@@ -83,7 +83,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 rounded-lg border text-sm outline-none focus:ring-2"
-              style={{ borderColor: '#0D1B2A30', focusRingColor: '#00B4D8' }}
+              style={{ borderColor: '#0D1B2A30' }}
               placeholder="professor@escola.pt"
             />
           </div>
