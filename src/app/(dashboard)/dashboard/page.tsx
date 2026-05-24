@@ -13,11 +13,25 @@ const quickCreate = [
 export default function DashboardPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [savedCount, setSavedCount] = useState(0)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  function handleSave(content: unknown) {
-    console.log('Conteúdo gerado:', content)
-    setSavedCount(n => n + 1)
-    setActiveTool(null)
+  async function handleSave(content: unknown) {
+    setSaveError(null)
+    try {
+      const res = await fetch('/api/content/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: activeTool ?? 'test', content }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erro desconhecido')
+      setSavedCount(n => n + 1)
+      setActiveTool(null)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro ao guardar'
+      console.error('Erro ao guardar:', msg)
+      setSaveError(msg)
+    }
   }
 
   return (
@@ -73,6 +87,12 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {saveError && (
+        <div className="p-4 rounded-xl border" style={{ background: '#fee2e220', borderColor: '#dc262630' }}>
+          <p className="text-sm font-medium" style={{ color: '#dc2626' }}>⚠️ {saveError}</p>
+        </div>
+      )}
 
       {activeTool === 'test' && (
         <TestGenerator onClose={() => setActiveTool(null)} onSave={handleSave} />

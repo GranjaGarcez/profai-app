@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import MathFigure from '@/components/math/MathFigure'
 
 const SUBJECTS_PT = [
   'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
@@ -33,6 +34,7 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     topic: '',
     difficulty: 'medium',
     numQuestions: 10,
+    duration: 50,
     questionTypes: ['multiple_choice'],
     country: 'PT',
   })
@@ -69,7 +71,14 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
   }
 
   const content = result as Record<string, unknown> | null
-  const questions = content ? (content.questions as Array<Record<string, unknown>>) : []
+
+  // Suporta tanto formato antigo (questions[]) como novo (groups[].questions)
+  const questions: Array<Record<string, unknown>> = content
+    ? content.questions
+      ? (content.questions as Array<Record<string, unknown>>)
+      : ((content.groups as Array<Record<string, unknown>> | undefined) ?? [])
+          .flatMap(g => (g.questions as Array<Record<string, unknown>>) ?? [])
+    : []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: '#0D1B2A90' }}>
@@ -160,16 +169,33 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   N.º de perguntas: {form.numQuestions}
                 </label>
                 <input
-                  type="range"
-                  min={3}
-                  max={20}
-                  value={form.numQuestions}
+                  type="range" min={3} max={20} value={form.numQuestions}
                   onChange={e => setForm(f => ({ ...f, numQuestions: Number(e.target.value) }))}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs" style={{ color: '#6B7280' }}>
                   <span>3</span><span>20</span>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Duração da prova</label>
+              <div className="flex gap-2">
+                {[45, 50, 90, 100].map(min => (
+                  <button
+                    key={min}
+                    onClick={() => setForm(f => ({ ...f, duration: min }))}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border transition-colors"
+                    style={{
+                      background: form.duration === min ? '#0D1B2A' : 'white',
+                      color: form.duration === min ? '#F7F3EE' : '#6B7280',
+                      borderColor: '#0D1B2A30',
+                    }}
+                  >
+                    {min} min
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -226,25 +252,44 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
         {/* PREVIEW */}
         {step === 'preview' && content && (
           <div className="p-6 space-y-4">
+            {/* Resumo */}
             <div className="p-4 rounded-xl" style={{ background: '#0D1B2A08' }}>
               <h3 className="font-bold text-lg" style={{ color: '#0D1B2A' }}>{content.title as string}</h3>
-              <div className="flex gap-4 mt-1 text-xs" style={{ color: '#6B7280' }}>
+              <div className="flex flex-wrap gap-4 mt-1 text-xs" style={{ color: '#6B7280' }}>
                 <span>📚 {content.subject as string}</span>
                 <span>🎓 {content.yearLevel as number}.º ano</span>
                 <span>📝 {questions.length} perguntas</span>
                 <span>⭐ {content.totalPoints as number} pontos</span>
+                <span>🖼️ {questions.filter(q => q.figure !== null && q.figure !== undefined).length} figuras</span>
               </div>
             </div>
 
-            <div className="space-y-3 max-h-80 overflow-y-auto">
+            {/* Diagnóstico: mostra se o AI gerou figuras */}
+            {questions.filter(q => q.figure !== null && q.figure !== undefined).length === 0 &&
+             ['Matemática', 'Matemática A'].includes(content.subject as string) && (
+              <div className="px-3 py-2 rounded-lg text-xs" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+                ⚠️ O AI não gerou figuras para este teste. Tenta gerar novamente — o prompt foi melhorado.
+              </div>
+            )}
+
+            {/* Lista de questões */}
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
               {questions.map((q, i) => (
                 <div key={i} className="p-4 rounded-xl bg-white border" style={{ borderColor: '#0D1B2A10' }}>
                   <div className="flex items-start gap-3">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: '#00B4D820', color: '#00B4D8' }}>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded shrink-0" style={{ background: '#00B4D820', color: '#00B4D8' }}>
                       {i + 1}
                     </span>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: '#0D1B2A' }}>{q.text as string}</p>
+
+                      {/* Figura SVG */}
+                      {q.figure !== null && q.figure !== undefined && (
+                        <div className="mt-2">
+                          <MathFigure figure={q.figure} />
+                        </div>
+                      )}
+
                       {(q.options as string[] | undefined) && (
                         <ul className="mt-2 space-y-1">
                           {(q.options as string[]).map((opt, j) => (
@@ -256,7 +301,7 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                         ✓ {q.correctAnswer as string}
                       </p>
                     </div>
-                    <span className="text-xs font-medium" style={{ color: '#C8A84B' }}>{q.points as number}pt</span>
+                    <span className="text-xs font-medium shrink-0" style={{ color: '#C8A84B' }}>{q.points as number}pt</span>
                   </div>
                 </div>
               ))}
