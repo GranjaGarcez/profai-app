@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import TestGenerator from '@/components/teacher/TestGenerator'
 
 const quickCreate = [
@@ -11,8 +12,8 @@ const quickCreate = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [activeTool, setActiveTool] = useState<string | null>(null)
-  const [savedCount, setSavedCount] = useState(0)
   const [saveError, setSaveError] = useState<string | null>(null)
 
   async function handleSave(content: unknown) {
@@ -25,8 +26,12 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Erro desconhecido')
-      setSavedCount(n => n + 1)
-      setActiveTool(null)
+      // Redireciona directamente para a página de edição do teste
+      if (data.id) {
+        router.push(`/dashboard/content/${data.id}`)
+      } else {
+        setActiveTool(null)
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erro ao guardar'
       console.error('Erro ao guardar:', msg)
@@ -66,14 +71,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-
-      {savedCount > 0 && (
-        <div className="p-4 rounded-xl border" style={{ background: '#d1fae520', borderColor: '#10B98130' }}>
-          <p className="text-sm font-medium" style={{ color: '#065f46' }}>
-            ✅ {savedCount} {savedCount === 1 ? 'conteúdo gerado' : 'conteúdos gerados'} nesta sessão
-          </p>
-        </div>
-      )}
 
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7280' }}>
