@@ -1,0 +1,16 @@
+
+# 2026-05-24 13:58:16.166344
++Create two TypeScript files for the PROF.IA Next.js 15 project:
++
++FILE 1: src/lib/supabase/client.ts
++- Browser-side Supabase client using @supabase/ssr createBrowserClient
++- Uses process.env.NEXT_PUBLIC_SUPABASE_URL and process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
++- Export a createClient function
++
++FILE 2: src/lib/supabase/server.ts
++- Server-side Supabase client using @supabase/ssr createServerClient
++- Uses cookies() from next/headers (async in Next.js 15)
++- Export an async createClient function
++- Proper cookie get/set/remove handlers
++
++No 'any' types. TypeScript strict.
