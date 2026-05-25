@@ -10,6 +10,7 @@ export interface Question {
   points: number
   markScheme?: string
   bloomLevel?: string
+  allowCalculator?: boolean   // IA define; professor pode sobrepor
 }
 
 export interface TestGroup {

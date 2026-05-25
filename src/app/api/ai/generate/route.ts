@@ -137,6 +137,7 @@ ${curriculumConstraint}DIRECTRIZES PEDAGÓGICAS OBRIGATÓRIAS:
 5. CURRÍCULO: Alinhamento estrito com as AE da DGE — respeita SEMPRE a secção CURRÍCULO OBRIGATÓRIO acima
 6. COTAÇÃO: totalPoints = 100; questões de resolução/análise valem mais que memorização; distribuição proporcional e justificável
 7. CRITÉRIOS: markScheme detalhado com critérios parciais quando aplicável (ex: "1pt pela equação + 1pt pelo cálculo + 1pt pela resposta com unidade")
+8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
 
@@ -165,6 +166,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "options": ["A) opção correcta", "B) distrator plausível 1", "C) distrator plausível 2", "D) distrator plausível 3"],
           "correctAnswer": "A",
           "points": 5,
+          "allowCalculator": false,
           "markScheme": "Resposta: A. A opção B induz o erro de [...]. A opção C confunde [...]. A opção D [...]. Critério: resposta correcta e completa (5 pontos)."
         }
       ]
@@ -182,6 +184,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "figure": null,
           "correctAnswer": "Resposta completa com unidades",
           "points": 20,
+          "allowCalculator": true,
           "markScheme": "5pt — identificação correcta dos dados; 5pt — equação/método correcto; 5pt — cálculo sem erro; 5pt — resposta com unidade e conclusão."
         }
       ]

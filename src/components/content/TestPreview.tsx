@@ -18,6 +18,7 @@ interface Question {
   correctAnswer: string
   points: number
   markScheme?: string
+  allowCalculator?: boolean
 }
 
 interface TestGroup {
@@ -447,6 +448,7 @@ export default function TestPreview({
                     }}
                     onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
                     onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
+                    onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
                   />
                 ))}
               </div>
@@ -493,11 +495,12 @@ interface QuestionBlockProps {
   onChangePoints: (v: number) => void
   onChangeMarkScheme: (v: string) => void
   onChangeOption: (oi: number, v: string) => void
+  onChangeCalculator: (v: boolean) => void
 }
 
 function QuestionBlock({
   q, globalIndex, editing,
-  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption,
+  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
   const isMulti = q.type === 'multiple_choice' || q.type === 'true_false'
@@ -524,6 +527,28 @@ function QuestionBlock({
                 {q.bloomLevel}
               </span>
             )}
+            {/* Calculadora — badge ou toggle */}
+            {editing ? (
+              <label className="no-print flex items-center gap-1.5 px-2 py-0.5 rounded cursor-pointer border transition-colors"
+                style={{
+                  borderColor: q.allowCalculator ? '#00B4D8' : '#0D1B2A20',
+                  background: q.allowCalculator ? '#e0f7fc' : 'transparent',
+                  color: q.allowCalculator ? '#0369a1' : '#9CA3AF',
+                }}>
+                <input
+                  type="checkbox"
+                  checked={q.allowCalculator ?? false}
+                  onChange={e => onChangeCalculator(e.target.checked)}
+                  className="w-3 h-3 accent-cyan-500"
+                />
+                <span className="text-xs">🧮 calculadora</span>
+              </label>
+            ) : q.allowCalculator ? (
+              <span className="no-print text-xs px-2 py-0.5 rounded"
+                style={{ background: '#e0f7fc', color: '#0369a1' }}>
+                🧮 calculadora
+              </span>
+            ) : null}
             {/* Pontuação editável */}
             <span className="ml-auto text-xs font-bold" style={{ color: '#6B7280' }}>
               {editing ? (

@@ -171,8 +171,8 @@ export default function ExamPage() {
 
   const questions: Question[] = session ? getAllQuestions(session.test_snapshot as TestSnapshot) : []
   const answered = Object.keys(answers).filter(k => answers[k].trim()).length
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allowCalculator = Boolean((session as any)?.allow_calculator)
+  // Calculadora disponível se pelo menos uma questão a permite
+  const anyCalculatorAllowed = questions.some(q => q.allowCalculator)
 
   async function handleSubmit() {
     if (submitting) return
@@ -235,7 +235,7 @@ export default function ExamPage() {
           Código: <strong>{session!.access_code}</strong>
           {session!.duration_minutes && ` · ${session!.duration_minutes} minutos`}
           {' · '}{questions.length} questões
-          {allowCalculator && ' · 🧮 Calculadora permitida'}
+          {anyCalculatorAllowed && ' · 🧮 Calculadora disponível em algumas questões'}
         </p>
       </div>
       <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: '#0D1B2A10' }}>
@@ -290,7 +290,7 @@ export default function ExamPage() {
               ⏱ {formatTime(timeLeft)}
             </span>
           )}
-          {allowCalculator && (
+          {anyCalculatorAllowed && (
             <button onClick={() => setShowCalculator(c => !c)}
               className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors"
               style={{ background: showCalculator ? '#00B4D8' : '#ffffff20', color: showCalculator ? 'white' : '#94a3b8' }}
@@ -315,6 +315,7 @@ export default function ExamPage() {
           key={q.index} q={q} n={i + 1}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
+          anyCalculatorAllowed={anyCalculatorAllowed}
         />
       ))}
 
@@ -340,9 +341,9 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, answer, onChange,
+  q, n, answer, onChange, anyCalculatorAllowed,
 }: {
-  q: Question; n: number; answer: string; onChange: (v: string) => void
+  q: Question; n: number; answer: string; onChange: (v: string) => void; anyCalculatorAllowed: boolean
 }) {
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
@@ -381,12 +382,23 @@ function QuestionCard({
   return (
     <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: '#0D1B2A10' }}>
       {/* Cabeçalho */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{n}</span>
         <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#0D1B2A08', color: '#6B7280' }}>
           {TYPE_LABEL[q.type] ?? q.type}
         </span>
+        {q.allowCalculator ? (
+          <span className="text-xs px-2 py-0.5 rounded font-medium"
+            style={{ background: '#e0f7fc', color: '#0369a1' }}>
+            🧮 calculadora permitida
+          </span>
+        ) : anyCalculatorAllowed ? (
+          <span className="text-xs px-2 py-0.5 rounded"
+            style={{ background: '#f3f4f6', color: '#9CA3AF' }}>
+            🚫 sem calculadora
+          </span>
+        ) : null}
         <span className="ml-auto text-xs font-bold" style={{ color: '#C8A84B' }}>{q.points} pt</span>
       </div>
 
