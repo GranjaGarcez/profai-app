@@ -44,7 +44,14 @@ async function gradeOpenWithAI(
   }
 
   const calcSection = calcHistory
-    ? `\nCÁLCULOS EFECTUADOS NA CALCULADORA (por ordem cronológica):\n${calcHistory}\n(Usa este registo para inferir a estratégia do aluno, mesmo que a resposta escrita seja incompleta.)`
+    ? `\nCÁLCULOS EFECTUADOS NA CALCULADORA (registo cronológico bruto):
+${calcHistory}
+
+COMO INTERPRETAR ESTE REGISTO:
+- O registo é bruto: pode conter teclas erradas, tentativas canceladas ou cálculos mentais verificados.
+- Procura a sequência coerente que conduz ao resultado — ignora entradas isoladas ou sem relação com a questão.
+- Se um passo intermédio não aparece (ex: o aluno escreve "16" sem mostrar "4×4"), trata-o como cálculo mental legítimo.
+- Só penalizes cálculos da calculadora se forem claramente contraditórios com a resolução apresentada.`
     : ''
 
   const prompt = `És um professor experiente de ${subject} a corrigir a resposta de um aluno.
@@ -56,15 +63,17 @@ CRITÉRIOS DE CORRECÇÃO: ${q.markScheme ?? q.correctAnswer}
 
 RESPOSTA DO ALUNO: ${trimmed || '(sem texto)'}
 ${calcSection}
-REGRAS DE CORRECÇÃO — aplica-as com rigor:
-1. Não penalizes a ausência de fórmula explícita se o cálculo apresentado evidencia claramente o processo (a fórmula está implícita no desenvolvimento).
-2. Aceita qualquer notação matematicamente equivalente: 3/4 = 0,75 = ¾ = 75% são todas correctas.
-3. Penaliza APENAS o que a questão pede explicitamente — não inventes requisitos.
-4. Se há raciocínio correcto mas erro de cálculo menor (ex: aritmético), aplica cotação parcial (≥ 50% da cotação).
-5. Se o resultado final está correcto, mesmo com método diferente do esperado, atribui cotação máxima.
-6. Não exijas passos intermédios que a questão não solicita.
-7. Se o histórico da calculadora mostra uma sequência de cálculos coerente com a resolução correcta, considera isso evidência de raciocínio correcto mesmo que a escrita seja sumária.
-8. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
+REGRAS DE CORRECÇÃO — aplica todas sem excepção:
+1. Avalia o TRABALHO RELEVANTE, não a apresentação: o que conta é a estratégia correcta e o resultado, não a formatação ou a existência de todos os passos escritos.
+2. Passos intermédios omitidos (ex: escrever "16" sem mostrar "4×4") são cálculo mental legítimo — não penalizes.
+3. Aceita qualquer notação matematicamente equivalente: 3/4 = 0,75 = ¾ = 75% são todas correctas.
+4. Não penalizes a ausência de fórmula explícita se o desenvolvimento evidencia o processo.
+5. Penaliza APENAS o que a questão pede explicitamente — não inventes requisitos.
+6. Erro de cálculo menor com raciocínio correcto → cotação parcial (≥ 50%).
+7. Resultado correcto com método diferente do esperado → cotação máxima.
+8. IN DUBIO PRO DISCIPULUM: em caso de dúvida genuína sobre se a resposta é correcta ou parcialmente correcta, decide sempre a favor do aluno. A confiança deve reflectir essa dúvida (valor baixo).
+9. O histórico da calculadora mostra a estratégia usada, não um rascunho limpo — procura a linha coerente e ignora ruído.
+10. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
 
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
 {"score": <número de 0 a ${q.points}>, "feedback": "<frase curta em Português de Portugal>", "confidence": <0.0 a 1.0>}`
