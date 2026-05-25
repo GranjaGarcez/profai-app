@@ -34,7 +34,13 @@ function applyOp(op: Op, a: number, b: number): number {
 
 const toRad = (deg: number) => (deg * Math.PI) / 180
 
-export default function Calculator({ onClose }: { onClose: () => void }) {
+export default function Calculator({
+  onClose,
+  inline = false,
+}: {
+  onClose?: () => void
+  inline?: boolean
+}) {
   const [state, setState] = useState<CalcState>(INIT)
   const [pos, setPos] = useState({ x: 24, y: 90 })
   const [dragging, setDragging] = useState<{ ox: number; oy: number } | null>(null)
@@ -152,6 +158,56 @@ export default function Calculator({ onClose }: { onClose: () => void }) {
       >
         {label}
       </button>
+    )
+  }
+
+  // Modo inline: renderiza no fluxo normal sem posicionamento fixo nem drag
+  if (inline) {
+    return (
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#0f172a', border: '1px solid #334155' }}>
+        {/* Visor */}
+        <div className="px-3 pt-3 pb-2">
+          <div className="rounded-xl px-3 py-2" style={{ background: '#020617', minHeight: 60 }}>
+            <p className="text-xs text-right truncate mb-0.5" style={{ color: '#475569', minHeight: 16 }}>
+              {state.expression || ' '}
+            </p>
+            <p className="text-2xl font-mono font-bold text-right truncate" style={{ color: '#f1f5f9' }}>
+              {state.display}
+            </p>
+          </div>
+        </div>
+        {/* Teclado */}
+        <div className="px-3 pb-3 grid grid-cols-4 gap-1.5">
+          <Btn label="sin" action={() => sci(x => Math.sin(toRad(x)), 'sin')} color="#1e3a5f" />
+          <Btn label="cos" action={() => sci(x => Math.cos(toRad(x)), 'cos')} color="#1e3a5f" />
+          <Btn label="tan" action={() => sci(x => Math.tan(toRad(x)), 'tan')} color="#1e3a5f" />
+          <Btn label="π" action={() => setConst(Math.PI, 'π')} color="#1e3a5f" />
+          <Btn label="√" action={() => sci(x => Math.sqrt(x), '√')} color="#1e3a5f" />
+          <Btn label="x²" action={() => sci(x => x * x, 'sq')} color="#1e3a5f" />
+          <Btn label="log" action={() => sci(x => Math.log10(x), 'log')} color="#1e3a5f" />
+          <Btn label="ln" action={() => sci(x => Math.log(x), 'ln')} color="#1e3a5f" />
+          <Btn label="AC" action={clear} color="#7f1d1d" />
+          <Btn label="⌫" action={backspace} />
+          <Btn label="xⁿ" action={() => operate('^')} color="#0369a1" />
+          <Btn label="÷" action={() => operate('÷')} color="#0369a1" />
+          <Btn label="7" action={() => digit('7')} />
+          <Btn label="8" action={() => digit('8')} />
+          <Btn label="9" action={() => digit('9')} />
+          <Btn label="×" action={() => operate('×')} color="#0369a1" />
+          <Btn label="4" action={() => digit('4')} />
+          <Btn label="5" action={() => digit('5')} />
+          <Btn label="6" action={() => digit('6')} />
+          <Btn label="−" action={() => operate('-')} color="#0369a1" />
+          <Btn label="1" action={() => digit('1')} />
+          <Btn label="2" action={() => digit('2')} />
+          <Btn label="3" action={() => digit('3')} />
+          <Btn label="+" action={() => operate('+')} color="#0369a1" />
+          <Btn label="+/−" action={negate} />
+          <Btn label="0" action={() => digit('0')} />
+          <Btn label="." action={() => digit('.')} />
+          <Btn label="=" action={equals} color="#0284c7" />
+        </div>
+      </div>
     )
   }
 

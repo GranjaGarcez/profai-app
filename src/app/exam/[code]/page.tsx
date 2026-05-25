@@ -143,7 +143,6 @@ export default function ExamPage() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [showCalculator, setShowCalculator] = useState(false)
 
   useEffect(() => {
     fetch(`/api/exam/session/${code}`)
@@ -171,8 +170,6 @@ export default function ExamPage() {
 
   const questions: Question[] = session ? getAllQuestions(session.test_snapshot as TestSnapshot) : []
   const answered = Object.keys(answers).filter(k => answers[k].trim()).length
-  // Calculadora disponível se pelo menos uma questão a permite
-  const anyCalculatorAllowed = questions.some(q => q.allowCalculator)
 
   async function handleSubmit() {
     if (submitting) return
@@ -235,7 +232,7 @@ export default function ExamPage() {
           Código: <strong>{session!.access_code}</strong>
           {session!.duration_minutes && ` · ${session!.duration_minutes} minutos`}
           {' · '}{questions.length} questões
-          {anyCalculatorAllowed && ' · 🧮 Calculadora disponível em algumas questões'}
+          {questions.some(q => q.allowCalculator) && ' · 🧮 Calculadora disponível em questões assinaladas'}
         </p>
       </div>
       <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: '#0D1B2A10' }}>
@@ -273,8 +270,6 @@ export default function ExamPage() {
   // ── Fase exame ─────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
-
       {/* Cabeçalho fixo */}
       <div className="sticky top-0 z-10 py-3 px-4 rounded-xl flex items-center justify-between shadow-sm gap-3"
         style={{ background: '#0D1B2A', color: '#F7F3EE' }}>
@@ -289,14 +284,6 @@ export default function ExamPage() {
               style={{ background: timeLeft < 120 ? '#dc2626' : '#00B4D830', color: timeLeft < 120 ? 'white' : '#00B4D8' }}>
               ⏱ {formatTime(timeLeft)}
             </span>
-          )}
-          {anyCalculatorAllowed && (
-            <button onClick={() => setShowCalculator(c => !c)}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors"
-              style={{ background: showCalculator ? '#00B4D8' : '#ffffff20', color: showCalculator ? 'white' : '#94a3b8' }}
-              title="Calculadora científica">
-              🧮
-            </button>
           )}
         </div>
       </div>
@@ -315,7 +302,6 @@ export default function ExamPage() {
           key={q.index} q={q} n={i + 1}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
-          anyCalculatorAllowed={anyCalculatorAllowed}
         />
       ))}
 
@@ -341,9 +327,9 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, answer, onChange, anyCalculatorAllowed,
+  q, n, answer, onChange,
 }: {
-  q: Question; n: number; answer: string; onChange: (v: string) => void; anyCalculatorAllowed: boolean
+  q: Question; n: number; answer: string; onChange: (v: string) => void
 }) {
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
@@ -351,6 +337,7 @@ function QuestionCard({
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null)
   const [showKeyboard, setShowKeyboard] = useState(false)
+  const [showCalc, setShowCalc]         = useState(false)
   const [activeCategory, setActiveCategory] = useState(0)
 
   // Fracção personalizada
@@ -388,17 +375,19 @@ function QuestionCard({
         <span className="text-xs px-2 py-0.5 rounded" style={{ background: '#0D1B2A08', color: '#6B7280' }}>
           {TYPE_LABEL[q.type] ?? q.type}
         </span>
-        {q.allowCalculator ? (
-          <span className="text-xs px-2 py-0.5 rounded font-medium"
-            style={{ background: '#e0f7fc', color: '#0369a1' }}>
-            🧮 calculadora permitida
-          </span>
-        ) : anyCalculatorAllowed ? (
-          <span className="text-xs px-2 py-0.5 rounded"
-            style={{ background: '#f3f4f6', color: '#9CA3AF' }}>
-            🚫 sem calculadora
-          </span>
-        ) : null}
+        {q.allowCalculator && (
+          <button
+            onClick={() => setShowCalc(c => !c)}
+            className="text-xs px-2 py-0.5 rounded font-medium transition-colors"
+            style={{
+              background: showCalc ? '#0f172a' : '#e0f7fc',
+              color: showCalc ? '#94a3b8' : '#0369a1',
+              border: `1px solid ${showCalc ? '#334155' : '#bae6fd'}`,
+            }}
+          >
+            🧮 {showCalc ? 'fechar calculadora' : 'calculadora'}
+          </button>
+        )}
         <span className="ml-auto text-xs font-bold" style={{ color: '#C8A84B' }}>{q.points} pt</span>
       </div>
 
@@ -412,6 +401,11 @@ function QuestionCard({
         <div className="rounded-xl overflow-hidden border" style={{ borderColor: '#0D1B2A08', background: '#fafafa' }}>
           <MathFigure figure={q.figure as Record<string, unknown>} />
         </div>
+      )}
+
+      {/* Calculadora inline — só na questão que a permite */}
+      {q.allowCalculator && showCalc && (
+        <Calculator inline />
       )}
 
       {/* Escolha múltipla */}
