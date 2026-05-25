@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import type { CalcEntry } from '@/lib/exam/types'
 
 type Op = '+' | '-' | '×' | '÷' | '^' | null
 
@@ -37,11 +38,15 @@ const toRad = (deg: number) => (deg * Math.PI) / 180
 export default function Calculator({
   onClose,
   inline = false,
+  onEntry,
 }: {
   onClose?: () => void
   inline?: boolean
+  onEntry?: (entry: CalcEntry) => void
 }) {
   const [state, setState] = useState<CalcState>(INIT)
+  const stateRef = useRef<CalcState>(INIT)
+  stateRef.current = state
   const [pos, setPos] = useState({ x: 24, y: 90 })
   const [dragging, setDragging] = useState<{ ox: number; oy: number } | null>(null)
 
@@ -80,32 +85,35 @@ export default function Calculator({
   }, [])
 
   const equals = useCallback(() => {
-    setState(s => {
-      if (s.prev === null || s.op === null) return s
-      const cur = parseFloat(s.display)
-      const result = applyOp(s.op, s.prev, cur)
-      return {
-        display: fmt(result),
-        prev: null,
-        op: null,
-        waitNext: true,
-        expression: `${s.expression} ${s.display} =`,
-      }
-    })
-  }, [])
+    const s = stateRef.current
+    if (s.prev === null || s.op === null) return
+    const cur = parseFloat(s.display)
+    const result = applyOp(s.op, s.prev, cur)
+    const expr = `${s.expression} ${s.display}`
+    const next: CalcState = {
+      display: fmt(result),
+      prev: null,
+      op: null,
+      waitNext: true,
+      expression: `${expr} =`,
+    }
+    setState(next)
+    onEntry?.({ expr: expr.trim(), result: fmt(result) })
+  }, [onEntry])
 
   const sci = useCallback((fn: (x: number) => number, label: string) => {
-    setState(s => {
-      const x = parseFloat(s.display)
-      const result = fn(x)
-      return {
-        ...s,
-        display: fmt(result),
-        waitNext: true,
-        expression: `${label}(${s.display})`,
-      }
+    const s = stateRef.current
+    const x = parseFloat(s.display)
+    const result = fn(x)
+    const expr = `${label}(${s.display})`
+    setState({
+      ...s,
+      display: fmt(result),
+      waitNext: true,
+      expression: expr,
     })
-  }, [])
+    onEntry?.({ expr, result: fmt(result) })
+  }, [onEntry])
 
   const clear = useCallback(() => setState(INIT), [])
 

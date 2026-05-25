@@ -1,5 +1,10 @@
 // ── Tipos partilhados do sistema de exames ────────────────────────────────────
 
+export interface CalcEntry {
+  expr: string    // expressão calculada, ex: "sin(30)", "3.14 × 4²"
+  result: string  // resultado, ex: "0.5", "50.24"
+}
+
 export interface Question {
   index: number
   type: 'multiple_choice' | 'true_false' | 'short_answer' | 'long_answer' | 'fill_blank'

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import type { ExamSession, Question, TestSnapshot } from '@/lib/exam/types'
+import type { CalcEntry, ExamSession, Question, TestSnapshot } from '@/lib/exam/types'
 import { getAllQuestions } from '@/lib/exam/types'
 import Calculator from '@/components/exam/Calculator'
 import MathFigure from '@/components/math/MathFigure'
@@ -137,7 +137,8 @@ export default function ExamPage() {
   const [studentNumber, setStudentNumber] = useState('')
   const [studentClass,  setStudentClass]  = useState('')
 
-  const [answers, setAnswers]     = useState<Record<string, string>>({})
+  const [answers, setAnswers]       = useState<Record<string, string>>({})
+  const [calcHistories, setCalcHistories] = useState<Record<string, CalcEntry[]>>({})
   const [submitting, setSubmitting] = useState(false)
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
@@ -176,12 +177,22 @@ export default function ExamPage() {
     setSubmitting(true)
     if (timerRef.current) clearInterval(timerRef.current)
     try {
+      // Embed calc histories as calc_<questionIndex> keys alongside regular answers
+      const answersWithCalc: Record<string, string> = { ...answers }
+      for (const [qIdx, entries] of Object.entries(calcHistories)) {
+        if (entries.length > 0) {
+          answersWithCalc[`calc_${qIdx}`] = entries
+            .map((e, i) => `${i + 1}. ${e.expr} = ${e.result}`)
+            .join(' | ')
+        }
+      }
       const res = await fetch('/api/exam/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: session!.id, studentName: studentName.trim(),
-          studentNumber: studentNumber.trim(), studentClass: studentClass.trim(), answers,
+          studentNumber: studentNumber.trim(), studentClass: studentClass.trim(),
+          answers: answersWithCalc,
         }),
       })
       const data = await res.json()
@@ -302,6 +313,10 @@ export default function ExamPage() {
           key={q.index} q={q} n={i + 1}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
+          onCalcEntry={(entry: CalcEntry) => setCalcHistories(h => ({
+            ...h,
+            [String(q.index)]: [...(h[String(q.index)] ?? []), entry],
+          }))}
         />
       ))}
 
@@ -327,9 +342,11 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, answer, onChange,
+  q, n, answer, onChange, onCalcEntry,
 }: {
-  q: Question; n: number; answer: string; onChange: (v: string) => void
+  q: Question; n: number; answer: string
+  onChange: (v: string) => void
+  onCalcEntry: (entry: CalcEntry) => void
 }) {
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
@@ -405,7 +422,7 @@ function QuestionCard({
 
       {/* Calculadora inline — só na questão que a permite */}
       {q.allowCalculator && showCalc && (
-        <Calculator inline />
+        <Calculator inline onEntry={onCalcEntry} />
       )}
 
       {/* Escolha múltipla */}

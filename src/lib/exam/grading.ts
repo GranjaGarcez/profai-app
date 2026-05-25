@@ -36,11 +36,16 @@ async function gradeOpenWithAI(
   q: Question,
   rawAnswer: string,
   subject: string,
+  calcHistory?: string,   // formatted calc log, e.g. "1. sin(30) = 0.5 | 2. 3 × 4 = 12"
 ): Promise<GradingDetail> {
   const trimmed = rawAnswer.trim()
-  if (!trimmed) {
+  if (!trimmed && !calcHistory) {
     return { score: 0, max: q.points, feedback: 'Sem resposta.', auto: true, ai_confidence: 1 }
   }
+
+  const calcSection = calcHistory
+    ? `\nCÁLCULOS EFECTUADOS NA CALCULADORA (por ordem cronológica):\n${calcHistory}\n(Usa este registo para inferir a estratégia do aluno, mesmo que a resposta escrita seja incompleta.)`
+    : ''
 
   const prompt = `És um professor experiente de ${subject} a corrigir a resposta de um aluno.
 
@@ -49,8 +54,8 @@ TIPO: ${q.type}
 COTAÇÃO MÁXIMA: ${q.points} pontos
 CRITÉRIOS DE CORRECÇÃO: ${q.markScheme ?? q.correctAnswer}
 
-RESPOSTA DO ALUNO: ${trimmed}
-
+RESPOSTA DO ALUNO: ${trimmed || '(sem texto)'}
+${calcSection}
 REGRAS DE CORRECÇÃO — aplica-as com rigor:
 1. Não penalizes a ausência de fórmula explícita se o cálculo apresentado evidencia claramente o processo (a fórmula está implícita no desenvolvimento).
 2. Aceita qualquer notação matematicamente equivalente: 3/4 = 0,75 = ¾ = 75% são todas correctas.
@@ -58,7 +63,8 @@ REGRAS DE CORRECÇÃO — aplica-as com rigor:
 4. Se há raciocínio correcto mas erro de cálculo menor (ex: aritmético), aplica cotação parcial (≥ 50% da cotação).
 5. Se o resultado final está correcto, mesmo com método diferente do esperado, atribui cotação máxima.
 6. Não exijas passos intermédios que a questão não solicita.
-7. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
+7. Se o histórico da calculadora mostra uma sequência de cálculos coerente com a resolução correcta, considera isso evidência de raciocínio correcto mesmo que a escrita seja sumária.
+8. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
 
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
 {"score": <número de 0 a ${q.points}>, "feedback": "<frase curta em Português de Portugal>", "confidence": <0.0 a 1.0>}`
@@ -124,11 +130,13 @@ export async function gradeSubmission(
   const tasks = questions.map(async q => {
     const key = String(q.index)
     const raw = answers[key] ?? ''
+    const calcKey = `calc_${key}`
+    const calcHistory = answers[calcKey] ?? undefined
 
     if (q.type === 'multiple_choice' || q.type === 'true_false') {
       details[key] = gradeObjective(q, raw)
     } else {
-      details[key] = await gradeOpenWithAI(q, raw, snapshot.subject)
+      details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
     }
   })
 
