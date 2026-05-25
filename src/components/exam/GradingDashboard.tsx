@@ -174,6 +174,34 @@ function SubmissionDetail({
                   )}
                 </div>
 
+                {/* Histórico da calculadora */}
+                {(() => {
+                  const calcLog = submission.answers[`calc_${qKey}`]
+                  if (!calcLog) return null
+                  const steps = calcLog.split(' | ')
+                  return (
+                    <div className="pl-1">
+                      <p className="text-xs font-medium mb-1.5" style={{ color: '#9CA3AF' }}>
+                        🧮 Cálculos na calculadora
+                      </p>
+                      <div className="px-3 py-2 rounded-lg space-y-1"
+                        style={{ background: '#0f172a', border: '1px solid #1e293b' }}>
+                        {steps.map((step, si) => {
+                          const [expr, result] = step.replace(/^\d+\.\s*/, '').split(' = ')
+                          return (
+                            <p key={si} className="text-xs font-mono" style={{ color: '#94a3b8' }}>
+                              <span style={{ color: '#64748b' }}>{si + 1}.</span>{' '}
+                              <span style={{ color: '#e2e8f0' }}>{expr}</span>
+                              <span style={{ color: '#475569' }}> = </span>
+                              <span style={{ color: '#38bdf8', fontWeight: 600 }}>{result}</span>
+                            </p>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* Feedback IA */}
                 {detail?.feedback && (
                   <div className="pl-1">
@@ -186,6 +214,22 @@ function SubmissionDetail({
                 )}
 
                 {/* Pontuação + override */}
+                {(() => {
+                  const conf = detail?.ai_confidence
+                  const score = detail?.score
+                  const isExtreme = score === 0 || score === q.points
+                  const needsReview = conf !== undefined && conf < 0.8 && isExtreme && detail?.auto !== false
+                  return needsReview ? (
+                    <div className="pl-1">
+                      <p className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                        style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d80' }}>
+                        ⚠️ Confiança baixa ({Math.round(conf! * 100)}%) com pontuação extrema
+                        — recomenda-se revisão manual.
+                      </p>
+                    </div>
+                  ) : null
+                })()}
+
                 <div className="flex items-center gap-3 pt-1">
                   <div className="flex items-center gap-1.5 text-sm">
                     <span className="font-bold text-base" style={{ color: '#0D1B2A' }}>
@@ -194,7 +238,10 @@ function SubmissionDetail({
                     <span style={{ color: '#9CA3AF' }}>/ {q.points} pt</span>
                     {detail?.ai_confidence !== undefined && (
                       <span className="text-xs px-1.5 py-0.5 rounded ml-1"
-                        style={{ background: '#f0f9ff', color: '#0369a1' }}>
+                        style={{
+                          background: detail.ai_confidence >= 0.8 ? '#f0f9ff' : '#fef3c7',
+                          color:      detail.ai_confidence >= 0.8 ? '#0369a1' : '#92400e',
+                        }}>
                         IA {Math.round(detail.ai_confidence * 100)}%
                       </span>
                     )}
