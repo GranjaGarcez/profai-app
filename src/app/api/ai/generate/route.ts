@@ -118,8 +118,12 @@ VERIFICAÇÃO FINAL: Antes de fechar o JSON, conta quantas questões têm figure
     // ── Organização em grupos ───────────────────────────────────────────────
     const hasMultipleTypes = questionTypes.length > 1
     const groupNote = hasMultipleTypes
-      ? `ORGANIZAÇÃO: Agrupa as questões em Grupos por tipo (Grupo I, Grupo II, etc.). Cada grupo deve ter um label romano, uma descrição do tipo de questão e a cotação total do grupo.`
-      : `ORGANIZAÇÃO: Todas as questões são do mesmo tipo — usa um único grupo.`
+      ? `ESTRUTURA OBRIGATÓRIA EM GRUPOS (boas práticas DGE 2.º ciclo):
+• Grupo I — Seleção (escolha múltipla e/ou verdadeiro/falso): 20–25 pts total. Testa reconhecimento e compreensão (Bloom 1–3). Pontuação por questão: 3–5 pts (EM), 2–3 pts (VF).
+• Grupo II — Resposta curta / Completar espaços: 25–35 pts total. Testa aplicação e análise (Bloom 3–4). Pontuação por questão: 5–10 pts.
+• Grupo III — Resolução de problemas / Resposta longa: mínimo 40–50 pts total. Testa análise, síntese e avaliação (Bloom 4–6). Pontuação por questão: 10–20 pts.
+Se não foram pedidos todos os tipos, adapta os grupos ao que foi pedido — nunca mistures tipos de resposta no mesmo grupo. A descrição de cada grupo deve identificar claramente o tipo e a cotação total do grupo entre parênteses.`
+      : `ORGANIZAÇÃO: Todas as questões são do mesmo tipo — usa um único grupo com label e descrição adequados.`
 
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
 
@@ -130,13 +134,18 @@ ${groupNote}
 ${figureNote}
 
 ${curriculumConstraint}DIRECTRIZES PEDAGÓGICAS OBRIGATÓRIAS:
-1. BLOOM: Distribui por níveis cognitivos — 20% Recordar, 35% Compreender/Aplicar, 45% Analisar/Avaliar/Criar
+1. BLOOM: Distribui por níveis cognitivos — 20% Recordar, 35% Compreender/Aplicar, 45% Analisar/Avaliar/Criar. Questões de Bloom 4–6 valem proporcionalmente mais.
 2. CONTEXTO: Questões de desenvolvimento devem ter contexto real e significativo para alunos de ${yearLevel}.º ano
 3. DISTRATORES (escolha múltipla): Cada opção errada deve corresponder a um erro conceptual real e plausível — nunca opções obviamente absurdas
 4. LINGUAGEM: Clara, precisa, Português de Portugal estrito. Usa "rectângulo", "fórmula", "efeito", "facto", "óptimo", "actividade" (nunca formas brasileiras)
 5. CURRÍCULO: Alinhamento estrito com as AE da DGE — respeita SEMPRE a secção CURRÍCULO OBRIGATÓRIO acima
-6. COTAÇÃO: totalPoints = 100; questões de resolução/análise valem mais que memorização; distribuição proporcional e justificável
-7. CRITÉRIOS: markScheme detalhado com critérios parciais quando aplicável (ex: "1pt pela equação + 1pt pelo cálculo + 1pt pela resposta com unidade")
+6. COTAÇÃO — segue RIGOROSAMENTE esta matriz (totalPoints = 100 exactamente):
+   • Escolha múltipla: 3–5 pts/questão (total do grupo ≤ 25 pts)
+   • Verdadeiro/Falso: 2–3 pts/questão (total do grupo ≤ 15 pts)
+   • Resposta curta / Completar: 5–10 pts/questão (total do grupo 25–35 pts)
+   • Resolução / Resposta longa: 10–20 pts/questão (total do grupo ≥ 40 pts)
+   • NUNCA uses pontos não inteiros; verifica que a soma exacta = 100.
+7. CRITÉRIOS: markScheme detalhado com critérios parciais quando aplicável (ex: "2pt identificação de dados + 3pt método + 3pt cálculo + 2pt resposta com unidade")
 8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
@@ -165,27 +174,45 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "figure": null,
           "options": ["A) opção correcta", "B) distrator plausível 1", "C) distrator plausível 2", "D) distrator plausível 3"],
           "correctAnswer": "A",
-          "points": 5,
+          "points": 4,
           "allowCalculator": false,
-          "markScheme": "Resposta: A. A opção B induz o erro de [...]. A opção C confunde [...]. A opção D [...]. Critério: resposta correcta e completa (5 pontos)."
+          "markScheme": "Resposta: A. A opção B induz o erro de [...]. A opção C confunde [...]. A opção D [...]. Critério: resposta correcta e completa (4 pontos)."
         }
       ]
     },
     {
       "label": "Grupo II",
-      "description": "Resolução de problemas — apresenta todos os cálculos. (80 pontos)",
-      "totalPoints": 80,
+      "description": "Resposta curta — responde de forma precisa e justificada. (30 pontos)",
+      "totalPoints": 30,
       "questions": [
         {
-          "index": 5,
+          "index": 6,
           "type": "short_answer",
           "bloomLevel": "Aplicar",
           "text": "Enunciado com contexto real exigindo aplicação de conhecimentos",
           "figure": null,
-          "correctAnswer": "Resposta completa com unidades",
+          "correctAnswer": "Resposta completa",
+          "points": 10,
+          "allowCalculator": false,
+          "markScheme": "3pt — identificação do conceito; 4pt — desenvolvimento correcto; 3pt — resposta completa e precisa."
+        }
+      ]
+    },
+    {
+      "label": "Grupo III",
+      "description": "Resolução de problemas — apresenta todos os cálculos e justificações. (50 pontos)",
+      "totalPoints": 50,
+      "questions": [
+        {
+          "index": 9,
+          "type": "long_answer",
+          "bloomLevel": "Analisar",
+          "text": "Enunciado com contexto real exigindo análise e resolução multi-passo",
+          "figure": null,
+          "correctAnswer": "Resposta completa com unidades e conclusão",
           "points": 20,
           "allowCalculator": true,
-          "markScheme": "5pt — identificação correcta dos dados; 5pt — equação/método correcto; 5pt — cálculo sem erro; 5pt — resposta com unidade e conclusão."
+          "markScheme": "4pt — identificação correcta dos dados; 6pt — método/equação correcta; 6pt — cálculo sem erro; 4pt — resposta com unidade e conclusão."
         }
       ]
     }

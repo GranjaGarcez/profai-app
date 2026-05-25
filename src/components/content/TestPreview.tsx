@@ -68,6 +68,137 @@ function normaliseGroups(test: TestContent): TestGroup[] {
 
 function deepClone<T>(v: T): T { return JSON.parse(JSON.stringify(v)) }
 
+// ── Painel de distribuição de cotação ─────────────────────────────────────────
+const GROUP_COLORS = ['#0D1B2A', '#00B4D8', '#7c3aed', '#059669', '#C8A84B']
+
+function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoints: number }) {
+  const allQs = groups.flatMap(g => g.questions)
+
+  const groupData = groups.map((g, i) => ({
+    label: g.label,
+    pts: g.questions.reduce((s, q) => s + q.points, 0),
+    color: GROUP_COLORS[i % GROUP_COLORS.length],
+  }))
+
+  // Categorias pedagógicas
+  const selPts  = allQs.filter(q => q.type === 'multiple_choice' || q.type === 'true_false').reduce((s, q) => s + q.points, 0)
+  const curtPts = allQs.filter(q => q.type === 'short_answer'    || q.type === 'fill_blank').reduce((s, q) => s + q.points, 0)
+  const resPts  = allQs.filter(q => q.type === 'long_answer').reduce((s, q) => s + q.points, 0)
+
+  const pct = (n: number) => totalPoints > 0 ? Math.round((n / totalPoints) * 100) : 0
+
+  const categories = [
+    { label: 'Seleção',        pts: selPts,  target: '≤ 25%',   ok: pct(selPts) <= 25 },
+    { label: 'Resposta curta', pts: curtPts, target: '25–35%',  ok: pct(curtPts) >= 20 },
+    { label: 'Resolução',      pts: resPts,  target: '≥ 40%',   ok: pct(resPts) >= 40 },
+  ]
+
+  // Bloom
+  const bloomMap: Record<string, number> = {}
+  for (const q of allQs) if (q.bloomLevel) bloomMap[q.bloomLevel] = (bloomMap[q.bloomLevel] ?? 0) + 1
+  const bloomEntries = Object.entries(bloomMap).sort((a, b) => b[1] - a[1])
+
+  const warnings = categories.filter(c => c.pts > 0 && !c.ok)
+
+  return (
+    <div className="no-print mb-6 rounded-xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
+      <div className="px-5 py-3 flex items-center justify-between"
+        style={{ background: '#f8fafc', borderBottom: '1px solid #0D1B2A08' }}>
+        <h3 className="text-sm font-bold" style={{ color: '#0D1B2A' }}>
+          Estrutura e distribuição da cotação
+        </h3>
+        <span className="text-xs" style={{ color: '#9CA3AF' }}>
+          {allQs.length} questões · {totalPoints} pontos
+        </span>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        {/* Barra de grupos */}
+        <div>
+          <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>Por grupo</p>
+          <div className="flex rounded-lg overflow-hidden h-7 bg-gray-100">
+            {groupData.map((g, i) => {
+              const p = pct(g.pts)
+              return p > 0 ? (
+                <div key={i}
+                  style={{ width: `${p}%`, background: g.color }}
+                  className="flex items-center justify-center text-xs text-white font-semibold overflow-hidden"
+                  title={`${g.label}: ${g.pts} pts (${p}%)`}>
+                  {p > 10 ? `${p}%` : ''}
+                </div>
+              ) : null
+            })}
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2">
+            {groupData.map((g, i) => (
+              <span key={i} className="flex items-center gap-1.5 text-xs" style={{ color: '#374151' }}>
+                <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: g.color }} />
+                {g.label} — <strong>{g.pts} pts</strong> ({pct(g.pts)}%)
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Por categoria pedagógica */}
+        <div>
+          <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>
+            Por categoria pedagógica <span style={{ color: '#d1d5db', fontWeight: 400 }}>(boas práticas DGE 2.º ciclo)</span>
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {categories.map(cat => (
+              <div key={cat.label} className="px-3 py-2.5 rounded-lg border text-center"
+                style={{
+                  borderColor: cat.pts === 0 ? '#0D1B2A10' : cat.ok ? '#bbf7d0' : '#fcd34d',
+                  background:  cat.pts === 0 ? '#fafafa'   : cat.ok ? '#f0fdf4' : '#fffbeb',
+                }}>
+                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{cat.label}</p>
+                <p className="text-xl font-bold font-mono leading-none" style={{ color: '#0D1B2A' }}>
+                  {pct(cat.pts)}%
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+                  {cat.pts} pts · alvo {cat.target}
+                </p>
+                {cat.pts > 0 && (
+                  <p className="text-xs font-semibold mt-1"
+                    style={{ color: cat.ok ? '#059669' : '#92400e' }}>
+                    {cat.ok ? '✓ no intervalo' : '⚠️ fora do intervalo'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bloom */}
+        {bloomEntries.length > 0 && (
+          <div>
+            <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>Níveis de Bloom</p>
+            <div className="flex flex-wrap gap-2">
+              {bloomEntries.map(([level, count]) => (
+                <span key={level} className="text-xs px-2.5 py-1 rounded-full"
+                  style={{ background: '#e0f7fc', color: '#0369a1', border: '1px solid #bae6fd' }}>
+                  {level} · {count} {count === 1 ? 'questão' : 'questões'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Avisos */}
+        {warnings.length > 0 && (
+          <div className="px-3 py-2.5 rounded-lg text-xs"
+            style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d60' }}>
+            <p className="font-semibold mb-1">Recomendações de ajuste:</p>
+            {warnings.map(w => (
+              <p key={w.label}>⚠️ {w.label}: {pct(w.pts)}% — intervalo recomendado {w.target}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Componente de campo editável (texto simples, uma linha) ───────────────────
 function EditField({
   value, onChange, editing, className, style, placeholder,
@@ -274,6 +405,9 @@ export default function TestPreview({
         </div>
       )}
 
+      {/* ── Painel de distribuição ── */}
+      <ScoreBreakdown groups={groups} totalPoints={editableTest.totalPoints} />
+
       {/* ── Documento ── */}
       <div id="test-document" className="bg-white rounded-xl shadow-sm border print-area"
         style={{ borderColor: '#0D1B2A10' }}>
@@ -403,32 +537,37 @@ export default function TestPreview({
 
               {/* Cabeçalho do grupo */}
               {group.label && (
-                <div className="flex items-baseline justify-between mb-4 pb-2"
-                  style={{ borderBottom: '1.5px solid #0D1B2A25' }}>
-                  <h2 className="text-base font-bold shrink-0"
-                    style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A' }}>
-                    <EditField
-                      value={group.label}
-                      onChange={v => updateGroup(gi, 'label', v)}
-                      editing={isEditing}
-                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, color: '#0D1B2A' }}
-                    />
-                  </h2>
-                  {group.description && (
-                    <p className="text-xs ml-4 flex-1" style={{ color: '#6B7280' }}>
+                <div className="mb-5">
+                  {/* Barra decorativa colorida (no-print) */}
+                  <div className="no-print h-1 rounded-full mb-3"
+                    style={{ background: GROUP_COLORS[gi % GROUP_COLORS.length], opacity: 0.7 }} />
+                  <div className="flex items-baseline justify-between pb-2"
+                    style={{ borderBottom: '1.5px solid #0D1B2A25' }}>
+                    <h2 className="text-base font-bold shrink-0"
+                      style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A' }}>
                       <EditField
-                        value={group.description}
-                        onChange={v => updateGroup(gi, 'description', v)}
+                        value={group.label}
+                        onChange={v => updateGroup(gi, 'label', v)}
                         editing={isEditing}
-                        style={{ color: '#6B7280', fontSize: '0.75rem' }}
+                        style={{ fontFamily: 'Georgia, serif', fontWeight: 700, color: '#0D1B2A' }}
                       />
-                    </p>
-                  )}
-                  {group.totalPoints != null && (
-                    <span className="text-xs font-bold ml-4 shrink-0" style={{ color: '#0D1B2A' }}>
-                      {group.totalPoints} pontos
-                    </span>
-                  )}
+                    </h2>
+                    {group.description && (
+                      <p className="text-xs ml-4 flex-1 italic" style={{ color: '#6B7280' }}>
+                        <EditField
+                          value={group.description}
+                          onChange={v => updateGroup(gi, 'description', v)}
+                          editing={isEditing}
+                          style={{ color: '#6B7280', fontSize: '0.75rem' }}
+                        />
+                      </p>
+                    )}
+                    {group.totalPoints != null && (
+                      <span className="text-sm font-bold ml-4 shrink-0" style={{ color: '#0D1B2A' }}>
+                        {group.totalPoints} pontos
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
