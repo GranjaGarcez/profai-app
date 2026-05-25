@@ -8,20 +8,29 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
 // ── Perfis disciplinares de estrutura e cotação ────────────────────────────────
-function getSubjectProfile(subject: string, hasMultipleTypes: boolean): {
+function yearContext(yearLevel: number): string {
+  if (yearLevel <= 4) return `NÍVEL: ${yearLevel}.º ano (1.º ciclo) — linguagem muito simples e concreta; problemas de 1–2 passos; contextos familiares; apoio visual; Bloom predominante: Recordar/Compreender. Seleção pode ter até 40% do total; respostas longas formais são raras.`
+  if (yearLevel <= 6) return `NÍVEL: ${yearLevel}.º ano (2.º ciclo) — linguagem clara (10–12 anos); 2–3 passos; contextos quotidianos e naturais; equilíbrio concreto-abstracto. Bloom: 20% Recordar · 35% Compreender/Aplicar · 45% Analisar/Avaliar.`
+  if (yearLevel <= 9) return `NÍVEL: ${yearLevel}.º ano (3.º ciclo) — linguagem formal crescente; multi-passo com abstracção; contextos científicos e sociais. Bloom: 10% Recordar · 30% Compreender/Aplicar · 60% Analisar/Avaliar/Criar. Seleção máximo 20%; resolução/desenvolvimento mínimo 50%.`
+  return `NÍVEL: ${yearLevel}.º ano (Secundário) — linguagem rigorosa; problemas complexos multi-passo; nível próximo do exame nacional (IAVE). Bloom: 5% Recordar · 20% Compreender/Aplicar · 75% Analisar/Avaliar/Criar. Seleção máximo 15%; resolução/desenvolvimento mínimo 60%.`
+}
+
+function getSubjectProfile(subject: string, hasMultipleTypes: boolean, yearLevel: number): {
   structureNote: string
   scoringRule: string
 } {
   const s = subject.toLowerCase()
+  const ctx = yearContext(yearLevel)
 
   // ── Português / Língua Portuguesa ──────────────────────────────────────────
   if (s.includes('português') || s.includes('portugues') || s.includes('língua')) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — Português (2.º ciclo DGE):
-• Grupo I — Compreensão do texto (25–35 pts): transcreve um excerto literário ou não-literário (100–200 palavras, adequado ao ${subject}) no campo "text" de uma questão de tipo "long_answer" sem linhas de resposta, seguido de questões de interpretação (escolha múltipla, V/F, resposta curta). O texto é parte do enunciado, não da resposta.
-• Grupo II — Gramática / Educação Literária (20–30 pts): conhecimento explícito da língua — classificação morfossintáctica, transformação frásica, coerência e coesão textual. Usa completar espaços e resposta curta. Sem texto de suporte extenso.
-• Grupo III — Expressão Escrita (35–45 pts): produção de texto orientada (narrativo, descritivo ou expositivo conforme o nível). PESO DOMINANTE obrigatório. O markScheme deve detalhar: conteúdo/pertinência 40% + organização/coesão 30% + correcção linguística 30%.
-REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 100.`,
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Português (${yearLevel}.º ano):
+• Grupo I — Compreensão do texto (25–35 pts): transcreve um excerto literário ou não-literário no campo "text" de uma questão, seguido de questões de interpretação (escolha múltipla, V/F, resposta curta). O texto é parte do enunciado, não da resposta.
+• Grupo II — Gramática / Educação Literária (20–30 pts): conhecimento explícito da língua — classificação morfossintáctica, transformação frásica, coerência e coesão textual. Completar espaços e resposta curta.
+• Grupo III — Expressão Escrita (35–45 pts): produção de texto orientada. PESO DOMINANTE obrigatório. markScheme: conteúdo/pertinência 40% + organização/coesão 30% + correcção linguística 30%.
+REGRA: nunca menos de 35 pts na Expressão Escrita.
+${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
    • Compreensão (EM/VF): 3–5 pts/questão
    • Interpretação/Gramática (resposta curta/completar): 4–8 pts/questão
@@ -33,10 +42,11 @@ REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 10
   // ── História ────────────────────────────────────────────────────────────────
   if (s.includes('história') || s.includes('historia')) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — História (2.º ciclo DGE):
+      structureNote: `ESTRUTURA OBRIGATÓRIA — História (${yearLevel}.º ano):
 • Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre factos, cronologia e conceitos históricos. 3–4 pts/questão.
-• Grupo II — Análise de fontes / Resposta curta (30–40 pts): inclui OBRIGATORIAMENTE pelo menos um excerto de fonte histórica (primária ou secundária, 50–100 palavras) ou descrição de imagem histórica. Questões de interpretação, contextualização e relação causa-efeito. 5–10 pts/questão.
-• Grupo III — Resposta de desenvolvimento (35–50 pts): questão de síntese com tese, argumentação estruturada com evidências históricas e conclusão. Exige construção de discurso histórico coerente. 20–30 pts/questão.`,
+• Grupo II — Análise de fontes / Resposta curta (30–40 pts): inclui OBRIGATORIAMENTE pelo menos uma fonte histórica (primária ou secundária) ou descrição de imagem histórica. Questões de interpretação, contextualização e causa-efeito. 5–10 pts/questão.
+• Grupo III — Resposta de desenvolvimento (35–50 pts): síntese com tese, argumentação com evidências históricas e conclusão. Discurso histórico coerente. 20–30 pts/questão.
+${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
    • Seleção (EM/VF): 3–4 pts/questão, máximo 20 pts no grupo
    • Análise de fontes / Resposta curta: 5–10 pts/questão
@@ -48,10 +58,11 @@ REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 10
   // ── Geografia ───────────────────────────────────────────────────────────────
   if (s.includes('geograf')) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — Geografia (2.º ciclo DGE):
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Geografia (${yearLevel}.º ano):
 • Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre conceitos, localizações e fenómenos geográficos. 3–4 pts/questão.
-• Grupo II — Interpretação de documentos / Resposta curta (30–40 pts): análise de gráficos, tabelas ou mapas (descritos textualmente) com dados geográficos reais e actuais. 5–10 pts/questão.
-• Grupo III — Resposta de desenvolvimento / Situação-problema (35–50 pts): questão de síntese sobre fenómenos geográficos com exemplos concretos e actuais do mundo real. 15–25 pts/questão.`,
+• Grupo II — Interpretação de documentos / Resposta curta (30–40 pts): análise de gráficos, tabelas ou mapas com dados reais e actuais. 5–10 pts/questão.
+• Grupo III — Resposta de desenvolvimento (35–50 pts): síntese sobre fenómenos geográficos com exemplos concretos actuais. 15–25 pts/questão.
+${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
    • Seleção: 3–4 pts/questão, máximo 20 pts
    • Interpretação / Curta: 5–10 pts/questão
@@ -63,10 +74,11 @@ REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 10
   // ── Ciências Naturais ────────────────────────────────────────────────────────
   if (s.includes('ciência') || s.includes('ciencia') || s.includes('natural') || s.includes('biolog')) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — Ciências Naturais (2.º ciclo DGE):
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Ciências Naturais (${yearLevel}.º ano):
 • Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, classificações e nomenclatura científica. 3–5 pts/questão.
-• Grupo II — Interpretação de dados / Resposta curta (25–35 pts): inclui OBRIGATORIAMENTE análise de gráfico, tabela, esquema anatómico ou protocolo experimental. Questões de observação, identificação e relação de variáveis. 5–10 pts/questão.
-• Grupo III — Situação-problema / Resposta longa (40–50 pts): aplicação do método científico a contexto observável do mundo natural; explicação de fenómenos; formulação de hipóteses. Exige justificação científica fundamentada. 10–20 pts/questão.`,
+• Grupo II — Interpretação de dados / Resposta curta (25–35 pts): inclui OBRIGATORIAMENTE análise de gráfico, tabela, esquema anatómico ou protocolo experimental. Observação, identificação e relação de variáveis. 5–10 pts/questão.
+• Grupo III — Situação-problema / Resposta longa (40–50 pts): método científico, explicação de fenómenos naturais, formulação de hipóteses. Justificação científica obrigatória. 10–20 pts/questão.
+${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
    • Seleção (EM/VF): 3–5 pts/questão, máximo 25 pts no grupo
    • Interpretação/Resposta curta: 5–10 pts/questão
@@ -78,10 +90,11 @@ REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 10
   // ── Físico-Química ───────────────────────────────────────────────────────────
   if (s.includes('físic') || s.includes('fisic') || s.includes('quím') || s.includes('quim')) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — Físico-Química (2.º ciclo DGE):
-• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, definições e grandezas físicas/químicas. 3–5 pts/questão.
-• Grupo II — Interpretação experimental / Resposta curta (25–35 pts): análise de dados laboratoriais, gráficos de resultados experimentais ou tabelas; SEMPRE com unidades. Questões sobre variáveis, procedimento e conclusões experimentais. 5–10 pts/questão.
-• Grupo III — Resolução de problemas (40–50 pts): aplicação de fórmulas em contexto real com apresentação estruturada obrigatória: dados → fórmula → cálculo → resposta com unidade. Múltiplos passos. 10–20 pts/questão.`,
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Físico-Química (${yearLevel}.º ano):
+• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, definições e grandezas. 3–5 pts/questão.
+• Grupo II — Interpretação experimental / Resposta curta (25–35 pts): dados laboratoriais, gráficos ou tabelas com unidades obrigatórias. Variáveis, procedimento, conclusões. 5–10 pts/questão.
+• Grupo III — Resolução de problemas (40–50 pts): fórmulas em contexto real; estrutura obrigatória: dados → fórmula → cálculo → resposta com unidade. Multi-passo. 10–20 pts/questão.
+${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
    • Seleção: 3–5 pts/questão, máximo 25 pts
    • Interpretação experimental: 5–10 pts/questão; unidades obrigatórias nas respostas
@@ -93,10 +106,11 @@ REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 10
   // ── Matemática / STEM (default) ──────────────────────────────────────────────
   if (hasMultipleTypes) {
     return {
-      structureNote: `ESTRUTURA OBRIGATÓRIA — Matemática (2.º ciclo DGE):
-• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F. Distratores baseados em erros conceptuais típicos (ex: confundir perímetro com área, inverter numerador e denominador). 3–5 pts (EM), 2–3 pts (VF).
-• Grupo II — Cálculo e resposta curta (25–30 pts): exercícios de aplicação directa com apresentação obrigatória de cálculos. 5–10 pts/questão.
-• Grupo III — Resolução de problemas (45–55 pts): situações multi-passo com contexto real que exigem modelação matemática, estratégia e raciocínio. Inclui SEMPRE apresentação de cálculos e justificação escrita do raciocínio. 10–20 pts/questão.`,
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Matemática (${yearLevel}.º ano):
+• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F. Distratores baseados em erros conceptuais típicos. 3–5 pts (EM), 2–3 pts (VF).
+• Grupo II — Cálculo e resposta curta (25–30 pts): aplicação directa com apresentação de cálculos obrigatória. 5–10 pts/questão.
+• Grupo III — Resolução de problemas (45–55 pts): multi-passo com contexto real; modelação matemática, estratégia e raciocínio; cálculos e justificação obrigatórios. 10–20 pts/questão.
+${ctx}`,
       scoringRule: `6. COTAÇÃO — segue RIGOROSAMENTE esta matriz (totalPoints = 100 exactamente, pontos sempre inteiros):
    • Escolha múltipla: 3–5 pts/questão (total do grupo ≤ 25 pts)
    • Verdadeiro/Falso: 2–3 pts/questão (total do grupo ≤ 15 pts)
@@ -222,7 +236,7 @@ VERIFICAÇÃO FINAL: Antes de fechar o JSON, conta quantas questões têm figure
 
     // ── Perfil disciplinar (estrutura + cotação) ────────────────────────────
     const hasMultipleTypes = questionTypes.length > 1
-    const { structureNote, scoringRule } = getSubjectProfile(subject, hasMultipleTypes)
+    const { structureNote, scoringRule } = getSubjectProfile(subject, hasMultipleTypes, yearLevel)
 
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
 
