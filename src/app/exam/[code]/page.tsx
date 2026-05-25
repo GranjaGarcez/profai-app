@@ -1,20 +1,101 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import type { ExamSession, Question, TestSnapshot } from '@/lib/exam/types'
 import { getAllQuestions } from '@/lib/exam/types'
+import Calculator from '@/components/exam/Calculator'
 
 type Phase = 'loading' | 'error' | 'identify' | 'exam' | 'submitted'
 
 const TYPE_LABEL: Record<string, string> = {
   multiple_choice: 'Escolha múltipla',
-  true_false: 'Verdadeiro / Falso',
-  short_answer: 'Resposta curta',
-  long_answer: 'Resposta longa',
-  fill_blank: 'Completar espaços',
+  true_false:      'Verdadeiro / Falso',
+  short_answer:    'Resposta curta',
+  long_answer:     'Resposta longa',
+  fill_blank:      'Completar espaços',
 }
 
+// ── Símbolos matemáticos ────────────────────────────────────────────────────────
+const MATH_SYMBOLS = [
+  {
+    cat: 'Operadores',
+    items: [
+      { label: '×', insert: '×' },
+      { label: '÷', insert: '÷' },
+      { label: '±', insert: '±' },
+      { label: '·', insert: '·' },
+      { label: '%', insert: '%' },
+      { label: '∞', insert: '∞' },
+    ],
+  },
+  {
+    cat: 'Potências / Raízes',
+    items: [
+      { label: 'x²', insert: '²' },
+      { label: 'x³', insert: '³' },
+      { label: 'xⁿ', insert: '^' },
+      { label: '√', insert: '√' },
+      { label: '∛', insert: '∛' },
+      { label: '½', insert: '½' },
+    ],
+  },
+  {
+    cat: 'Relações',
+    items: [
+      { label: '≠', insert: '≠' },
+      { label: '≤', insert: '≤' },
+      { label: '≥', insert: '≥' },
+      { label: '≈', insert: '≈' },
+      { label: '∝', insert: '∝' },
+      { label: '~', insert: '~' },
+    ],
+  },
+  {
+    cat: 'Gregas',
+    items: [
+      { label: 'π', insert: 'π' },
+      { label: 'α', insert: 'α' },
+      { label: 'β', insert: 'β' },
+      { label: 'γ', insert: 'γ' },
+      { label: 'θ', insert: 'θ' },
+      { label: 'λ', insert: 'λ' },
+      { label: 'μ', insert: 'μ' },
+      { label: 'σ', insert: 'σ' },
+      { label: 'φ', insert: 'φ' },
+      { label: 'Σ', insert: 'Σ' },
+      { label: 'Δ', insert: 'Δ' },
+      { label: 'Ω', insert: 'Ω' },
+    ],
+  },
+  {
+    cat: 'Geometria',
+    items: [
+      { label: '°', insert: '°' },
+      { label: '∠', insert: '∠' },
+      { label: '⊥', insert: '⊥' },
+      { label: '∥', insert: '∥' },
+      { label: '△', insert: '△' },
+      { label: '→', insert: '→' },
+    ],
+  },
+  {
+    cat: 'Conjuntos',
+    items: [
+      { label: '∈', insert: '∈' },
+      { label: '∉', insert: '∉' },
+      { label: '∩', insert: '∩' },
+      { label: '∪', insert: '∪' },
+      { label: '∅', insert: '∅' },
+      { label: 'ℝ', insert: 'ℝ' },
+      { label: 'ℤ', insert: 'ℤ' },
+      { label: 'ℕ', insert: 'ℕ' },
+      { label: 'ℚ', insert: 'ℚ' },
+    ],
+  },
+]
+
+// ── Componente principal ────────────────────────────────────────────────────────
 export default function ExamPage() {
   const { code } = useParams<{ code: string }>()
   const [phase, setPhase]     = useState<Phase>('loading')
@@ -26,13 +107,16 @@ export default function ExamPage() {
   const [studentNumber, setStudentNumber] = useState('')
   const [studentClass,  setStudentClass]  = useState('')
 
-  // Respostas: { [questionIndex]: string }
+  // Respostas
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
   // Temporizador
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Ferramentas
+  const [showCalculator, setShowCalculator] = useState(false)
 
   // Carrega sessão
   useEffect(() => {
@@ -69,6 +153,9 @@ export default function ExamPage() {
   const questions: Question[] = session ? getAllQuestions(session.test_snapshot as TestSnapshot) : []
   const answered = Object.keys(answers).filter(k => answers[k].trim()).length
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allowCalculator = (session as any)?.allow_calculator ?? false
+
   async function handleSubmit() {
     if (submitting) return
     setSubmitting(true)
@@ -99,7 +186,7 @@ export default function ExamPage() {
     return `${m}:${String(sec).padStart(2, '0')}`
   }
 
-  // ── Ecrãs ─────────────────────────────────────────────────────────────────
+  // ── Ecrãs ───────────────────────────────────────────────────────────────────
 
   if (phase === 'loading') return (
     <div className="text-center py-20 text-sm" style={{ color: '#6B7280' }}>A carregar exame...</div>
@@ -190,23 +277,41 @@ export default function ExamPage() {
     </div>
   )
 
-  // ── Fase exame ──────────────────────────────────────────────────────────────
+  // ── Fase exame ─────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      {/* Calculadora flutuante */}
+      {showCalculator && (
+        <Calculator onClose={() => setShowCalculator(false)} />
+      )}
+
       {/* Cabeçalho fixo */}
-      <div className="sticky top-0 z-10 py-3 px-4 rounded-xl flex items-center justify-between shadow-sm"
+      <div className="sticky top-0 z-10 py-3 px-4 rounded-xl flex items-center justify-between shadow-sm gap-3"
         style={{ background: '#0D1B2A', color: '#F7F3EE' }}>
-        <div>
-          <p className="text-xs font-semibold">{session!.title}</p>
-          <p className="text-xs opacity-60">{studentName}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold truncate">{session!.title}</p>
+          <p className="text-xs opacity-60 truncate">{studentName}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs opacity-70">{answered}/{questions.length} respondidas</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs opacity-70">{answered}/{questions.length}</span>
           {timeLeft !== null && (
             <span className="font-mono text-sm font-bold px-2 py-0.5 rounded"
               style={{ background: timeLeft < 120 ? '#dc2626' : '#00B4D830', color: timeLeft < 120 ? 'white' : '#00B4D8' }}>
               ⏱ {formatTime(timeLeft)}
             </span>
+          )}
+          {allowCalculator && (
+            <button
+              onClick={() => setShowCalculator(c => !c)}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors"
+              style={{
+                background: showCalculator ? '#00B4D8' : '#ffffff20',
+                color: showCalculator ? 'white' : '#94a3b8',
+              }}
+              title="Calculadora"
+            >
+              🧮
+            </button>
           )}
         </div>
       </div>
@@ -251,7 +356,7 @@ export default function ExamPage() {
   )
 }
 
-// ── Cartão de questão ──────────────────────────────────────────────────────────
+// ── Cartão de questão com teclado matemático ───────────────────────────────────
 function QuestionCard({
   q, n, answer, onChange,
 }: {
@@ -261,9 +366,29 @@ function QuestionCard({
   const isTF    = q.type === 'true_false'
   const isOpen  = !isMulti && !isTF
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [showKeyboard, setShowKeyboard] = useState(false)
+  const [activeCategory, setActiveCategory] = useState(0)
+
+  // Insere símbolo na posição do cursor
+  const insertSymbol = useCallback((sym: string) => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    const newValue = answer.slice(0, start) + sym + answer.slice(end)
+    onChange(newValue)
+    // Repõe cursor após símbolo (via requestAnimationFrame, pós-render do React)
+    const newPos = start + sym.length
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(newPos, newPos)
+    })
+  }, [answer, onChange])
+
   return (
     <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: '#0D1B2A10' }}>
-      {/* Header */}
+      {/* Cabeçalho */}
       <div className="flex items-center gap-2">
         <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{n}</span>
@@ -278,7 +403,7 @@ function QuestionCard({
         {q.text}
       </p>
 
-      {/* Opções */}
+      {/* Escolha múltipla */}
       {isMulti && q.options && (
         <div className="space-y-2 mt-1">
           {q.options.map((opt, j) => {
@@ -300,7 +425,7 @@ function QuestionCard({
         </div>
       )}
 
-      {/* V / F */}
+      {/* Verdadeiro / Falso */}
       {isTF && (
         <div className="flex gap-3">
           {['Verdadeiro', 'Falso'].map(opt => {
@@ -321,16 +446,73 @@ function QuestionCard({
         </div>
       )}
 
-      {/* Resposta aberta */}
+      {/* Resposta aberta + teclado matemático */}
       {isOpen && (
-        <textarea
-          value={answer}
-          onChange={e => onChange(e.target.value)}
-          rows={q.type === 'long_answer' ? 8 : 3}
-          placeholder="Escreve a tua resposta aqui..."
-          className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none"
-          style={{ borderColor: '#0D1B2A25', outline: 'none', lineHeight: 1.7 }}
-        />
+        <div className="space-y-2">
+          {/* Barra do teclado */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowKeyboard(k => !k)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors"
+              style={{
+                borderColor: showKeyboard ? '#00B4D8' : '#0D1B2A20',
+                background: showKeyboard ? '#e0f7fc' : 'white',
+                color: showKeyboard ? '#0369a1' : '#6B7280',
+              }}
+            >
+              <span>±</span>
+              <span>{showKeyboard ? 'Fechar teclado' : 'Teclado matemático'}</span>
+            </button>
+          </div>
+
+          {/* Palete de símbolos */}
+          {showKeyboard && (
+            <div className="rounded-xl border overflow-hidden" style={{ borderColor: '#0D1B2A15' }}>
+              {/* Categorias */}
+              <div className="flex overflow-x-auto border-b" style={{ borderColor: '#0D1B2A10', background: '#f8fafc' }}>
+                {MATH_SYMBOLS.map((cat, ci) => (
+                  <button
+                    key={ci}
+                    onClick={() => setActiveCategory(ci)}
+                    className="px-3 py-2 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
+                    style={{
+                      background: activeCategory === ci ? 'white' : 'transparent',
+                      color: activeCategory === ci ? '#0D1B2A' : '#9CA3AF',
+                      borderBottom: activeCategory === ci ? '2px solid #00B4D8' : '2px solid transparent',
+                    }}
+                  >
+                    {cat.cat}
+                  </button>
+                ))}
+              </div>
+              {/* Símbolos da categoria activa */}
+              <div className="p-2 flex flex-wrap gap-1.5" style={{ background: 'white' }}>
+                {MATH_SYMBOLS[activeCategory].items.map((sym, si) => (
+                  <button
+                    key={si}
+                    onClick={() => insertSymbol(sym.insert)}
+                    className="min-w-[2.25rem] h-9 px-2 rounded-lg border text-sm font-mono font-medium transition-all active:scale-95 hover:border-cyan-400"
+                    style={{ borderColor: '#0D1B2A15', color: '#0D1B2A', background: '#f8fafc' }}
+                    title={sym.insert}
+                  >
+                    {sym.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={answer}
+            onChange={e => onChange(e.target.value)}
+            rows={q.type === 'long_answer' ? 8 : 3}
+            placeholder="Escreve a tua resposta aqui..."
+            className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none"
+            style={{ borderColor: '#0D1B2A25', outline: 'none', lineHeight: 1.7, fontFamily: 'inherit' }}
+          />
+        </div>
       )}
 
       {/* Indicador respondido */}

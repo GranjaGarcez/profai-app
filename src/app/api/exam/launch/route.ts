@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { contentItemId, durationMinutes } = await request.json()
+  const { contentItemId, durationMinutes, allowCalculator } = await request.json()
 
   // Fetch do item de conteúdo (snapshot do teste)
   const { data: item, error: itemErr } = await supabase
@@ -44,10 +44,11 @@ export async function POST(request: NextRequest) {
       teacher_id:      user.id,
       content_item_id: contentItemId,
       access_code:     code,
-      title:           item.title,
-      status:          'active',
+      title:            item.title,
+      status:           'active',
       duration_minutes: durationMinutes ?? null,
-      test_snapshot:   item.content,
+      allow_calculator: allowCalculator ?? false,
+      test_snapshot:    item.content,
     })
     .select('id, access_code')
     .single()

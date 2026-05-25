@@ -13,6 +13,7 @@ export default function ExamLauncher({ contentItemId, contentTitle, onClose }: P
   const router = useRouter()
   const [duration, setDuration] = useState('60')
   const [unlimited, setUnlimited] = useState(false)
+  const [allowCalculator, setAllowCalculator] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ code: string; sessionId: string } | null>(null)
   const [error, setError] = useState('')
@@ -28,6 +29,7 @@ export default function ExamLauncher({ contentItemId, contentTitle, onClose }: P
         body: JSON.stringify({
           contentItemId,
           durationMinutes: unlimited ? null : Number(duration),
+          allowCalculator,
         }),
       })
       const data = await res.json()
@@ -118,6 +120,33 @@ export default function ExamLauncher({ contentItemId, contentTitle, onClose }: P
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Calculadora */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#0D1B2A' }}>
+                  Ferramentas
+                </label>
+                <label className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
+                  style={{
+                    borderColor: allowCalculator ? '#00B4D8' : '#0D1B2A15',
+                    background: allowCalculator ? '#e0f7fc' : 'white',
+                  }}>
+                  <input
+                    type="checkbox"
+                    checked={allowCalculator}
+                    onChange={e => setAllowCalculator(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-cyan-500"
+                  />
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#0D1B2A' }}>
+                      🧮 Permitir calculadora científica
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
+                      Útil quando o objectivo não é testar o cálculo, mas a estratégia e raciocínio
+                    </p>
+                  </div>
+                </label>
               </div>
 
               {/* Aviso */}
