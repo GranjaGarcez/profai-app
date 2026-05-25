@@ -52,7 +52,7 @@ export default async function ContentDetailPage({ params }: Props) {
       </div>
 
       {/* Conteúdo por tipo */}
-      {item.type === 'test' && <TestPreview content={item.content} />}
+      {item.type === 'test' && <TestPreview content={item.content} contentItemId={item.id} />}
 
       {item.type !== 'test' && (
         <div className="p-6 rounded-xl border bg-white" style={{ borderColor: '#0D1B2A10' }}>

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
+import ExamLauncher from '@/components/exam/ExamLauncher'
 import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
 import { generateTestDocx } from '@/lib/export/testDocx'
 
@@ -125,13 +126,20 @@ function EditArea({
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
-export default function TestPreview({ content }: { content: unknown }) {
+export default function TestPreview({
+  content,
+  contentItemId,
+}: {
+  content: unknown
+  contentItemId?: string
+}) {
   const rawTest = content as TestContent
 
   // ── Estado ──────────────────────────────────────────────────────────────────
   const [editableTest, setEditableTest] = useState<TestContent>(() => deepClone(rawTest))
   const [isEditing, setIsEditing] = useState(false)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
+  const [showLauncher, setShowLauncher] = useState(false)
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
 
   // ── Helpers de edição ────────────────────────────────────────────────────────
@@ -196,6 +204,13 @@ export default function TestPreview({ content }: { content: unknown }) {
           onClose={() => setShowSchoolModal(false)}
         />
       )}
+      {showLauncher && contentItemId && (
+        <ExamLauncher
+          contentItemId={contentItemId}
+          contentTitle={editableTest.title}
+          onClose={() => setShowLauncher(false)}
+        />
+      )}
 
       {/* ── Barra de acções (ecrã apenas) ── */}
       <div className="flex flex-wrap gap-2 mb-6 no-print">
@@ -230,9 +245,18 @@ export default function TestPreview({ content }: { content: unknown }) {
           </button>
           <button onClick={handleDocx}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-            style={{ background: '#00B4D8' }}>
+            style={{ background: '#0D1B2A' }}>
             📄 Word
           </button>
+          {contentItemId && (
+            <button
+              onClick={() => setShowLauncher(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white"
+              style={{ background: '#00B4D8' }}
+            >
+              🚀 Lançar Exame
+            </button>
+          )}
         </div>
 
         <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
