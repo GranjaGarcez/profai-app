@@ -51,9 +51,17 @@ CRITÉRIOS DE CORRECÇÃO: ${q.markScheme ?? q.correctAnswer}
 
 RESPOSTA DO ALUNO: ${trimmed}
 
-Avalia a resposta com rigor mas justiça. Aplica cotação parcial quando os critérios o permitem.
+REGRAS DE CORRECÇÃO — aplica-as com rigor:
+1. Não penalizes a ausência de fórmula explícita se o cálculo apresentado evidencia claramente o processo (a fórmula está implícita no desenvolvimento).
+2. Aceita qualquer notação matematicamente equivalente: 3/4 = 0,75 = ¾ = 75% são todas correctas.
+3. Penaliza APENAS o que a questão pede explicitamente — não inventes requisitos.
+4. Se há raciocínio correcto mas erro de cálculo menor (ex: aritmético), aplica cotação parcial (≥ 50% da cotação).
+5. Se o resultado final está correcto, mesmo com método diferente do esperado, atribui cotação máxima.
+6. Não exijas passos intermédios que a questão não solicita.
+7. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
+
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
-{"score": <número de 0 a ${q.points}>, "feedback": "<frase curta de justificação em Português de Portugal>", "confidence": <0.0 a 1.0>}`
+{"score": <número de 0 a ${q.points}>, "feedback": "<frase curta em Português de Portugal>", "confidence": <0.0 a 1.0>}`
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
