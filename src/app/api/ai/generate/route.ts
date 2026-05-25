@@ -245,10 +245,30 @@ Responde APENAS com este JSON:
     if (!jsonMatch) throw new Error('Resposta inválida da IA')
     const content = JSON.parse(jsonMatch[0])
 
-    // ── Debug: auditar figuras geradas ───────────────────────────────────────
+    // ── Normalização de pontos (garante soma = 100) ──────────────────────────
     if (tool === 'test') {
-      const groups = (content.groups ?? []) as Array<{ label: string; questions: Array<{ index: number; figure: unknown }> }>
-      const allQs = groups.flatMap(g => g.questions ?? [])
+      type QRaw = { index: number; figure: unknown; points?: number }
+      type GRaw = { label: string; questions: QRaw[]; totalPoints?: number }
+      const groups = (content.groups ?? []) as GRaw[]
+      const allQs  = groups.flatMap(g => g.questions ?? [])
+
+      const currentTotal = allQs.reduce((s, q) => s + (Number(q.points) || 0), 0)
+      if (currentTotal > 0 && currentTotal !== 100) {
+        const diff = 100 - currentTotal
+        // Aplica a diferença à questão com mais pontos (menos impacto percentual)
+        const heaviest = allQs.reduce((max, q) =>
+          (Number(q.points) || 0) > (Number(max.points) || 0) ? q : max, allQs[0])
+        if (heaviest) heaviest.points = (Number(heaviest.points) || 0) + diff
+
+        // Recalcula totalPoints dos grupos
+        for (const g of groups) {
+          g.totalPoints = g.questions.reduce((s, q) => s + (Number(q.points) || 0), 0)
+        }
+        content.totalPoints = 100
+        console.log(`[PROFAI] Pontos normalizados: ${currentTotal} → 100 (diff ${diff > 0 ? '+' : ''}${diff} em Q${heaviest?.index})`)
+      }
+
+      // Debug: auditar figuras geradas
       const withFig = allQs.filter(q => q.figure !== null && q.figure !== undefined)
       console.log(`[PROFAI] Test gerado: ${allQs.length} questões, ${withFig.length} com figura`)
       if (withFig.length > 0) {
