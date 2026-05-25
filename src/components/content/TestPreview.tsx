@@ -71,8 +71,118 @@ function deepClone<T>(v: T): T { return JSON.parse(JSON.stringify(v)) }
 // ── Painel de distribuição de cotação ─────────────────────────────────────────
 const GROUP_COLORS = ['#0D1B2A', '#00B4D8', '#7c3aed', '#059669', '#C8A84B']
 
-function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoints: number }) {
+interface CategoryDef {
+  label: string
+  types: string[]
+  targetLabel: string
+  okFn: (pct: number) => boolean
+}
+
+function getDisciplineProfile(subject: string): CategoryDef[] {
+  const s = subject.toLowerCase()
+
+  if (s.includes('português') || s.includes('portugues') || s.includes('língua')) {
+    return [
+      {
+        label: 'Compreensão / Gramática',
+        types: ['multiple_choice', 'true_false', 'short_answer', 'fill_blank'],
+        targetLabel: '~55%', okFn: p => p >= 45 && p <= 70,
+      },
+      {
+        label: 'Expressão Escrita',
+        types: ['long_answer'],
+        targetLabel: '≥ 35%', okFn: p => p >= 35,
+      },
+    ]
+  }
+
+  if (s.includes('história') || s.includes('historia') || s.includes('geograf')) {
+    return [
+      {
+        label: 'Seleção',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 20%', okFn: p => p <= 20,
+      },
+      {
+        label: 'Fontes / Resposta curta',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '30–45%', okFn: p => p >= 25,
+      },
+      {
+        label: 'Desenvolvimento',
+        types: ['long_answer'],
+        targetLabel: '≥ 35%', okFn: p => p >= 35,
+      },
+    ]
+  }
+
+  if (s.includes('ciência') || s.includes('ciencia') || s.includes('natural') || s.includes('biolog')) {
+    return [
+      {
+        label: 'Seleção',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 25%', okFn: p => p <= 25,
+      },
+      {
+        label: 'Interpretação de dados',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '25–35%', okFn: p => p >= 20,
+      },
+      {
+        label: 'Situação-problema',
+        types: ['long_answer'],
+        targetLabel: '≥ 40%', okFn: p => p >= 40,
+      },
+    ]
+  }
+
+  if (s.includes('físic') || s.includes('fisic') || s.includes('quím') || s.includes('quim')) {
+    return [
+      {
+        label: 'Seleção',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 25%', okFn: p => p <= 25,
+      },
+      {
+        label: 'Interpretação experimental',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '25–35%', okFn: p => p >= 20,
+      },
+      {
+        label: 'Resolução de problemas',
+        types: ['long_answer'],
+        targetLabel: '≥ 40%', okFn: p => p >= 40,
+      },
+    ]
+  }
+
+  // Matemática / STEM (default)
+  return [
+    {
+      label: 'Seleção',
+      types: ['multiple_choice', 'true_false'],
+      targetLabel: '≤ 25%', okFn: p => p <= 25,
+    },
+    {
+      label: 'Cálculo / Curta',
+      types: ['short_answer', 'fill_blank'],
+      targetLabel: '25–35%', okFn: p => p >= 20,
+    },
+    {
+      label: 'Resolução',
+      types: ['long_answer'],
+      targetLabel: '≥ 45%', okFn: p => p >= 45,
+    },
+  ]
+}
+
+function ScoreBreakdown({
+  groups, totalPoints, subject,
+}: {
+  groups: TestGroup[]; totalPoints: number; subject: string
+}) {
   const allQs = groups.flatMap(g => g.questions)
+  const profile = getDisciplineProfile(subject)
 
   const groupData = groups.map((g, i) => ({
     label: g.label,
@@ -80,18 +190,15 @@ function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoi
     color: GROUP_COLORS[i % GROUP_COLORS.length],
   }))
 
-  // Categorias pedagógicas
-  const selPts  = allQs.filter(q => q.type === 'multiple_choice' || q.type === 'true_false').reduce((s, q) => s + q.points, 0)
-  const curtPts = allQs.filter(q => q.type === 'short_answer'    || q.type === 'fill_blank').reduce((s, q) => s + q.points, 0)
-  const resPts  = allQs.filter(q => q.type === 'long_answer').reduce((s, q) => s + q.points, 0)
-
   const pct = (n: number) => totalPoints > 0 ? Math.round((n / totalPoints) * 100) : 0
 
-  const categories = [
-    { label: 'Seleção',        pts: selPts,  target: '≤ 25%',   ok: pct(selPts) <= 25 },
-    { label: 'Resposta curta', pts: curtPts, target: '25–35%',  ok: pct(curtPts) >= 20 },
-    { label: 'Resolução',      pts: resPts,  target: '≥ 40%',   ok: pct(resPts) >= 40 },
-  ]
+  const categories = profile.map(cat => {
+    const pts = allQs
+      .filter(q => cat.types.includes(q.type))
+      .reduce((s, q) => s + q.points, 0)
+    const p = pct(pts)
+    return { ...cat, pts, p, ok: pts === 0 || cat.okFn(p) }
+  })
 
   // Bloom
   const bloomMap: Record<string, number> = {}
@@ -99,6 +206,7 @@ function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoi
   const bloomEntries = Object.entries(bloomMap).sort((a, b) => b[1] - a[1])
 
   const warnings = categories.filter(c => c.pts > 0 && !c.ok)
+  const cols = categories.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
 
   return (
     <div className="no-print mb-6 rounded-xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
@@ -108,7 +216,7 @@ function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoi
           Estrutura e distribuição da cotação
         </h3>
         <span className="text-xs" style={{ color: '#9CA3AF' }}>
-          {allQs.length} questões · {totalPoints} pontos
+          {allQs.length} questões · {totalPoints} pontos · {subject}
         </span>
       </div>
 
@@ -139,24 +247,27 @@ function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoi
           </div>
         </div>
 
-        {/* Por categoria pedagógica */}
+        {/* Por categoria pedagógica (perfil disciplinar) */}
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>
-            Por categoria pedagógica <span style={{ color: '#d1d5db', fontWeight: 400 }}>(boas práticas DGE 2.º ciclo)</span>
+            Por categoria pedagógica
+            <span className="ml-1 font-normal" style={{ color: '#d1d5db' }}>
+              (boas práticas DGE · perfil {subject})
+            </span>
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid ${cols} gap-2`}>
             {categories.map(cat => (
               <div key={cat.label} className="px-3 py-2.5 rounded-lg border text-center"
                 style={{
                   borderColor: cat.pts === 0 ? '#0D1B2A10' : cat.ok ? '#bbf7d0' : '#fcd34d',
                   background:  cat.pts === 0 ? '#fafafa'   : cat.ok ? '#f0fdf4' : '#fffbeb',
                 }}>
-                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{cat.label}</p>
+                <p className="text-xs font-medium mb-1 leading-tight" style={{ color: '#6B7280' }}>{cat.label}</p>
                 <p className="text-xl font-bold font-mono leading-none" style={{ color: '#0D1B2A' }}>
-                  {pct(cat.pts)}%
+                  {cat.p}%
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
-                  {cat.pts} pts · alvo {cat.target}
+                  {cat.pts} pts · alvo {cat.targetLabel}
                 </p>
                 {cat.pts > 0 && (
                   <p className="text-xs font-semibold mt-1"
@@ -188,9 +299,9 @@ function ScoreBreakdown({ groups, totalPoints }: { groups: TestGroup[]; totalPoi
         {warnings.length > 0 && (
           <div className="px-3 py-2.5 rounded-lg text-xs"
             style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d60' }}>
-            <p className="font-semibold mb-1">Recomendações de ajuste:</p>
+            <p className="font-semibold mb-1">Recomendações de ajuste ({subject}):</p>
             {warnings.map(w => (
-              <p key={w.label}>⚠️ {w.label}: {pct(w.pts)}% — intervalo recomendado {w.target}</p>
+              <p key={w.label}>⚠️ {w.label}: {w.p}% — alvo {w.targetLabel}</p>
             ))}
           </div>
         )}
@@ -406,7 +517,11 @@ export default function TestPreview({
       )}
 
       {/* ── Painel de distribuição ── */}
-      <ScoreBreakdown groups={groups} totalPoints={editableTest.totalPoints} />
+      <ScoreBreakdown
+        groups={groups}
+        totalPoints={editableTest.totalPoints}
+        subject={editableTest.subject}
+      />
 
       {/* ── Documento ── */}
       <div id="test-document" className="bg-white rounded-xl shadow-sm border print-area"

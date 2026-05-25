@@ -7,6 +7,111 @@ import { getCurriculumConstraint } from '@/lib/curriculum'
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
+// ── Perfis disciplinares de estrutura e cotação ────────────────────────────────
+function getSubjectProfile(subject: string, hasMultipleTypes: boolean): {
+  structureNote: string
+  scoringRule: string
+} {
+  const s = subject.toLowerCase()
+
+  // ── Português / Língua Portuguesa ──────────────────────────────────────────
+  if (s.includes('português') || s.includes('portugues') || s.includes('língua')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Português (2.º ciclo DGE):
+• Grupo I — Compreensão do texto (25–35 pts): transcreve um excerto literário ou não-literário (100–200 palavras, adequado ao ${subject}) no campo "text" de uma questão de tipo "long_answer" sem linhas de resposta, seguido de questões de interpretação (escolha múltipla, V/F, resposta curta). O texto é parte do enunciado, não da resposta.
+• Grupo II — Gramática / Educação Literária (20–30 pts): conhecimento explícito da língua — classificação morfossintáctica, transformação frásica, coerência e coesão textual. Usa completar espaços e resposta curta. Sem texto de suporte extenso.
+• Grupo III — Expressão Escrita (35–45 pts): produção de texto orientada (narrativo, descritivo ou expositivo conforme o nível). PESO DOMINANTE obrigatório. O markScheme deve detalhar: conteúdo/pertinência 40% + organização/coesão 30% + correcção linguística 30%.
+REGRA: nunca menos de 35 pts na Expressão Escrita. A soma dos três grupos = 100.`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Compreensão (EM/VF): 3–5 pts/questão
+   • Interpretação/Gramática (resposta curta/completar): 4–8 pts/questão
+   • Expressão Escrita: MÍNIMO 35 pts — com critérios parciais no markScheme (conteúdo + estrutura + correcção linguística)
+   • Distribuição típica: Compreensão ~30 pts | Gramática ~25 pts | Escrita ~45 pts`,
+    }
+  }
+
+  // ── História ────────────────────────────────────────────────────────────────
+  if (s.includes('história') || s.includes('historia')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — História (2.º ciclo DGE):
+• Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre factos, cronologia e conceitos históricos. 3–4 pts/questão.
+• Grupo II — Análise de fontes / Resposta curta (30–40 pts): inclui OBRIGATORIAMENTE pelo menos um excerto de fonte histórica (primária ou secundária, 50–100 palavras) ou descrição de imagem histórica. Questões de interpretação, contextualização e relação causa-efeito. 5–10 pts/questão.
+• Grupo III — Resposta de desenvolvimento (35–50 pts): questão de síntese com tese, argumentação estruturada com evidências históricas e conclusão. Exige construção de discurso histórico coerente. 20–30 pts/questão.`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Seleção (EM/VF): 3–4 pts/questão, máximo 20 pts no grupo
+   • Análise de fontes / Resposta curta: 5–10 pts/questão
+   • Resposta de desenvolvimento: 20–30 pts — nunca menos de 35% do total; markScheme com critérios de conteúdo histórico + qualidade do discurso
+   • Distribuição típica: Seleção ~15% | Fontes/Curta ~35% | Desenvolvimento ~50%`,
+    }
+  }
+
+  // ── Geografia ───────────────────────────────────────────────────────────────
+  if (s.includes('geograf')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Geografia (2.º ciclo DGE):
+• Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre conceitos, localizações e fenómenos geográficos. 3–4 pts/questão.
+• Grupo II — Interpretação de documentos / Resposta curta (30–40 pts): análise de gráficos, tabelas ou mapas (descritos textualmente) com dados geográficos reais e actuais. 5–10 pts/questão.
+• Grupo III — Resposta de desenvolvimento / Situação-problema (35–50 pts): questão de síntese sobre fenómenos geográficos com exemplos concretos e actuais do mundo real. 15–25 pts/questão.`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Seleção: 3–4 pts/questão, máximo 20 pts
+   • Interpretação / Curta: 5–10 pts/questão
+   • Desenvolvimento: 15–25 pts/questão — mínimo 35 pts no grupo
+   • Distribuição típica: Seleção ~15% | Interpretação ~35% | Desenvolvimento ~50%`,
+    }
+  }
+
+  // ── Ciências Naturais ────────────────────────────────────────────────────────
+  if (s.includes('ciência') || s.includes('ciencia') || s.includes('natural') || s.includes('biolog')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Ciências Naturais (2.º ciclo DGE):
+• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, classificações e nomenclatura científica. 3–5 pts/questão.
+• Grupo II — Interpretação de dados / Resposta curta (25–35 pts): inclui OBRIGATORIAMENTE análise de gráfico, tabela, esquema anatómico ou protocolo experimental. Questões de observação, identificação e relação de variáveis. 5–10 pts/questão.
+• Grupo III — Situação-problema / Resposta longa (40–50 pts): aplicação do método científico a contexto observável do mundo natural; explicação de fenómenos; formulação de hipóteses. Exige justificação científica fundamentada. 10–20 pts/questão.`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Seleção (EM/VF): 3–5 pts/questão, máximo 25 pts no grupo
+   • Interpretação/Resposta curta: 5–10 pts/questão
+   • Situação-problema/Longa: 10–20 pts/questão — mínimo 40 pts no grupo
+   • Distribuição típica: Seleção ~20% | Interpretação ~30% | Situação-problema ~50%`,
+    }
+  }
+
+  // ── Físico-Química ───────────────────────────────────────────────────────────
+  if (s.includes('físic') || s.includes('fisic') || s.includes('quím') || s.includes('quim')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Físico-Química (2.º ciclo DGE):
+• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, definições e grandezas físicas/químicas. 3–5 pts/questão.
+• Grupo II — Interpretação experimental / Resposta curta (25–35 pts): análise de dados laboratoriais, gráficos de resultados experimentais ou tabelas; SEMPRE com unidades. Questões sobre variáveis, procedimento e conclusões experimentais. 5–10 pts/questão.
+• Grupo III — Resolução de problemas (40–50 pts): aplicação de fórmulas em contexto real com apresentação estruturada obrigatória: dados → fórmula → cálculo → resposta com unidade. Múltiplos passos. 10–20 pts/questão.`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Seleção: 3–5 pts/questão, máximo 25 pts
+   • Interpretação experimental: 5–10 pts/questão; unidades obrigatórias nas respostas
+   • Resolução de problemas: 10–20 pts/questão — mínimo 40 pts no grupo; markScheme detalha pontos por dados + fórmula + cálculo + unidade
+   • Distribuição típica: Seleção ~20% | Interpretação ~30% | Resolução ~50%`,
+    }
+  }
+
+  // ── Matemática / STEM (default) ──────────────────────────────────────────────
+  if (hasMultipleTypes) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Matemática (2.º ciclo DGE):
+• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F. Distratores baseados em erros conceptuais típicos (ex: confundir perímetro com área, inverter numerador e denominador). 3–5 pts (EM), 2–3 pts (VF).
+• Grupo II — Cálculo e resposta curta (25–30 pts): exercícios de aplicação directa com apresentação obrigatória de cálculos. 5–10 pts/questão.
+• Grupo III — Resolução de problemas (45–55 pts): situações multi-passo com contexto real que exigem modelação matemática, estratégia e raciocínio. Inclui SEMPRE apresentação de cálculos e justificação escrita do raciocínio. 10–20 pts/questão.`,
+      scoringRule: `6. COTAÇÃO — segue RIGOROSAMENTE esta matriz (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Escolha múltipla: 3–5 pts/questão (total do grupo ≤ 25 pts)
+   • Verdadeiro/Falso: 2–3 pts/questão (total do grupo ≤ 15 pts)
+   • Resposta curta / Cálculo: 5–10 pts/questão (total do grupo 25–35 pts)
+   • Resolução / Resposta longa: 10–20 pts/questão (total do grupo ≥ 45 pts)`,
+    }
+  }
+
+  // Tipo único — sem estrutura obrigatória de grupos
+  return {
+    structureNote: `ORGANIZAÇÃO: Todas as questões são do mesmo tipo — usa um único grupo com label e descrição adequados ao tipo pedido.`,
+    scoringRule: `6. COTAÇÃO: totalPoints = 100 exactamente; pontos sempre inteiros; distribuição proporcional à complexidade cognitiva (questões de Bloom 4–6 valem mais).`,
+  }
+}
+
 // Tenta gerar com Gemini; se falhar por rate-limit ou quota, usa Groq como fallback
 async function generateWithFallback(prompt: string): Promise<string> {
   // 1ª tentativa: Gemini 2.5 Flash
@@ -115,36 +220,25 @@ SINTAXE EXACTA dos tipos disponíveis (copia e adapta com valores reais para o $
 
 VERIFICAÇÃO FINAL: Antes de fechar o JSON, conta quantas questões têm figure != null. Se for menos de ${minFigures}, adiciona figuras às questões que mais se adequam.` : ''
 
-    // ── Organização em grupos ───────────────────────────────────────────────
+    // ── Perfil disciplinar (estrutura + cotação) ────────────────────────────
     const hasMultipleTypes = questionTypes.length > 1
-    const groupNote = hasMultipleTypes
-      ? `ESTRUTURA OBRIGATÓRIA EM GRUPOS (boas práticas DGE 2.º ciclo):
-• Grupo I — Seleção (escolha múltipla e/ou verdadeiro/falso): 20–25 pts total. Testa reconhecimento e compreensão (Bloom 1–3). Pontuação por questão: 3–5 pts (EM), 2–3 pts (VF).
-• Grupo II — Resposta curta / Completar espaços: 25–35 pts total. Testa aplicação e análise (Bloom 3–4). Pontuação por questão: 5–10 pts.
-• Grupo III — Resolução de problemas / Resposta longa: mínimo 40–50 pts total. Testa análise, síntese e avaliação (Bloom 4–6). Pontuação por questão: 10–20 pts.
-Se não foram pedidos todos os tipos, adapta os grupos ao que foi pedido — nunca mistures tipos de resposta no mesmo grupo. A descrição de cada grupo deve identificar claramente o tipo e a cotação total do grupo entre parênteses.`
-      : `ORGANIZAÇÃO: Todas as questões são do mesmo tipo — usa um único grupo com label e descrição adequados.`
+    const { structureNote, scoringRule } = getSubjectProfile(subject, hasMultipleTypes)
 
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
 Duração: ${testDuration} minutos | Dificuldade: ${diffLabel} | Total: ${numQuestions} questões | 100 pontos
 
-${groupNote}
+${structureNote}
 ${figureNote}
 
 ${curriculumConstraint}DIRECTRIZES PEDAGÓGICAS OBRIGATÓRIAS:
-1. BLOOM: Distribui por níveis cognitivos — 20% Recordar, 35% Compreender/Aplicar, 45% Analisar/Avaliar/Criar. Questões de Bloom 4–6 valem proporcionalmente mais.
-2. CONTEXTO: Questões de desenvolvimento devem ter contexto real e significativo para alunos de ${yearLevel}.º ano
-3. DISTRATORES (escolha múltipla): Cada opção errada deve corresponder a um erro conceptual real e plausível — nunca opções obviamente absurdas
+1. BLOOM: Distribui por níveis cognitivos adaptados à disciplina — questões de Bloom 4–6 (análise/síntese/avaliação) têm sempre peso proporcionalmente maior.
+2. CONTEXTO: Questões de desenvolvimento têm sempre contexto real e significativo para alunos de ${yearLevel}.º ano
+3. DISTRATORES (escolha múltipla): Cada opção errada corresponde a um erro conceptual real e plausível — nunca opções obviamente absurdas
 4. LINGUAGEM: Clara, precisa, Português de Portugal estrito. Usa "rectângulo", "fórmula", "efeito", "facto", "óptimo", "actividade" (nunca formas brasileiras)
 5. CURRÍCULO: Alinhamento estrito com as AE da DGE — respeita SEMPRE a secção CURRÍCULO OBRIGATÓRIO acima
-6. COTAÇÃO — segue RIGOROSAMENTE esta matriz (totalPoints = 100 exactamente):
-   • Escolha múltipla: 3–5 pts/questão (total do grupo ≤ 25 pts)
-   • Verdadeiro/Falso: 2–3 pts/questão (total do grupo ≤ 15 pts)
-   • Resposta curta / Completar: 5–10 pts/questão (total do grupo 25–35 pts)
-   • Resolução / Resposta longa: 10–20 pts/questão (total do grupo ≥ 40 pts)
-   • NUNCA uses pontos não inteiros; verifica que a soma exacta = 100.
+${scoringRule}
 7. CRITÉRIOS: markScheme detalhado com critérios parciais quando aplicável (ex: "2pt identificação de dados + 3pt método + 3pt cálculo + 2pt resposta com unidade")
 8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
 
