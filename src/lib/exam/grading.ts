@@ -3,8 +3,9 @@ import Groq from 'groq-sdk'
 import type { Question, GradingDetail, TestSnapshot } from './types'
 import { getAllQuestions } from './types'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+// Inicialização lazy — evita falha de build quando as env vars não estão disponíveis em build time
+function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
+function getGroq()  { return new Groq({ apiKey: process.env.GROQ_API_KEY! }) }
 
 // ── Correcção automática MCQ / V-F ────────────────────────────────────────────
 function gradeObjective(q: Question, rawAnswer: string): GradingDetail {
@@ -79,7 +80,7 @@ Responde APENAS com JSON válido (sem texto extra, sem markdown):
 {"score": <número de 0 a ${q.points}>, "feedback": "<frase curta em Português de Portugal>", "confidence": <0.0 a 1.0>}`
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
     const result = await model.generateContent(prompt)
     const text = result.response.text()
     const match = text.match(/\{[\s\S]*?\}/)
@@ -96,7 +97,7 @@ Responde APENAS com JSON válido (sem texto extra, sem markdown):
   } catch {
     // Fallback Groq
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroq().chat.completions.create({
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'Responde APENAS com JSON válido. Nunca adiciones texto extra.' },

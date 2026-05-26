@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+// Inicialização lazy — evita falha de build quando env vars não estão disponíveis em build time
+function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
+function getGroq()  { return new Groq({ apiKey: process.env.GROQ_API_KEY! }) }
 
 // ── Perfis disciplinares de estrutura e cotação ────────────────────────────────
 function yearContext(yearLevel: number): string {
@@ -130,7 +131,7 @@ ${ctx}`,
 async function generateWithFallback(prompt: string): Promise<string> {
   // 1ª tentativa: Gemini 2.5 Flash
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
     const result = await model.generateContent(prompt)
     return result.response.text()
   } catch (geminiError) {
@@ -141,7 +142,7 @@ async function generateWithFallback(prompt: string): Promise<string> {
   }
 
   // 2ª tentativa: Groq (llama-3.3-70b — rápido e gratuito)
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
       {
