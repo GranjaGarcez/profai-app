@@ -54,9 +54,12 @@ const TYPE_LABEL: Record<string, string> = {
   fill_blank: 'Completar espaços',
 }
 
+// Linhas de resposta por tipo (altura em px cada uma)
 const ANSWER_LINES: Record<string, number> = {
-  short_answer: 4, long_answer: 10, fill_blank: 2, true_false: 0,
+  short_answer: 5, long_answer: 12, fill_blank: 3, true_false: 0,
 }
+
+const LETTERS = ['A', 'B', 'C', 'D', 'E']
 
 function normaliseGroups(test: TestContent): TestGroup[] {
   if (test.groups && test.groups.length > 0) return test.groups
@@ -95,7 +98,6 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
-
   if (s.includes('história') || s.includes('historia') || s.includes('geograf')) {
     return [
       {
@@ -115,7 +117,6 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
-
   if (s.includes('ciência') || s.includes('ciencia') || s.includes('natural') || s.includes('biolog')) {
     return [
       {
@@ -135,7 +136,6 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
-
   if (s.includes('físic') || s.includes('fisic') || s.includes('quím') || s.includes('quim')) {
     return [
       {
@@ -155,8 +155,6 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
-
-  // Matemática / STEM (default)
   return [
     {
       label: 'Seleção',
@@ -193,86 +191,109 @@ function ScoreBreakdown({
   const pct = (n: number) => totalPoints > 0 ? Math.round((n / totalPoints) * 100) : 0
 
   const categories = profile.map(cat => {
-    const pts = allQs
-      .filter(q => cat.types.includes(q.type))
-      .reduce((s, q) => s + q.points, 0)
+    const pts = allQs.filter(q => cat.types.includes(q.type)).reduce((s, q) => s + q.points, 0)
     const p = pct(pts)
     return { ...cat, pts, p, ok: pts === 0 || cat.okFn(p) }
   })
 
-  // Bloom
   const bloomMap: Record<string, number> = {}
   for (const q of allQs) if (q.bloomLevel) bloomMap[q.bloomLevel] = (bloomMap[q.bloomLevel] ?? 0) + 1
   const bloomEntries = Object.entries(bloomMap).sort((a, b) => b[1] - a[1])
 
   const warnings = categories.filter(c => c.pts > 0 && !c.ok)
   const cols = categories.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+  const allOk = warnings.length === 0 && allQs.length > 0
 
   return (
-    <div className="no-print mb-6 rounded-xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
-      <div className="px-5 py-3 flex items-center justify-between"
-        style={{ background: '#f8fafc', borderBottom: '1px solid #0D1B2A08' }}>
-        <h3 className="text-sm font-bold" style={{ color: '#0D1B2A' }}>
-          Estrutura e distribuição da cotação
-        </h3>
-        <span className="text-xs" style={{ color: '#9CA3AF' }}>
-          {allQs.length} questões · {totalPoints} pontos · {subject}
-        </span>
+    <div className="no-print mb-6 rounded-2xl overflow-hidden"
+      style={{ border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(13,27,42,0.06)' }}>
+
+      {/* Header */}
+      <div className="px-5 py-3.5 flex items-center justify-between"
+        style={{ background: '#0D1B2A', borderBottom: '1px solid #1e3a5f' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-1.5 h-5 rounded-sm" style={{ background: '#00B4D8' }} />
+          <h3 className="text-sm font-bold tracking-wide" style={{ color: '#F7F3EE' }}>
+            Estrutura e Distribuição da Cotação
+          </h3>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+            style={{ background: allOk ? '#059669' : '#d97706', color: 'white' }}>
+            {allOk ? '✓ Equilibrado' : `${warnings.length} aviso${warnings.length > 1 ? 's' : ''}`}
+          </span>
+          <span className="text-xs" style={{ color: '#94a3b8' }}>
+            {allQs.length} questões · {totalPoints} pts · {subject}
+          </span>
+        </div>
       </div>
 
-      <div className="px-5 py-4 space-y-4">
+      <div className="p-5 space-y-5" style={{ background: '#fafbfc' }}>
+
         {/* Barra de grupos */}
         <div>
-          <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>Por grupo</p>
-          <div className="flex rounded-lg overflow-hidden h-7 bg-gray-100">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2.5"
+            style={{ color: '#64748b' }}>Distribuição por grupo</p>
+          <div className="flex rounded-lg overflow-hidden h-8 gap-px" style={{ background: '#e2e8f0' }}>
             {groupData.map((g, i) => {
               const p = pct(g.pts)
               return p > 0 ? (
                 <div key={i}
-                  style={{ width: `${p}%`, background: g.color }}
-                  className="flex items-center justify-center text-xs text-white font-semibold overflow-hidden"
+                  style={{ width: `${p}%`, background: g.color, transition: 'width 0.3s' }}
+                  className="flex items-center justify-center text-xs text-white font-bold overflow-hidden relative"
                   title={`${g.label}: ${g.pts} pts (${p}%)`}>
-                  {p > 10 ? `${p}%` : ''}
+                  {p > 8 && <span className="relative z-10">{p}%</span>}
                 </div>
               ) : null
             })}
           </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2">
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-2.5">
             {groupData.map((g, i) => (
-              <span key={i} className="flex items-center gap-1.5 text-xs" style={{ color: '#374151' }}>
-                <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: g.color }} />
-                {g.label} — <strong>{g.pts} pts</strong> ({pct(g.pts)}%)
+              <span key={i} className="flex items-center gap-2 text-xs" style={{ color: '#374151' }}>
+                <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: g.color }} />
+                <span style={{ color: '#6B7280' }}>{g.label}</span>
+                <strong style={{ color: '#0D1B2A' }}>{g.pts} pts</strong>
+                <span style={{ color: '#9CA3AF' }}>({pct(g.pts)}%)</span>
               </span>
             ))}
           </div>
         </div>
 
-        {/* Por categoria pedagógica (perfil disciplinar) */}
+        {/* Categorias pedagógicas */}
         <div>
-          <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>
-            Por categoria pedagógica
-            <span className="ml-1 font-normal" style={{ color: '#d1d5db' }}>
-              (boas práticas DGE · perfil {subject})
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2.5"
+            style={{ color: '#64748b' }}>
+            Perfil pedagógico
+            <span className="ml-2 normal-case font-normal" style={{ color: '#94a3b8' }}>
+              boas práticas DGE · {subject}
             </span>
           </p>
-          <div className={`grid ${cols} gap-2`}>
+          <div className={`grid ${cols} gap-2.5`}>
             {categories.map(cat => (
-              <div key={cat.label} className="px-3 py-2.5 rounded-lg border text-center"
+              <div key={cat.label}
+                className="rounded-xl p-3.5"
                 style={{
-                  borderColor: cat.pts === 0 ? '#0D1B2A10' : cat.ok ? '#bbf7d0' : '#fcd34d',
-                  background:  cat.pts === 0 ? '#fafafa'   : cat.ok ? '#f0fdf4' : '#fffbeb',
+                  background: cat.pts === 0 ? '#f8fafc'
+                    : cat.ok ? 'white' : '#fffbeb',
+                  border: `1px solid ${cat.pts === 0 ? '#e2e8f0'
+                    : cat.ok ? '#bbf7d0' : '#fcd34d'}`,
+                  borderLeft: `3px solid ${cat.pts === 0 ? '#e2e8f0'
+                    : cat.ok ? '#059669' : '#d97706'}`,
                 }}>
-                <p className="text-xs font-medium mb-1 leading-tight" style={{ color: '#6B7280' }}>{cat.label}</p>
-                <p className="text-xl font-bold font-mono leading-none" style={{ color: '#0D1B2A' }}>
+                <p className="text-xs font-medium mb-2 leading-snug" style={{ color: '#6B7280' }}>
+                  {cat.label}
+                </p>
+                <p className="text-2xl font-black leading-none mb-1"
+                  style={{ color: cat.pts === 0 ? '#d1d5db' : cat.ok ? '#0D1B2A' : '#92400e', fontVariantNumeric: 'tabular-nums' }}>
                   {cat.p}%
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+                <p className="text-xs" style={{ color: '#9CA3AF' }}>
                   {cat.pts} pts · alvo {cat.targetLabel}
                 </p>
                 {cat.pts > 0 && (
-                  <p className="text-xs font-semibold mt-1"
-                    style={{ color: cat.ok ? '#059669' : '#92400e' }}>
-                    {cat.ok ? '✓ no intervalo' : '⚠️ fora do intervalo'}
+                  <p className="text-xs font-semibold mt-1.5"
+                    style={{ color: cat.ok ? '#059669' : '#b45309' }}>
+                    {cat.ok ? '✓ no intervalo' : '⚠ fora do intervalo'}
                   </p>
                 )}
               </div>
@@ -283,12 +304,17 @@ function ScoreBreakdown({
         {/* Bloom */}
         {bloomEntries.length > 0 && (
           <div>
-            <p className="text-xs font-medium mb-2" style={{ color: '#6B7280' }}>Níveis de Bloom</p>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2.5"
+              style={{ color: '#64748b' }}>Taxonomia de Bloom</p>
             <div className="flex flex-wrap gap-2">
               {bloomEntries.map(([level, count]) => (
-                <span key={level} className="text-xs px-2.5 py-1 rounded-full"
+                <span key={level}
+                  className="text-xs px-3 py-1 rounded-full font-medium"
                   style={{ background: '#e0f7fc', color: '#0369a1', border: '1px solid #bae6fd' }}>
-                  {level} · {count} {count === 1 ? 'questão' : 'questões'}
+                  {level}
+                  <span className="ml-1.5 opacity-70">
+                    {count} {count === 1 ? 'q.' : 'q.'}
+                  </span>
                 </span>
               ))}
             </div>
@@ -297,11 +323,15 @@ function ScoreBreakdown({
 
         {/* Avisos */}
         {warnings.length > 0 && (
-          <div className="px-3 py-2.5 rounded-lg text-xs"
-            style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d60' }}>
-            <p className="font-semibold mb-1">Recomendações de ajuste ({subject}):</p>
+          <div className="px-4 py-3 rounded-xl"
+            style={{ background: '#fffbeb', border: '1px solid #fcd34d', color: '#92400e' }}>
+            <p className="text-xs font-bold mb-1.5 flex items-center gap-1.5">
+              <span>⚠</span> Recomendações de ajuste
+            </p>
             {warnings.map(w => (
-              <p key={w.label}>⚠️ {w.label}: {w.p}% — alvo {w.targetLabel}</p>
+              <p key={w.label} className="text-xs">
+                {w.label}: {w.p}% — alvo {w.targetLabel}
+              </p>
             ))}
           </div>
         )}
@@ -310,7 +340,7 @@ function ScoreBreakdown({
   )
 }
 
-// ── Componente de campo editável (texto simples, uma linha) ───────────────────
+// ── Campo editável ────────────────────────────────────────────────────────────
 function EditField({
   value, onChange, editing, className, style, placeholder,
 }: {
@@ -319,25 +349,14 @@ function EditField({
 }) {
   if (!editing) return <span className={className} style={style}>{value}</span>
   return (
-    <input
-      type="text"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={className}
-      style={{
-        ...style,
-        background: 'transparent',
-        borderBottom: '1.5px dashed #00B4D8',
-        outline: 'none',
-        width: '100%',
-        cursor: 'text',
-      }}
+    <input type="text" value={value} onChange={e => onChange(e.target.value)}
+      placeholder={placeholder} className={className}
+      style={{ ...style, background: 'transparent', borderBottom: '1.5px dashed #00B4D8', outline: 'none', width: '100%', cursor: 'text' }}
     />
   )
 }
 
-// ── Componente de área editável (multilinha) ───────────────────────────────────
+// ── Área editável ─────────────────────────────────────────────────────────────
 function EditArea({
   value, onChange, editing, className, style, placeholder,
 }: {
@@ -346,50 +365,30 @@ function EditArea({
 }) {
   if (!editing) return <span className={className} style={style}>{value}</span>
   return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={3}
-      className={className}
-      style={{
-        ...style,
-        background: 'transparent',
-        border: '1.5px dashed #00B4D8',
-        borderRadius: 4,
-        outline: 'none',
-        width: '100%',
-        resize: 'vertical',
-        cursor: 'text',
-        padding: '2px 4px',
-        lineHeight: '1.7',
-      }}
+    <textarea value={value} onChange={e => onChange(e.target.value)}
+      placeholder={placeholder} rows={3} className={className}
+      style={{ ...style, background: 'transparent', border: '1.5px dashed #00B4D8', borderRadius: 4, outline: 'none', width: '100%', resize: 'vertical', cursor: 'text', padding: '2px 4px', lineHeight: '1.7' }}
     />
   )
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function TestPreview({
-  content,
-  contentItemId,
+  content, contentItemId,
 }: {
   content: unknown
   contentItemId?: string
 }) {
   const rawTest = content as TestContent
-
-  // ── Estado ──────────────────────────────────────────────────────────────────
   const [editableTest, setEditableTest] = useState<TestContent>(() => deepClone(rawTest))
   const [isEditing, setIsEditing] = useState(false)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
 
-  // ── Helpers de edição ────────────────────────────────────────────────────────
   const updateRoot = useCallback(<K extends keyof TestContent>(key: K, val: TestContent[K]) => {
     setEditableTest(t => ({ ...t, [key]: val }))
   }, [])
-
   const updateGroup = useCallback((gi: number, key: keyof TestGroup, val: unknown) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
@@ -397,17 +396,13 @@ export default function TestPreview({
       return { ...t, groups }
     })
   }, [])
-
-  const updateQuestion = useCallback((
-    gi: number, qi: number, key: keyof Question, val: unknown
-  ) => {
+  const updateQuestion = useCallback((gi: number, qi: number, key: keyof Question, val: unknown) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
       ;(groups[gi].questions[qi] as unknown as Record<string, unknown>)[key as string] = val
       return { ...t, groups }
     })
   }, [])
-
   const updateOption = useCallback((gi: number, qi: number, oi: number, val: string) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
@@ -417,8 +412,6 @@ export default function TestPreview({
       return { ...t, groups }
     })
   }, [])
-
-  // Recalcula totalPoints dos grupos a partir das questões
   const recalcPoints = useCallback((gi: number) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
@@ -428,146 +421,131 @@ export default function TestPreview({
     })
   }, [])
 
-  // ── Normalização para renderização ──────────────────────────────────────────
   const groups = normaliseGroups(editableTest)
   const allQuestions = groups.flatMap(g => g.questions)
 
   async function handleDocx() {
     await generateTestDocx(editableTest as Parameters<typeof generateTestDocx>[0])
   }
-  function handlePrint() { window.print() }
 
   return (
     <div>
-      {/* ── Modais ── */}
       {showSchoolModal && (
-        <SchoolProfileModal
-          current={profile}
-          onSave={saveProfile}
-          onClose={() => setShowSchoolModal(false)}
-        />
+        <SchoolProfileModal current={profile} onSave={saveProfile} onClose={() => setShowSchoolModal(false)} />
       )}
       {showLauncher && contentItemId && (
-        <ExamLauncher
-          contentItemId={contentItemId}
-          contentTitle={editableTest.title}
-          onClose={() => setShowLauncher(false)}
-        />
+        <ExamLauncher contentItemId={contentItemId} contentTitle={editableTest.title} onClose={() => setShowLauncher(false)} />
       )}
 
-      {/* ── Barra de acções (ecrã apenas) ── */}
-      <div className="flex flex-wrap gap-2 mb-6 no-print">
-        {/* Escola */}
-        <button onClick={() => setShowSchoolModal(true)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border transition-colors"
-          style={{
-            borderColor: hasProfile ? '#C8A84B60' : '#0D1B2A25',
-            color: hasProfile ? '#C8A84B' : '#6B7280',
-            background: hasProfile ? '#fffbeb' : 'white',
-          }}>
-          🏫 {hasProfile ? 'Escola configurada' : 'Configurar escola'}
-        </button>
-
-        {/* Editar */}
-        <button
-          onClick={() => setIsEditing(e => !e)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors"
-          style={{
-            background: isEditing ? '#00B4D8' : 'white',
-            color: isEditing ? 'white' : '#0D1B2A',
-            border: `1.5px solid ${isEditing ? '#00B4D8' : '#0D1B2A25'}`,
-          }}>
-          {isEditing ? '👁 Pré-visualizar' : '✏️ Editar teste'}
-        </button>
-
-        <div className="flex gap-2 ml-auto">
-          <button onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-            style={{ background: '#0D1B2A' }}>
-            🖨️ Imprimir / PDF
+      {/* ── Barra de acções ────────────────────────────────────────────────── */}
+      <div className="no-print mb-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Escola */}
+          <button onClick={() => setShowSchoolModal(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all"
+            style={{
+              borderColor: hasProfile ? '#C8A84B50' : '#e2e8f0',
+              color: hasProfile ? '#92740a' : '#6B7280',
+              background: hasProfile ? '#fefce8' : 'white',
+            }}>
+            <span style={{ fontSize: 15 }}>🏫</span>
+            {hasProfile ? 'Escola configurada' : 'Configurar escola'}
           </button>
-          <button onClick={handleDocx}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-            style={{ background: '#0D1B2A' }}>
-            📄 Word
+
+          {/* Editar */}
+          <button onClick={() => setIsEditing(e => !e)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition-all"
+            style={{
+              background: isEditing ? '#0D1B2A' : 'white',
+              color: isEditing ? '#F7F3EE' : '#0D1B2A',
+              borderColor: isEditing ? '#0D1B2A' : '#e2e8f0',
+            }}>
+            <span style={{ fontSize: 14 }}>{isEditing ? '👁' : '✏️'}</span>
+            {isEditing ? 'Pré-visualizar' : 'Editar teste'}
           </button>
-          {contentItemId && (
-            <button
-              onClick={() => setShowLauncher(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white"
-              style={{ background: '#00B4D8' }}
-            >
-              🚀 Lançar Exame
+
+          {/* Acções principais — à direita */}
+          <div className="flex items-center gap-2 ml-auto">
+            <button onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: 14 }}>🖨️</span> Imprimir
             </button>
-          )}
+            <button onClick={handleDocx}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: 14 }}>📄</span> Word
+            </button>
+            {contentItemId && (
+              <button onClick={() => setShowLauncher(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, #00B4D8, #0096b7)', boxShadow: '0 2px 8px rgba(0,180,216,0.35)' }}>
+                <span style={{ fontSize: 14 }}>🚀</span> Lançar Exame
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
-          style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d60' }}>
-          ⚠️ Revê sempre o conteúdo gerado por IA antes de distribuir
+        {/* Avisos */}
+        {isEditing && (
+          <div className="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2"
+            style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+            ✏️ <span><strong>Modo de edição</strong> — clica em qualquer texto ou número para editar.</span>
+          </div>
+        )}
+        <div className="px-4 py-2 rounded-lg text-xs flex items-center gap-2"
+          style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}>
+          ⚠️ Revê sempre o conteúdo gerado por IA antes de distribuir aos alunos
         </div>
       </div>
 
-      {/* Banner de modo de edição */}
-      {isEditing && (
-        <div className="no-print mb-4 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
-          style={{ background: '#e0f7fc', color: '#0369a1', border: '1.5px dashed #00B4D8' }}>
-          ✏️ <span><strong>Modo de edição activo</strong> — clica em qualquer texto ou número para editar. Os campos editáveis têm um sublinhado azul a tracejado.</span>
-        </div>
-      )}
-
       {/* ── Painel de distribuição ── */}
-      <ScoreBreakdown
-        groups={groups}
-        totalPoints={editableTest.totalPoints}
-        subject={editableTest.subject}
-      />
+      <ScoreBreakdown groups={groups} totalPoints={editableTest.totalPoints} subject={editableTest.subject} />
 
-      {/* ── Documento ── */}
-      <div id="test-document" className="bg-white rounded-xl shadow-sm border print-area"
-        style={{ borderColor: '#0D1B2A10' }}>
+      {/* ── Documento ──────────────────────────────────────────────────────── */}
+      <div id="test-document" className="bg-white rounded-2xl overflow-hidden print-area"
+        style={{ border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(13,27,42,0.08)' }}>
+
+        {/* Banda de cor topo */}
+        <div style={{ height: 5, background: 'linear-gradient(90deg, #0D1B2A 0%, #0D1B2A 65%, #00B4D8 100%)' }} />
 
         {/* CABEÇALHO ─────────────────────────────────────────────────────── */}
-        <div className="px-10 pt-8 pb-6" style={{ borderBottom: '2px solid #0D1B2A' }}>
+        <div className="px-10 pt-7 pb-5" style={{ borderBottom: '2px solid #0D1B2A' }}>
 
           {/* Linha topo: escola + classificação */}
           <div className="flex justify-between items-start mb-5">
             <div className="flex-1 flex items-start gap-4">
-              {/* Logótipo */}
               {profile.logoDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.logoDataUrl}
-                  alt="Logótipo da escola"
+                <img src={profile.logoDataUrl} alt="Logótipo"
                   className="h-16 w-16 object-contain shrink-0"
-                  style={{ printColorAdjust: 'exact' } as React.CSSProperties}
-                />
+                  style={{ printColorAdjust: 'exact' } as React.CSSProperties} />
               )}
               <div>
                 {hasProfile ? (
                   <>
                     {profile.agrupamento && (
-                      <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#0D1B2A' }}>
+                      <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#0D1B2A', letterSpacing: '0.1em' }}>
                         {profile.agrupamento}
                       </p>
                     )}
                     {profile.escola && (
-                      <p className="text-xs mt-0.5" style={{ color: '#374151' }}>{profile.escola}</p>
+                      <p className="text-xs mt-0.5 font-medium" style={{ color: '#374151' }}>{profile.escola}</p>
                     )}
                     {profile.concelho && (
                       <p className="text-xs" style={{ color: '#6B7280' }}>{profile.concelho}</p>
                     )}
-                    <div className="h-px w-48 my-1" style={{ background: '#0D1B2A20' }} />
+                    <div className="h-px w-40 my-1.5" style={{ background: '#0D1B2A25' }} />
                     <p className="text-xs" style={{ color: '#9CA3AF' }}>
                       Ano lectivo {profile.anoLetivo || '2025 / 2026'}
                     </p>
                   </>
                 ) : (
                   <>
-                    <p className="text-xs uppercase tracking-widest font-semibold mb-0.5" style={{ color: '#6B7280' }}>
+                    <p className="text-xs uppercase tracking-widest font-black mb-0.5" style={{ color: '#9CA3AF', letterSpacing: '0.1em' }}>
                       Agrupamento de Escolas
                     </p>
-                    <div className="h-px w-56 mb-1" style={{ background: '#0D1B2A20' }} />
+                    <div className="h-px w-56 mb-1.5" style={{ background: '#0D1B2A15' }} />
                     <p className="text-xs" style={{ color: '#9CA3AF' }}>Ano lectivo 2025 / 2026</p>
                     <p className="text-xs mt-0.5 no-print" style={{ color: '#00B4D8' }}>
                       ↑ Clica em &quot;Configurar escola&quot; para personalizar
@@ -578,42 +556,49 @@ export default function TestPreview({
             </div>
 
             {/* Classificação */}
-            <div className="text-center ml-8 shrink-0">
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>CLASSIFICAÇÃO</p>
-              <div className="w-24 h-16 border-2 rounded flex items-center justify-center"
-                style={{ borderColor: '#0D1B2A40' }}>
-                <p className="text-xs" style={{ color: '#D1D5DB' }}>___ / {editableTest.totalPoints}</p>
+            <div className="shrink-0 ml-8">
+              <div className="border-2 rounded-xl overflow-hidden" style={{ borderColor: '#0D1B2A', width: 110 }}>
+                <div className="py-1 text-center" style={{ background: '#0D1B2A' }}>
+                  <p className="text-xs font-bold tracking-widest text-white" style={{ fontSize: 9, letterSpacing: '0.12em' }}>
+                    CLASSIFICAÇÃO
+                  </p>
+                </div>
+                <div className="py-5 text-center" style={{ background: 'white' }}>
+                  <p className="text-xs font-medium" style={{ color: '#0D1B2A' }}>
+                    _____ / <strong>{editableTest.totalPoints}</strong>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Título */}
-          <h1 className="text-2xl font-bold text-center mb-1"
-            style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A', letterSpacing: '-0.01em' }}>
+          {/* Título do teste */}
+          <h1 className="text-center mb-1"
+            style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A', fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
             <EditField
               value={editableTest.title}
               onChange={v => updateRoot('title', v)}
               editing={isEditing}
-              style={{ fontFamily: 'Georgia, serif', fontSize: '1.5rem', fontWeight: 700, color: '#0D1B2A', textAlign: 'center' }}
+              style={{ fontFamily: 'Georgia, serif', fontSize: '1.45rem', fontWeight: 800, color: '#0D1B2A', textAlign: 'center' }}
             />
           </h1>
-          <p className="text-center text-sm mb-5" style={{ color: '#374151' }}>
+          <p className="text-center text-sm mb-5" style={{ color: '#6B7280' }}>
             {editableTest.subject} · {editableTest.yearLevel}.º ano
-            {editableTest.duration ? ` · Duração: ${editableTest.duration} minutos` : ''}
-            {' · '} Cotação total:{' '}
+            {editableTest.duration ? ` · ${editableTest.duration} min` : ''}
+            {' · '}{DIFFICULTY_LABEL[editableTest.difficulty] ?? editableTest.difficulty}
+            {' · '}
             {isEditing ? (
-              <input
-                type="number" min={0} max={999}
-                value={editableTest.totalPoints}
-                onChange={e => updateRoot('totalPoints', Number(e.target.value))}
-                style={{ width: 48, borderBottom: '1.5px dashed #00B4D8', background: 'transparent', outline: 'none', textAlign: 'center' }}
-              />
-            ) : editableTest.totalPoints} pontos
-            {' · '} {DIFFICULTY_LABEL[editableTest.difficulty] ?? editableTest.difficulty}
+              <>
+                <input type="number" min={0} max={999} value={editableTest.totalPoints}
+                  onChange={e => updateRoot('totalPoints', Number(e.target.value))}
+                  style={{ width: 48, borderBottom: '1.5px dashed #00B4D8', background: 'transparent', outline: 'none', textAlign: 'center' }}
+                /> pontos
+              </>
+            ) : `${editableTest.totalPoints} pontos`}
           </p>
 
           {/* Dados do aluno */}
-          <div className="grid grid-cols-12 gap-x-4 gap-y-3">
+          <div className="grid grid-cols-12 gap-x-5 gap-y-4">
             {[
               { label: 'Nome completo do aluno', cols: 'col-span-7' },
               { label: 'N.º', cols: 'col-span-2' },
@@ -623,17 +608,21 @@ export default function TestPreview({
               { label: 'Enc. de Educação', cols: 'col-span-4' },
             ].map(f => (
               <div key={f.label} className={f.cols}>
-                <p className="text-xs mb-1 font-medium" style={{ color: '#6B7280' }}>{f.label}</p>
-                <div className="h-7 border-b-2" style={{ borderColor: '#0D1B2A50' }} />
+                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#9CA3AF', fontSize: '9px', letterSpacing: '0.08em' }}>
+                  {f.label}
+                </p>
+                <div className="h-7 border-b-2" style={{ borderColor: '#0D1B2A60' }} />
               </div>
             ))}
           </div>
 
           {/* Instruções */}
           {(editableTest.instructions || isEditing) && (
-            <div className="mt-4 px-4 py-3 rounded-lg text-xs leading-relaxed"
-              style={{ background: '#F7F3EE', color: '#374151', border: '1px solid #0D1B2A15' }}>
-              <span className="font-bold" style={{ color: '#0D1B2A' }}>Instruções: </span>
+            <div className="mt-5 px-4 py-3 rounded-xl text-xs leading-relaxed"
+              style={{ background: '#F7F3EE', color: '#374151', border: '1px solid #0D1B2A12' }}>
+              <span className="font-bold uppercase tracking-wide" style={{ color: '#0D1B2A', fontSize: 10, letterSpacing: '0.08em' }}>
+                Instruções:{' '}
+              </span>
               <EditArea
                 value={editableTest.instructions ?? ''}
                 onChange={v => updateRoot('instructions', v)}
@@ -646,39 +635,40 @@ export default function TestPreview({
         </div>
 
         {/* GRUPOS ─────────────────────────────────────────────────────────── */}
-        <div className="px-10 py-6 space-y-10">
+        <div className="px-10 py-7 space-y-10">
           {groups.map((group, gi) => (
             <div key={gi} className="group-block">
 
               {/* Cabeçalho do grupo */}
               {group.label && (
-                <div className="mb-5">
-                  {/* Barra decorativa colorida (no-print) */}
-                  <div className="no-print h-1 rounded-full mb-3"
-                    style={{ background: GROUP_COLORS[gi % GROUP_COLORS.length], opacity: 0.7 }} />
-                  <div className="flex items-baseline justify-between pb-2"
-                    style={{ borderBottom: '1.5px solid #0D1B2A25' }}>
-                    <h2 className="text-base font-bold shrink-0"
-                      style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A' }}>
-                      <EditField
-                        value={group.label}
-                        onChange={v => updateGroup(gi, 'label', v)}
-                        editing={isEditing}
-                        style={{ fontFamily: 'Georgia, serif', fontWeight: 700, color: '#0D1B2A' }}
-                      />
-                    </h2>
-                    {group.description && (
-                      <p className="text-xs ml-4 flex-1 italic" style={{ color: '#6B7280' }}>
+                <div className="mb-6">
+                  <div className="flex items-baseline justify-between py-2.5"
+                    style={{ borderTop: '2px solid #0D1B2A', borderBottom: '1px solid #0D1B2A20' }}>
+                    <div className="flex items-baseline gap-3">
+                      {/* Dot decorativo colorido */}
+                      <span className="no-print inline-block w-2 h-2 rounded-full shrink-0 translate-y-[-1px]"
+                        style={{ background: GROUP_COLORS[gi % GROUP_COLORS.length] }} />
+                      <h2 className="font-black" style={{ fontFamily: 'Georgia, serif', color: '#0D1B2A', fontSize: '0.95rem', letterSpacing: '-0.01em' }}>
                         <EditField
-                          value={group.description}
-                          onChange={v => updateGroup(gi, 'description', v)}
+                          value={group.label}
+                          onChange={v => updateGroup(gi, 'label', v)}
                           editing={isEditing}
-                          style={{ color: '#6B7280', fontSize: '0.75rem' }}
+                          style={{ fontFamily: 'Georgia, serif', fontWeight: 900, color: '#0D1B2A', fontSize: '0.95rem' }}
                         />
-                      </p>
-                    )}
+                      </h2>
+                      {group.description && (
+                        <p className="text-xs italic ml-1" style={{ color: '#6B7280' }}>
+                          <EditField
+                            value={group.description}
+                            onChange={v => updateGroup(gi, 'description', v)}
+                            editing={isEditing}
+                            style={{ color: '#6B7280', fontSize: '0.75rem' }}
+                          />
+                        </p>
+                      )}
+                    </div>
                     {group.totalPoints != null && (
-                      <span className="text-sm font-bold ml-4 shrink-0" style={{ color: '#0D1B2A' }}>
+                      <span className="text-sm font-black ml-4 shrink-0 tabular-nums" style={{ color: '#0D1B2A' }}>
                         {group.totalPoints} pontos
                       </span>
                     )}
@@ -687,7 +677,7 @@ export default function TestPreview({
               )}
 
               {/* Questões */}
-              <div className="space-y-7">
+              <div className="space-y-8">
                 {group.questions.map((q, qi) => (
                   <QuestionBlock
                     key={qi}
@@ -696,10 +686,7 @@ export default function TestPreview({
                     editing={isEditing}
                     onChangeText={v => updateQuestion(gi, qi, 'text', v)}
                     onChangeAnswer={v => updateQuestion(gi, qi, 'correctAnswer', v)}
-                    onChangePoints={v => {
-                      updateQuestion(gi, qi, 'points', v)
-                      recalcPoints(gi)
-                    }}
+                    onChangePoints={v => { updateQuestion(gi, qi, 'points', v); recalcPoints(gi) }}
                     onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
                     onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
                     onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
@@ -711,10 +698,14 @@ export default function TestPreview({
         </div>
 
         {/* RODAPÉ ─────────────────────────────────────────────────────────── */}
-        <div className="px-10 py-4 flex justify-between items-center text-xs"
-          style={{ borderTop: '1px solid #0D1B2A15', color: '#9CA3AF' }}>
-          <span>PROF.IA · Gerado por IA — rever antes de distribuir</span>
-          <span>{allQuestions.length} questões · {editableTest.totalPoints} pontos</span>
+        <div className="px-10 py-3 flex justify-between items-center"
+          style={{ borderTop: '1px solid #0D1B2A10', background: '#fafbfc' }}>
+          <span className="text-xs" style={{ color: '#C8A84B', fontWeight: 600, letterSpacing: '0.02em' }}>
+            PROF.IA
+          </span>
+          <span className="text-xs" style={{ color: '#9CA3AF' }}>
+            Gerado por IA — rever antes de distribuir · {allQuestions.length} questões · {editableTest.totalPoints} pontos
+          </span>
         </div>
       </div>
 
@@ -727,12 +718,11 @@ export default function TestPreview({
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
-            padding: 0 !important;
           }
           .no-print { display: none !important; }
           .group-block { page-break-inside: avoid; }
           .question-block { page-break-inside: avoid; }
-          @page { margin: 2.2cm 2.5cm; size: A4; }
+          @page { margin: 2cm 2.5cm; size: A4 portrait; }
         }
       `}</style>
     </div>
@@ -761,189 +751,177 @@ function QuestionBlock({
 
   return (
     <div className="question-block">
-      <div className="flex gap-3">
+      <div className="flex gap-4">
+
         {/* Número da questão */}
-        <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-          style={{ background: '#0D1B2A', color: '#F7F3EE' }}>
+        <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black mt-0.5"
+          style={{ background: '#0D1B2A', color: '#F7F3EE', letterSpacing: '-0.02em', boxShadow: '0 1px 3px rgba(13,27,42,0.25)' }}>
           {globalIndex}
         </span>
 
         <div className="flex-1">
           {/* Cabeçalho da questão */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs px-2 py-0.5 rounded"
-              style={{ background: '#0D1B2A08', color: '#6B7280' }}>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-xs px-2 py-0.5 rounded-md font-medium"
+              style={{ background: '#f1f5f9', color: '#64748b' }}>
               {TYPE_LABEL[q.type] ?? q.type}
             </span>
             {q.bloomLevel && (
-              <span className="text-xs px-2 py-0.5 rounded no-print"
-                style={{ background: '#00B4D815', color: '#0369a1' }}>
+              <span className="text-xs px-2 py-0.5 rounded-md no-print"
+                style={{ background: '#e0f7fc', color: '#0369a1' }}>
                 {q.bloomLevel}
               </span>
             )}
-            {/* Calculadora — badge ou toggle */}
+            {/* Calculadora */}
             {editing ? (
-              <label className="no-print flex items-center gap-1.5 px-2 py-0.5 rounded cursor-pointer border transition-colors"
+              <label className="no-print flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-pointer border"
                 style={{
-                  borderColor: q.allowCalculator ? '#00B4D8' : '#0D1B2A20',
+                  borderColor: q.allowCalculator ? '#00B4D8' : '#e2e8f0',
                   background: q.allowCalculator ? '#e0f7fc' : 'transparent',
                   color: q.allowCalculator ? '#0369a1' : '#9CA3AF',
                 }}>
-                <input
-                  type="checkbox"
-                  checked={q.allowCalculator ?? false}
+                <input type="checkbox" checked={q.allowCalculator ?? false}
                   onChange={e => onChangeCalculator(e.target.checked)}
-                  className="w-3 h-3 accent-cyan-500"
-                />
+                  className="w-3 h-3 accent-cyan-500" />
                 <span className="text-xs">🧮 calculadora</span>
               </label>
             ) : q.allowCalculator ? (
-              <span className="no-print text-xs px-2 py-0.5 rounded"
+              <span className="no-print text-xs px-2 py-0.5 rounded-md"
                 style={{ background: '#e0f7fc', color: '#0369a1' }}>
                 🧮 calculadora
               </span>
             ) : null}
-            {/* Pontuação editável */}
-            <span className="ml-auto text-xs font-bold" style={{ color: '#6B7280' }}>
+
+            {/* Pontuação */}
+            <span className="ml-auto text-xs font-black tabular-nums" style={{ color: '#C8A84B' }}>
               {editing ? (
                 <span className="flex items-center gap-1">
-                  <input
-                    type="number" min={0} max={100}
-                    value={q.points}
+                  <input type="number" min={0} max={100} value={q.points}
                     onChange={e => onChangePoints(Number(e.target.value))}
-                    style={{
-                      width: 40, textAlign: 'center',
-                      borderBottom: '1.5px dashed #00B4D8',
-                      background: 'transparent', outline: 'none',
-                      fontSize: '0.75rem', fontWeight: 700, color: '#6B7280',
-                    }}
+                    style={{ width: 40, textAlign: 'center', borderBottom: '1.5px dashed #00B4D8', background: 'transparent', outline: 'none', fontSize: '0.75rem', fontWeight: 900, color: '#C8A84B' }}
                   />
                   <span>pt</span>
                 </span>
               ) : (
-                <>{q.points} {q.points === 1 ? 'ponto' : 'pontos'}</>
+                <>({q.points} {q.points === 1 ? 'ponto' : 'pontos'})</>
               )}
             </span>
           </div>
 
           {/* Enunciado */}
-          <div className="text-sm leading-relaxed font-medium mb-2" style={{ color: '#0D1B2A', lineHeight: '1.7' }}>
+          <div className="mb-3 leading-relaxed" style={{ color: '#0D1B2A', fontSize: '0.9rem', lineHeight: '1.75', fontWeight: 500 }}>
             <EditArea
-              value={q.text}
-              onChange={onChangeText}
-              editing={editing}
-              style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0D1B2A', lineHeight: '1.7' }}
+              value={q.text} onChange={onChangeText} editing={editing}
+              style={{ fontSize: '0.9rem', fontWeight: 500, color: '#0D1B2A', lineHeight: '1.75' }}
             />
           </div>
 
-          {/* Figura matemática */}
+          {/* Figura */}
           {!!q.figure && <MathFigure figure={q.figure} />}
 
-          {/* Opções (escolha múltipla) */}
-          {isMulti && q.options && q.options.length > 0 && (
-            <div className="mt-3 space-y-2.5">
+          {/* ── Escolha múltipla ── */}
+          {q.type === 'multiple_choice' && q.options && q.options.length > 0 && (
+            <div className="mt-3 space-y-2">
               {q.options.map((opt, j) => {
-                const letter = opt.trim().charAt(0)
-                const isCorrect = letter === q.correctAnswer || opt === q.correctAnswer
+                const letter = LETTERS[j] ?? String.fromCharCode(65 + j)
+                // Remove prefixo de letra se existir (ex: "A. texto" → "texto")
+                const optText = editing ? opt : opt.replace(/^[A-E][).]\s*/, '').trim() || opt
+                const isCorrect = letter === q.correctAnswer.trim().toUpperCase() ||
+                                  opt.trim().charAt(0).toUpperCase() === q.correctAnswer.trim().toUpperCase()
                 return (
-                  <label key={j} className="flex items-start gap-3 cursor-pointer">
-                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                      style={{ borderColor: '#0D1B2A30' }} />
-                    <span className="text-sm flex-1" style={{ color: '#374151' }}>
+                  <div key={j} className="flex items-start gap-3">
+                    {/* Bolha de resposta */}
+                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold"
+                      style={{ borderColor: '#0D1B2A50', color: '#0D1B2A' }}>
+                      {letter}
+                    </span>
+                    <span className="text-sm flex-1" style={{ color: '#374151', lineHeight: '1.6' }}>
                       {editing ? (
-                        <input
-                          type="text" value={opt}
-                          onChange={e => onChangeOption(j, e.target.value)}
-                          style={{
-                            width: '100%', background: 'transparent', outline: 'none',
-                            borderBottom: '1.5px dashed #00B4D8',
-                            fontSize: '0.875rem', color: '#374151',
-                          }}
+                        <input type="text" value={opt} onChange={e => onChangeOption(j, e.target.value)}
+                          style={{ width: '100%', background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.875rem', color: '#374151' }}
                         />
-                      ) : opt}
+                      ) : optText}
                     </span>
                     {isCorrect && !editing && (
-                      <span className="ml-auto text-xs font-semibold no-print shrink-0"
-                        style={{ color: '#059669' }}>✓ correcta</span>
+                      <span className="ml-auto no-print text-xs font-bold shrink-0 mt-0.5"
+                        style={{ color: '#059669' }}>✓</span>
                     )}
-                  </label>
+                  </div>
                 )
               })}
             </div>
           )}
 
-          {/* Resposta correcta editável (escolha múltipla, no modo edição) */}
-          {isMulti && editing && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs font-semibold" style={{ color: '#059669' }}>Resposta correcta:</span>
-              <input
-                type="text" value={q.correctAnswer}
-                onChange={e => onChangeAnswer(e.target.value)}
-                style={{
-                  width: 40, textAlign: 'center',
-                  borderBottom: '1.5px dashed #00B4D8',
-                  background: 'transparent', outline: 'none',
-                  fontSize: '0.75rem', fontWeight: 700, color: '#059669',
-                }}
-              />
-              <span className="text-xs" style={{ color: '#9CA3AF' }}>(ex: A, B, C ou D)</span>
+          {/* ── Verdadeiro / Falso ── */}
+          {q.type === 'true_false' && (
+            <div className="mt-3 flex gap-8">
+              {['Verdadeiro', 'Falso'].map(opt => {
+                const val = opt.charAt(0)
+                const isCorrect = val === q.correctAnswer.trim().toUpperCase() ||
+                  opt.toUpperCase() === q.correctAnswer.trim().toUpperCase() ||
+                  (opt === 'Verdadeiro' && ['V', 'VERDADEIRO', 'TRUE', 'T'].includes(q.correctAnswer.trim().toUpperCase())) ||
+                  (opt === 'Falso' && ['F', 'FALSO', 'FALSE'].includes(q.correctAnswer.trim().toUpperCase()))
+                return (
+                  <div key={opt} className="flex items-center gap-2.5">
+                    <span className="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center"
+                      style={{ borderColor: '#0D1B2A50' }} />
+                    <span className="text-sm font-medium" style={{ color: '#374151' }}>{opt}</span>
+                    {isCorrect && !editing && (
+                      <span className="no-print text-xs font-bold" style={{ color: '#059669' }}>✓</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {/* Linhas de resposta */}
+          {/* Resposta correcta editável (MCQ/VF em modo edição) */}
+          {isMulti && editing && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs font-bold" style={{ color: '#059669' }}>Correcta:</span>
+              <input type="text" value={q.correctAnswer} onChange={e => onChangeAnswer(e.target.value)}
+                style={{ width: 40, textAlign: 'center', borderBottom: '1.5px dashed #00B4D8', background: 'transparent', outline: 'none', fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}
+              />
+              <span className="text-xs" style={{ color: '#9CA3AF' }}>(A, B, C, D, V ou F)</span>
+            </div>
+          )}
+
+          {/* ── Linhas de resposta (questões abertas) ── */}
           {!isMulti && answerLines > 0 && (
-            <div className="mt-4 space-y-4">
+            <div className="mt-5 space-y-0">
               {Array.from({ length: answerLines }).map((_, j) => (
-                <div key={j} className="h-px" style={{ background: '#0D1B2A20' }} />
+                <div key={j} style={{ height: 32, borderBottom: '1px solid #0D1B2A18' }} />
               ))}
             </div>
           )}
 
-          {/* Corrigenda */}
+          {/* ── Corrigenda (no-print) ── */}
           <div className="no-print mt-3">
             <details>
-              <summary className="text-xs font-semibold cursor-pointer select-none"
-                style={{ color: '#00B4D8' }}>
-                Ver corrigenda
+              <summary className="text-xs font-semibold cursor-pointer select-none inline-flex items-center gap-1"
+                style={{ color: '#00B4D8', listStyle: 'none' }}>
+                <span>▸</span> Ver corrigenda
               </summary>
-              <div className="mt-2 p-3 rounded-lg text-xs space-y-1.5"
+              <div className="mt-2 p-3 rounded-xl text-xs space-y-1.5"
                 style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                 {!isMulti && (
                   <p>
                     <span className="font-bold" style={{ color: '#166534' }}>Resposta: </span>
                     {editing ? (
-                      <input
-                        type="text" value={q.correctAnswer}
-                        onChange={e => onChangeAnswer(e.target.value)}
-                        style={{
-                          borderBottom: '1.5px dashed #00B4D8',
-                          background: 'transparent', outline: 'none',
-                          fontSize: '0.75rem', color: '#166534', width: '80%',
-                        }}
+                      <input type="text" value={q.correctAnswer} onChange={e => onChangeAnswer(e.target.value)}
+                        style={{ borderBottom: '1.5px dashed #00B4D8', background: 'transparent', outline: 'none', fontSize: '0.75rem', color: '#166534', width: '80%' }}
                       />
-                    ) : (
-                      <span style={{ color: '#166534' }}>{q.correctAnswer}</span>
-                    )}
+                    ) : <span style={{ color: '#166534' }}>{q.correctAnswer}</span>}
                   </p>
                 )}
                 {(q.markScheme || editing) && (
                   <p>
                     <span className="font-bold" style={{ color: '#166534' }}>Critérios: </span>
                     {editing ? (
-                      <textarea
-                        value={q.markScheme ?? ''}
-                        onChange={e => onChangeMarkScheme(e.target.value)}
-                        rows={3}
-                        style={{
-                          width: '100%', resize: 'vertical',
-                          border: '1.5px dashed #00B4D8', borderRadius: 4,
-                          background: 'transparent', outline: 'none',
-                          fontSize: '0.75rem', color: '#374151', padding: '2px 4px',
-                        }}
+                      <textarea value={q.markScheme ?? ''} onChange={e => onChangeMarkScheme(e.target.value)} rows={3}
+                        style={{ width: '100%', resize: 'vertical', border: '1.5px dashed #00B4D8', borderRadius: 4, background: 'transparent', outline: 'none', fontSize: '0.75rem', color: '#374151', padding: '2px 4px' }}
                       />
-                    ) : (
-                      <span style={{ color: '#374151' }}>{q.markScheme}</span>
-                    )}
+                    ) : <span style={{ color: '#374151' }}>{q.markScheme}</span>}
                   </p>
                 )}
               </div>
