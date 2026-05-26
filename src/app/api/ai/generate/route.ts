@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
 
+// Netlify/Vercel: duração máxima da função (segundos)
+export const maxDuration = 60
+
 // Inicialização lazy — evita falha de build quando env vars não estão disponíveis em build time
 function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
 function getGroq()  { return new Groq({ apiKey: process.env.GROQ_API_KEY! }) }
