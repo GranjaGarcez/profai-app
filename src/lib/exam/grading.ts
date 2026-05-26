@@ -94,7 +94,8 @@ Responde APENAS com JSON válido (sem texto extra, sem markdown):
       auto: true,
       ai_confidence: parsed.confidence ?? 0.8,
     }
-  } catch {
+  } catch (geminiErr) {
+    console.warn('Gemini grading falhou, a usar Groq:', geminiErr instanceof Error ? geminiErr.message : geminiErr)
     // Fallback Groq
     try {
       const completion = await getGroq().chat.completions.create({

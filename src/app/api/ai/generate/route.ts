@@ -127,7 +127,7 @@ ${ctx}`,
   }
 }
 
-// Tenta gerar com Gemini; se falhar por rate-limit ou quota, usa Groq como fallback
+// Tenta gerar com Gemini; se falhar por qualquer razão, usa Groq como fallback
 async function generateWithFallback(prompt: string): Promise<string> {
   // 1ª tentativa: Gemini 2.5 Flash
   try {
@@ -135,10 +135,7 @@ async function generateWithFallback(prompt: string): Promise<string> {
     const result = await model.generateContent(prompt)
     return result.response.text()
   } catch (geminiError) {
-    const msg = geminiError instanceof Error ? geminiError.message : ''
-    const isQuotaOrRate = msg.includes('429') || msg.includes('quota') || msg.includes('rate')
-    if (!isQuotaOrRate) throw geminiError // erro inesperado — propaga
-    console.warn('Gemini indisponível, a usar Groq como fallback...')
+    console.warn('Gemini falhou, a usar Groq como fallback:', geminiError instanceof Error ? geminiError.message : geminiError)
   }
 
   // 2ª tentativa: Groq (llama-3.3-70b — rápido e gratuito)
