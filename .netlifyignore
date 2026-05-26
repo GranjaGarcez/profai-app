@@ -1,0 +1,5 @@
+.next/
+node_modules/
+.aider.chat.history.md
+.aider.input.history
+tsconfig.tsbuildinfo
