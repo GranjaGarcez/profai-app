@@ -129,9 +129,9 @@ ${ctx}`,
 
 // Tenta gerar com Gemini; se falhar por qualquer razão, usa Groq como fallback
 async function generateWithFallback(prompt: string): Promise<string> {
-  // 1ª tentativa: Gemini 2.5 Flash
+  // 1ª tentativa: Gemini 2.0 Flash
   try {
-    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.0-flash' })
     const result = await model.generateContent(prompt)
     return result.response.text()
   } catch (geminiError) {
@@ -149,7 +149,7 @@ async function generateWithFallback(prompt: string): Promise<string> {
       { role: 'user', content: prompt },
     ],
     temperature: 0.7,
-    max_tokens: 4096,
+    max_tokens: 8192,
   })
   return completion.choices[0]?.message?.content ?? ''
 }
@@ -375,8 +375,17 @@ Responde APENAS com este JSON:
   try {
     const text = await generateWithFallback(prompt)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('Resposta inválida da IA')
-    const content = JSON.parse(jsonMatch[0])
+    if (!jsonMatch) {
+      console.error('[PROFAI] Sem JSON na resposta. Texto recebido (500 chars):', text.slice(0, 500))
+      throw new Error('Resposta inválida da IA')
+    }
+    let content: Record<string, unknown>
+    try {
+      content = JSON.parse(jsonMatch[0])
+    } catch (parseErr) {
+      console.error('[PROFAI] JSON inválido (primeiros 1000 chars):', jsonMatch[0].slice(0, 1000))
+      throw new Error('JSON malformado — a IA devolveu uma resposta incompleta. Tenta novamente.')
+    }
 
     // ── Normalização de pontos (garante soma = 100) ──────────────────────────
     if (tool === 'test') {
