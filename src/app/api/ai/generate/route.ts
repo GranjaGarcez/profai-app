@@ -425,7 +425,8 @@ Responde APENAS com este JSON:
 
     return NextResponse.json({ content })
   } catch (error) {
-    console.error('Erro na geração:', error)
-    return NextResponse.json({ error: 'Erro ao gerar conteúdo. Tenta novamente.' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Erro na geração:', msg)
+    return NextResponse.json({ error: `Erro: ${msg}` }, { status: 500 })
   }
 }
