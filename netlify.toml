@@ -2,16 +2,8 @@
   command = "npm run build"
   publish = ".next"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
 [build.environment]
   NODE_VERSION = "20"
-  DENO_TLS_CA_STORE = "system"
 
-[functions]
-  included_files = ["**"]
-
-# Desabilita extensões automáticas que causam conflitos
-[dev]
-  autoLaunch = false
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
