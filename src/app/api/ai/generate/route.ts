@@ -130,18 +130,28 @@ ${ctx}`,
   }
 }
 
-// Tenta gerar com Gemini; se falhar por qualquer razão, usa Groq como fallback
+// Tenta gerar com Gemini 2.5 Flash (22s timeout); fallback para Groq
 async function generateWithFallback(prompt: string): Promise<string> {
-  // 1ª tentativa: Gemini 2.0 Flash
+  // 1ª tentativa: Gemini 2.5 Flash com timeout explícito de 22 segundos
   try {
-    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.0-flash' })
-    const result = await model.generateContent(prompt)
-    return result.response.text()
+    const timeoutMs = 22_000
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const result = await Promise.race([
+      model.generateContent(prompt),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('gemini_timeout')), timeoutMs)
+      ),
+    ])
+    const text = (result as Awaited<ReturnType<typeof model.generateContent>>).response.text()
+    console.log('[PROFAI] Gemini 2.5 Flash respondeu com sucesso')
+    return text
   } catch (geminiError) {
-    console.warn('Gemini falhou, a usar Groq como fallback:', geminiError instanceof Error ? geminiError.message : geminiError)
+    const msg = geminiError instanceof Error ? geminiError.message : String(geminiError)
+    console.warn('[PROFAI] Gemini falhou, a usar Groq:', msg)
   }
 
-  // 2ª tentativa: Groq (llama-3.3-70b — rápido e gratuito)
+  // 2ª tentativa: Groq llama-3.3-70b
+  console.log('[PROFAI] A usar Groq como fallback...')
   const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
