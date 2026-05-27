@@ -150,18 +150,27 @@ async function generateWithFallback(prompt: string): Promise<string> {
     console.warn('[PROFAI] Gemini falhou, a usar Groq:', msg)
   }
 
-  // 2ª tentativa: Groq llama-3.3-70b
+  // 2ª tentativa: Groq llama-3.3-70b com system prompt optimizado
   console.log('[PROFAI] A usar Groq como fallback...')
   const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
       {
         role: 'system',
-        content: 'És um assistente especializado em educação portuguesa. Responde SEMPRE em Português de Portugal estrito. Responde APENAS com o JSON pedido, sem texto adicional, sem markdown, sem ```json.',
+        content: `És um professor especialista em avaliação em Portugal. REGRAS ABSOLUTAS:
+1. Responde APENAS com JSON válido e completo — zero texto extra, zero markdown, zero \`\`\`json.
+2. Português de Portugal estrito: "actividade", "óptimo", "efeito", "facto", "fórmula", "rectângulo".
+3. Cada questão DEVE ter um enunciado "text" ÚNICO — nunca repitas dados ou valores entre questões.
+4. A soma de "points" de TODAS as questões DEVE ser exactamente 100.
+5. Cada questão DEVE ter "markScheme" detalhado com critérios parciais.
+6. "multiple_choice": correctAnswer é APENAS "A", "B", "C" ou "D" (letra só, sem ponto).
+7. "true_false": correctAnswer é "Verdadeiro" ou "Falso".
+8. Segue o schema JSON EXACTAMENTE como pedido — não omitas nenhum campo obrigatório.
+9. Distribui os tipos de questão e os temas de forma variada — não repitas o mesmo conceito.`,
       },
       { role: 'user', content: prompt },
     ],
-    temperature: 0.7,
+    temperature: 0.6,
     max_tokens: 8192,
   })
   return completion.choices[0]?.message?.content ?? ''
@@ -400,37 +409,67 @@ Responde APENAS com este JSON:
       throw new Error('JSON malformado — a IA devolveu uma resposta incompleta. Tenta novamente.')
     }
 
-    // ── Normalização de pontos (garante soma = 100) ──────────────────────────
+    // ── Validação e reparação estrutural (zero chamadas IA extra) ────────────
     if (tool === 'test') {
-      type QRaw = { index: number; figure: unknown; points?: number }
+      type QRaw = {
+        index: number; figure: unknown; points?: number; type?: string
+        text?: string; correctAnswer?: unknown; markScheme?: string; options?: unknown[]
+      }
       type GRaw = { label: string; questions: QRaw[]; totalPoints?: number }
       const groups = (content.groups ?? []) as GRaw[]
-      const allQs  = groups.flatMap(g => g.questions ?? [])
 
+      // 1. Remover questões com texto duplicado
+      const seenTexts = new Set<string>()
+      let removed = 0
+      for (const g of groups) {
+        const before = g.questions.length
+        g.questions = (g.questions ?? []).filter(q => {
+          const key = String(q.text ?? '').trim().toLowerCase().slice(0, 80)
+          if (!key || seenTexts.has(key)) return false
+          seenTexts.add(key)
+          return true
+        })
+        removed += before - g.questions.length
+      }
+      if (removed > 0) console.warn(`[PROFAI] ${removed} questão(ões) duplicada(s) removida(s)`)
+
+      // 2. Normalizar correctAnswer de MCQ → apenas a letra (A/B/C/D)
+      for (const g of groups) {
+        for (const q of g.questions) {
+          if (q.type === 'multiple_choice' && q.correctAnswer) {
+            q.correctAnswer = String(q.correctAnswer).trim().charAt(0).toUpperCase()
+          }
+          // 3. Garantir markScheme em questões abertas
+          if ((q.type === 'short_answer' || q.type === 'long_answer') && !q.markScheme) {
+            const pts = Number(q.points) || 0
+            q.markScheme = `Conteúdo correcto e completo (${Math.ceil(pts * 0.6)}pt) + clareza e organização (${Math.floor(pts * 0.4)}pt).`
+          }
+        }
+      }
+
+      // 4. Re-indexar sequencialmente
+      let idx = 1
+      for (const g of groups) for (const q of g.questions) q.index = idx++
+
+      // 5. Normalizar totalPoints (soma deve ser 100)
+      const allQs = groups.flatMap(g => g.questions)
       const currentTotal = allQs.reduce((s, q) => s + (Number(q.points) || 0), 0)
       if (currentTotal > 0 && currentTotal !== 100) {
         const diff = 100 - currentTotal
-        // Aplica a diferença à questão com mais pontos (menos impacto percentual)
         const heaviest = allQs.reduce((max, q) =>
           (Number(q.points) || 0) > (Number(max.points) || 0) ? q : max, allQs[0])
         if (heaviest) heaviest.points = (Number(heaviest.points) || 0) + diff
-
-        // Recalcula totalPoints dos grupos
-        for (const g of groups) {
-          g.totalPoints = g.questions.reduce((s, q) => s + (Number(q.points) || 0), 0)
-        }
-        content.totalPoints = 100
-        console.log(`[PROFAI] Pontos normalizados: ${currentTotal} → 100 (diff ${diff > 0 ? '+' : ''}${diff} em Q${heaviest?.index})`)
+        console.log(`[PROFAI] Pontos normalizados: ${currentTotal} → 100`)
       }
-
-      // Debug: auditar figuras geradas
-      const withFig = allQs.filter(q => q.figure !== null && q.figure !== undefined)
-      console.log(`[PROFAI] Test gerado: ${allQs.length} questões, ${withFig.length} com figura`)
-      if (withFig.length > 0) {
-        console.log('[PROFAI] Figuras:', JSON.stringify(withFig.map(q => ({ idx: q.index, fig: q.figure })), null, 2))
-      } else {
-        console.warn('[PROFAI] ⚠️  Nenhuma figura gerada — verificar prompt')
+      for (const g of groups) {
+        g.totalPoints = g.questions.reduce((s, q) => s + (Number(q.points) || 0), 0)
       }
+      content.totalPoints = 100
+
+      // Log de auditoria
+      const allQsFinal = groups.flatMap(g => g.questions)
+      const withFig = allQsFinal.filter(q => q.figure !== null && q.figure !== undefined)
+      console.log(`[PROFAI] ✓ ${allQsFinal.length} questões | ${withFig.length} figuras | 100pts`)
     }
 
     return NextResponse.json({ content })
