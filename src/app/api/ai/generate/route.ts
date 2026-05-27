@@ -3,6 +3,7 @@ import Groq from 'groq-sdk'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
+import { findQuestions, saveQuestions, markUsed, bankToExamQuestion } from '@/lib/exam/questionBank'
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
@@ -395,6 +396,66 @@ Responde APENAS com este JSON:
   }
 
   try {
+    // ── Question Bank: verificar se há questões reutilizáveis ──────────────
+    let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
+    let numFromAI = tool === 'test' ? (inputs as Record<string, unknown>).numQuestions as number : 0
+
+    if (tool === 'test') {
+      const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
+        subject: string; yearLevel: number; topic: string
+        questionTypes: string[]; difficulty: string; numQuestions: number
+      }
+      bankHits = await findQuestions({
+        subject, yearLevel, topic,
+        types: questionTypes,
+        difficulty,
+        numWanted: numQuestions,
+        userId: user.id,
+      })
+
+      numFromAI = numQuestions - bankHits.length
+
+      if (bankHits.length > 0) {
+        console.log(`[BANK] ${bankHits.length} do banco | ${numFromAI} por gerar`)
+      }
+
+      // Se o banco tem tudo → devolver directamente sem chamar a IA
+      if (numFromAI <= 0) {
+        const { subject: s, yearLevel: y, topic: t, difficulty: d,
+                duration, numQuestions: nq } = inputs as Record<string, unknown>
+        const bankQuestions = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1))
+        const bankIds = bankHits.map(bq => bq.id)
+        await markUsed(bankIds, user.id)
+
+        // Agrupa numa estrutura de resposta compatível com o cliente
+        const bankContent = {
+          title: `Ficha de Avaliação de ${s} — ${t}`,
+          subject: s, yearLevel: y, topic: t, difficulty: d,
+          totalPoints: bankQuestions.reduce((sum, q) => sum + (q.points as number), 0),
+          duration: duration ?? 50,
+          instructions: 'Lê atentamente cada questão antes de responder. Apresenta todos os cálculos/justificações.',
+          groups: [{
+            label: 'Grupo I', description: 'Questões', totalPoints: 100,
+            questions: bankQuestions,
+          }],
+          _source: 'bank',
+        }
+        console.log(`[BANK] ✓ Teste servido 100% do banco (${nq} questões, 0 chamadas IA)`)
+        return NextResponse.json({ content: bankContent })
+      }
+
+      // Ajustar o prompt para gerar apenas as questões em falta
+      if (bankHits.length > 0) {
+        // Re-construir prompt com numQuestions = numFromAI
+        const modifiedInputs = { ...inputs as object, numQuestions: numFromAI }
+        prompt = prompt.replace(
+          /Total: \d+ questões/,
+          `Total: ${numFromAI} questões (complementar banco existente)`
+        )
+        void modifiedInputs // prompt já foi ajustado acima
+      }
+    }
+
     const text = await generateWithFallback(prompt)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
@@ -404,7 +465,7 @@ Responde APENAS com este JSON:
     let content: Record<string, unknown>
     try {
       content = JSON.parse(jsonMatch[0])
-    } catch (parseErr) {
+    } catch {
       console.error('[PROFAI] JSON inválido (primeiros 1000 chars):', jsonMatch[0].slice(0, 1000))
       throw new Error('JSON malformado — a IA devolveu uma resposta incompleta. Tenta novamente.')
     }
@@ -466,10 +527,43 @@ Responde APENAS com este JSON:
       }
       content.totalPoints = 100
 
-      // Log de auditoria
+      // ── Guardar questões IA no banco + combinar com banco existente ────────
       const allQsFinal = groups.flatMap(g => g.questions)
       const withFig = allQsFinal.filter(q => q.figure !== null && q.figure !== undefined)
-      console.log(`[PROFAI] ✓ ${allQsFinal.length} questões | ${withFig.length} figuras | 100pts`)
+      console.log(`[PROFAI] ✓ ${allQsFinal.length} questões IA | ${withFig.length} figuras | 100pts`)
+
+      // Guardar questões novas no banco (fire-and-forget, não bloqueia resposta)
+      const { subject, yearLevel, topic, difficulty } = (inputs ?? {}) as Record<string, unknown>
+      if (subject && topic) {
+        saveQuestions(allQsFinal as Array<Record<string, unknown>>, {
+          subject: String(subject), yearLevel: Number(yearLevel),
+          topic: String(topic), difficulty: String(difficulty ?? 'medium'),
+        }, user.id)
+        .then(savedIds => {
+          // Marcar IA + banco como usados
+          const bankIds = bankHits.map(bq => bq.id)
+          markUsed([...savedIds, ...bankIds], user.id)
+        })
+        .catch(err => console.warn('[BANK] save/markUsed falhou:', err))
+      }
+
+      // Injectar questões do banco no início (já validadas, alta qualidade)
+      if (bankHits.length > 0) {
+        const bankQs = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1))
+        // Re-indexar questões IA a seguir às do banco
+        let nextIdx = bankQs.length + 1
+        for (const g of groups) for (const q of g.questions) q.index = nextIdx++
+
+        // Inserir grupo "Banco de Questões" no início
+        content.groups = [
+          { label: 'Banco', description: '', totalPoints: bankQs.reduce((s, q) => s + (q.points as number), 0), questions: bankQs },
+          ...groups,
+        ]
+        // Actualizar totalPoints
+        const totalAll = [...bankQs, ...allQsFinal].reduce((s, q) => s + (Number(q.points) || 0), 0)
+        content.totalPoints = totalAll
+        console.log(`[BANK] Teste híbrido: ${bankQs.length} banco + ${allQsFinal.length} IA`)
+      }
     }
 
     return NextResponse.json({ content })
