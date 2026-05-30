@@ -1,0 +1,185 @@
+# PROF.IA — Estado do Projecto
+
+> Para continuar numa nova sessão, diz apenas **"continua"**.
+> Claude lê este ficheiro automaticamente — não precisas de colar nada.
+
+---
+
+## Último update
+2026-05-30 (sessão 3 — noite)
+
+## Stack
+- Next.js 16 (App Router) · TypeScript · Tailwind 4
+- Supabase (auth + postgres + RLS)
+- Deploy: Netlify (plugin-nextjs, timeout 26s por função)
+- Gemini 2.5 Flash (primário, 22s timeout) + Groq llama-3.3-70b (fallback)
+
+---
+
+## O que está funcional
+- [x] Auth (login/signup via Supabase)
+- [x] Geração de testes via AI (`/api/ai/generate`)
+- [x] Question bank — tabela `question_bank` + RLS + FTS português + campos `citation`/`source_url`
+- [x] Reutilização de questões por professor (sem repetição, via `question_usage`)
+- [x] Fallback Gemini → Groq automático (22s timeout)
+- [x] `validateAndRepair()` — pós-processamento determinístico de qualidade
+- [x] Export para DOCX
+- [x] Seeder `scripts/seedQuestionBank.ts` — Gemini 2.5 Flash, qualidade não negociável
+- [x] Pipeline orquestrador `scripts/pipeline.sh` + skill `/orquestrar`
+- [x] Feedback 👍/👎 por questão — `POST /api/questions/feedback` + `apply_question_vote()` SQL
+- [x] Questões geradas guardadas automaticamente no banco com `_bankId` (permite feedback imediato)
+- [x] markSchemes detalhados e disciplina-específicos (`autoMarkScheme()` + `autoMarkSchemeSeeder()`)
+
+---
+
+## Question Bank — Estado das Sementes
+
+### 2.º Ciclo (completo ✅)
+| Disciplina | Ano | Questões na BD |
+|-----------|-----|---------------|
+| Matemática | 5.º | ~56 |
+| Matemática | 6.º | ~46 |
+| Ciências Naturais | 5.º | 44 |
+| Ciências Naturais | 6.º | 40 |
+| Português | 5.º | ~10 |
+| Português | 6.º | ~18 |
+| HGP | 5.º | ~16 |
+| HGP | 6.º | ~24 |
+| **TOTAL 2.º ciclo** | | **~254 ✅** |
+
+### 3.º Ciclo e Secundário (✅ completo — 2026-05-30)
+| Disciplina | Anos | Tópicos | Questões inseridas |
+|-----------|------|---------|-------------------|
+| Matemática | 7.º, 8.º, 9.º | 6+6+6 tópicos | ~176 |
+| Português | 7.º, 8.º, 9.º | 5+5+4 tópicos | ~128 |
+| Matemática A | 10.º, 11.º, 12.º | 6+4+5 tópicos | ~178 |
+| Português | 10.º, 11.º, 12.º | 4+4+4 tópicos | ~128 |
+| **TOTAL inserido** | | | **940 ✅** |
+
+Seed correu sem erros — 940/940 geradas e guardadas. Cascade funcionou: Gemini → Groq (llama-3.3-70b) → SambaNova (DeepSeek).
+
+### Wikipedia Enrichment (✅ completo — 2026-05-30 noite)
+| Disciplina | Anos | Tópicos | Questões inseridas |
+|-----------|------|---------|-------------------|
+| Ciências Naturais | 7.º, 8.º, 9.º | 70 tópicos total | 358 + 144 = **502** |
+| Físico-Química | 7.º, 8.º, 9.º | (incluído acima) | |
+| História | 7.º, 8.º, 9.º | (incluído acima) | |
+| Geografia | 7.º, 8.º, 9.º | (incluído acima) | |
+
+- Corrida 1: 358 inseridas (22 falharam por `correct_answer: null`)
+- Corrida 2: 144 inseridas (bug corrigido — `modelAnswer` como fallback)
+- 3 tópicos saltados (Wikipedia PT sem conteúdo suficiente): Sistema reprodutor humano, Forças e equilíbrio, Riscos naturais
+- quality_score: 0.82 | citation: Wikipedia PT | source: wiki_enrichment
+
+---
+
+## OpenRouter — Situação actual (2026-05-30)
+- `google/gemini-2.5-flash` via OpenRouter: **NÃO gratuito** (erro 402) — removido da cascade
+- `openai/gpt-oss-120b:free`: testado — **reprovado** (erro matemático no markScheme + português do Brasil)
+- `deepseek/deepseek-v4-flash:free`: disponível mas com rate-limit frequente (429) — na cascade como 1.ª tentativa free
+- `nvidia/nemotron-3-super-120b-a12b:free`: ✅ **APROVADO** — 120B, PT-PT correcto, markScheme 4 critérios, 10s — na cascade
+- `moonshotai/kimi-k2.6:free`: ✅ **APROVADO** — PT-PT correcto, LaTeX, "fracção"/"efectuados", 1.4s (!!) — na cascade
+- `qwen/qwen3-235b-a22b:free`, `deepseek/deepseek-r1:free`: **indisponíveis** (404 — endpoints removidos)
+- **Cascade completa (2026-05-30):**
+  1. Gemini 2.5 Flash — 3 keys, round-robin ← melhor qualidade
+  2. Groq: llama-3.3-70b-versatile (0.6s) ✅
+  3. Groq: qwen/qwen3-32b (1.8s) ✅
+  4. SambaNova: DeepSeek-V3.1 (1.9s) ✅
+  5. SambaNova: Meta-Llama-3.3-70B (1.5s) ✅
+  6. Cerebras: gpt-oss-120b (0.6s) ✅
+  7. GitHub: gpt-4o (2.5s) ✅
+  8. Mistral: mistral-small (2.4s) ✅
+  9. OR: deepseek-v4-flash:free
+  10. OR: nemotron-3-super-120b:free (10s) ✅
+  11. Kimi K2.6 (1.4s) ✅
+  12. Ollama qwen3:8b (local)
+  13. logFailed()
+- **Hyperbolic**: exige créditos (402) — removido
+- **Together AI**: exige €5 cartão — removido
+- **Cerebras**: catálogo mudou (llama saiu, só gpt-oss-120b e zai-glm-4.7)
+- **Política permanente:** sem degradação de qualidade — Gemini 2.5 Flash ou esperar
+
+---
+
+## Pendente (por ordem de prioridade)
+
+### Alta prioridade
+- [x] `npm run seed` — 940 questões inseridas (3.º ciclo + secundário). **CONCLUÍDO 2026-05-30** ✅
+- [x] Wikipedia Enrichment — 502 questões CN/FQ/História/Geografia 7-9.º. **CONCLUÍDO 2026-05-30** ✅
+
+### Concluído hoje (2026-05-30)
+- [x] Testados modelos OpenRouter gratuitos — Nemotron-3-super-120B e Kimi K2.6 aprovados
+- [x] Cascade actualizada: OR:deepseek-v4-flash → OR:nemotron-3-super → Kimi K2.6 → Ollama
+- [x] Removido Gemini 2.5 Flash via OpenRouter (sempre 402)
+
+### Concluído hoje (2026-05-29)
+- [x] markSchemes detalhados disciplina-específicos (`autoMarkScheme()` em `route.ts` e `seedQuestionBank.ts`)
+- [x] Feedback 👍/👎 completo:
+  - Tabela `question_feedback` (já existia) + função SQL `apply_question_vote()` aplicada
+  - `POST /api/questions/feedback` — endpoint seguro com auth + admin client
+  - `route.ts` aguarda `saveQuestions()` e injeta `_bankId` na resposta
+  - `TestPreview.tsx` — botões 👍/👎 por questão, não impressos, com estado optimista
+  - 👍 = quality_score +0.05 | 👎 = quality_score −0.10 | mudança de voto tratada atomicamente
+- [x] Dashboard — `BankStats` component + `GET /api/questions/stats`:
+  - 4 métricas: total questões, adicionadas (7 dias), disciplinas cobertas, com feedback
+  - Tabela por disciplina: count + barra de qualidade + anos cobertos
+  - Top 5 questões por quality_score
+- [x] SEED_PLAN expandido para 3.º ciclo e secundário:
+  - Matemática 7.º-9.º: 18 tópicos (~176 questões)
+  - Português 7.º-9.º: 14 tópicos (~128 questões)
+  - Matemática A 10.º-12.º: 15 tópicos (~178 questões)
+  - Português 10.º-12.º: 12 tópicos (~128 questões)
+
+### Concluído hoje (2026-05-30) — tarde/noite
+- [x] Seed completo: 940/940 questões geradas e inseridas (Matemática + Português, 7.º-12.º)
+- [x] Wikipedia Enrichment: 502 questões CN/FQ/História/Geografia 7-9.º (ancoragem factual verificada)
+- [x] Bug corrigido: `correct_answer: null` em questões de desenvolvimento → usa `modelAnswer` como fallback
+- [x] Cascade `route.ts` expandida: Gemini (3 chaves) → Groq → SambaNova → GitHub → Mistral (5 fornecedores, sem crash em 429)
+- [x] Removido `groq-sdk` da cascade do `route.ts` — substituído por `fetch` directo (trata 429 silenciosamente)
+- [x] Página de importação de questões externas:
+  - `POST /api/questions/import` — IA estrutura texto colado → JSON → guarda com quality_score 0.95
+  - `QuestionImporter.tsx` — 3 passos: colar → preview editável → guardar
+  - `/dashboard/importar` — página com dica de uso
+  - Card "📥 Importar Questões" adicionado ao dashboard (IAVE, livros, matematica.pt)
+  - Cascade de IA: Gemini → Groq → SambaNova DeepSeek-V3.1
+
+### Média prioridade
+
+### Baixa prioridade
+- [ ] Deduplicar questões no banco (alguns tópicos têm duplicados de runs anteriores)
+- [ ] Verificar qualidade das questões geradas — rever amostra no Supabase
+
+---
+
+## Ficheiros-chave
+```
+src/app/api/ai/generate/route.ts    — endpoint principal de geração
+src/lib/exam/questionBank.ts        — banco de questões (CRUD + busca)
+src/lib/exam/grading.ts             — correcção automática
+supabase/migrations/                — migrações SQL aplicadas
+scripts/seedQuestionBank.ts         — seeder (Gemini 2.5 Flash only)
+scripts/pipeline.sh                 — pipeline orquestrador Aider+Groq
+.claude/seed-failed.json            — 11 tópicos a retentar
+.claude/commands/orquestrar.md      — skill /orquestrar
+```
+
+## Env vars necessárias
+```
+NEXT_PUBLIC_SUPABASE_URL            ✅ definida
+NEXT_PUBLIC_SUPABASE_ANON_KEY       ✅ definida
+SUPABASE_SERVICE_ROLE_KEY           ✅ definida
+GEMINI_API_KEY                      ✅ definida
+GROQ_API_KEY                        ✅ definida
+OPENROUTER_API_KEY                  ✅ definida (Gemini 2.5 Flash não gratuito lá)
+```
+
+## Modo de trabalho (PERMANENTE)
+- Skill `/orquestrar` activo em `~/.claude/commands/orquestrar.md`
+- Aider 0.86.3 + Gemini CLI 0.43.0 instalados
+- No Windows/Git Bash: Aider via `powershell.exe -Command "aider ..."`
+- OpenRouter disponível para Aider: `aider --model openrouter/google/gemini-2.5-flash`
+- ~700 tokens/tarefa em modo orquestrador (vs ~70.000 em modo directo)
+
+## Bugs conhecidos (já corrigidos nesta sessão)
+- ✅ OpenRouter 402 não chamava `logFailed()` — corrigido
+- ✅ `seed-failed.json` acumulava entradas duplicadas — limpo e reconstruído manualmente

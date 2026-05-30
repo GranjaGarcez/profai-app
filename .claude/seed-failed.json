@@ -1,0 +1,608 @@
+[
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 5,
+    "topic": "Diversidade dos seres vivos — classificação e características dos reinos",
+    "failedAt": "2026-05-29T12:52:21.829Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 5,
+    "topic": "Célula — estrutura e funções dos componentes celulares",
+    "failedAt": "2026-05-29T13:00:16.104Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 6,
+    "topic": "Reprodução nos animais — sexual e assexuada; estratégias reprodutivas",
+    "failedAt": "2026-05-29T13:06:12.336Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 6,
+    "topic": "Reprodução nas plantas — flor, polinização, frutificação e disseminação",
+    "failedAt": "2026-05-29T13:11:54.657Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 6,
+    "topic": "Sistema reprodutor humano e puberdade",
+    "failedAt": "2026-05-29T13:17:35.530Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 6,
+    "topic": "Agressões do ambiente — poluição, desflorestação e medidas de preservação",
+    "failedAt": "2026-05-29T13:23:24.651Z"
+  },
+  {
+    "subject": "Ciências Naturais",
+    "yearLevel": 6,
+    "topic": "Dinâmica interna da Terra — sismos, vulcões e placas tectónicas",
+    "failedAt": "2026-05-29T13:29:12.697Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 5,
+    "topic": "Gramática — classes de palavras: nome, adjectivo, verbo e advérbio",
+    "failedAt": "2026-05-29T13:34:55.476Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 5,
+    "topic": "Gramática — funções sintácticas: sujeito, predicado e complemento directo",
+    "failedAt": "2026-05-29T13:40:45.277Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Gramática — conjugação verbal: tempos do indicativo e do condicional",
+    "failedAt": "2026-05-29T13:49:48.327Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Leitura e interpretação — texto expositivo-informativo",
+    "failedAt": "2026-05-29T13:55:35.559Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 5,
+    "topic": "Localização e orientação — coordenadas geográficas, rosa dos ventos, escala",
+    "failedAt": "2026-05-29T14:01:33.164Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 5,
+    "topic": "Civilizações da Antiguidade — Egito, Grécia e Roma; contributos para o mundo actual",
+    "failedAt": "2026-05-29T14:07:23.095Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 5,
+    "topic": "A Idade Média em Portugal — feudalismo, Reconquista e fundação de Portugal",
+    "failedAt": "2026-05-29T14:13:10.647Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "As Grandes Descobertas Portuguesas — causas, rotas e consequências",
+    "failedAt": "2026-05-29T14:19:07.258Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal nos séculos XVI e XVII — sociedade, cultura e poder",
+    "failedAt": "2026-05-29T14:25:02.171Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal no século XX — Estado Novo, 25 de Abril e democracia",
+    "failedAt": "2026-05-29T14:30:50.482Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Números racionais — representação, operações e propriedades",
+    "failedAt": "2026-05-29T14:36:56.869Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Expressões algébricas — simplificação, valor numérico e operações com monómios",
+    "failedAt": "2026-05-29T14:47:31.829Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Equações do 1.º grau com uma incógnita — resolução e problemas",
+    "failedAt": "2026-05-29T14:48:37.196Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Geometria — semelhança de triângulos e critérios de semelhança",
+    "failedAt": "2026-05-29T14:54:36.151Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Estatística — frequências relativas, histogramas e diagramas de caule-e-folhas",
+    "failedAt": "2026-05-29T15:00:22.674Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Potências e raízes — propriedades das potências, raiz quadrada e cúbica",
+    "failedAt": "2026-05-29T15:01:15.320Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Polinómios — adição, subtracção, multiplicação e produtos notáveis",
+    "failedAt": "2026-05-29T15:06:55.180Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Sistemas de duas equações do 1.º grau — método da substituição e eliminação",
+    "failedAt": "2026-05-29T15:12:39.837Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Funções — noção de função, domínio, contradomínio e gráfico cartesiano",
+    "failedAt": "2026-05-29T15:18:35.293Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Números racionais — representação, operações e propriedades",
+    "failedAt": "2026-05-29T15:21:59.285Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Números racionais — representação, operações e propriedades",
+    "failedAt": "2026-05-29T15:21:59.424Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Proporcionalidade directa e inversa — constante de proporcionalidade e gráficos",
+    "failedAt": "2026-05-29T15:27:47.470Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Proporcionalidade directa e inversa — constante de proporcionalidade e gráficos",
+    "failedAt": "2026-05-29T15:27:47.527Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Expressões algébricas — simplificação, valor numérico e operações com monómios",
+    "failedAt": "2026-05-29T15:28:15.705Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Equações do 1.º grau com uma incógnita — resolução e problemas",
+    "failedAt": "2026-05-29T15:33:50.294Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Equações do 1.º grau com uma incógnita — resolução e problemas",
+    "failedAt": "2026-05-29T15:33:50.311Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Geometria — semelhança de triângulos e critérios de semelhança",
+    "failedAt": "2026-05-29T15:39:28.396Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Geometria — semelhança de triângulos e critérios de semelhança",
+    "failedAt": "2026-05-29T15:39:28.528Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Estatística — frequências relativas, histogramas e diagramas de caule-e-folhas",
+    "failedAt": "2026-05-29T15:45:01.298Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Estatística — frequências relativas, histogramas e diagramas de caule-e-folhas",
+    "failedAt": "2026-05-29T15:45:01.309Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Teorema de Pitágoras — demonstração, aplicações e distância entre pontos",
+    "failedAt": "2026-05-29T15:45:14.336Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 8,
+    "topic": "Estatística — média, mediana, moda e amplitude; análise e interpretação",
+    "failedAt": "2026-05-29T15:50:57.766Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Equações do 2.º grau — resolução por fórmula, discriminante e factorização",
+    "failedAt": "2026-05-29T15:56:34.491Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Função afim e função quadrática — representação gráfica e propriedades",
+    "failedAt": "2026-05-29T16:02:08.731Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Trigonometria no triângulo rectângulo — seno, cosseno e tangente",
+    "failedAt": "2026-05-29T16:07:43.594Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Geometria no espaço — sólidos geométricos, área e volume",
+    "failedAt": "2026-05-29T16:13:23.680Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Probabilidades — espaço amostral, probabilidade clássica e frequentista",
+    "failedAt": "2026-05-29T16:18:59.639Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 9,
+    "topic": "Revisão para exame nacional 9.º ano — tópicos integrados (questões tipo prova)",
+    "failedAt": "2026-05-29T16:24:35.302Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 7,
+    "topic": "Gramática — subordinação: proposições subordinadas adverbiais e nominais",
+    "failedAt": "2026-05-29T16:31:04.992Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 7,
+    "topic": "Gramática — funções sintácticas avançadas: complemento oblíquo e agente da passiva",
+    "failedAt": "2026-05-29T16:37:35.929Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 7,
+    "topic": "Texto poético — figuras de estilo, métrica e recursos expressivos",
+    "failedAt": "2026-05-29T16:43:15.021Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 7,
+    "topic": "Escrita — texto de opinião e texto expositivo-argumentativo (planificação e estrutura)",
+    "failedAt": "2026-05-29T16:48:52.774Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 8,
+    "topic": "Leitura e interpretação — texto dramático e texto épico (Os Lusíadas, selecção)",
+    "failedAt": "2026-05-29T16:54:28.946Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 8,
+    "topic": "Gramática — discurso directo e indirecto; conectores discursivos",
+    "failedAt": "2026-05-29T17:00:04.395Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 8,
+    "topic": "Gramática — conjugação dos modos conjuntivo e condicional",
+    "failedAt": "2026-05-29T17:05:39.870Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 8,
+    "topic": "Texto expositivo-informativo — identificação de tema, subtema e organização textual",
+    "failedAt": "2026-05-29T17:11:15.347Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 8,
+    "topic": "Escrita — resumo, síntese e texto argumentativo estruturado",
+    "failedAt": "2026-05-29T17:16:51.144Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 9,
+    "topic": "Literatura portuguesa — conto e narrativa contemporânea: análise e interpretação",
+    "failedAt": "2026-05-29T17:22:27.262Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 9,
+    "topic": "Gramática — revisão integrada para exame: classes, funções e processos de formação",
+    "failedAt": "2026-05-29T17:28:02.673Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 9,
+    "topic": "Texto poético — análise aprofundada de poemas (Pessoa, Camões, poesia contemporânea)",
+    "failedAt": "2026-05-29T17:33:39.236Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 9,
+    "topic": "Escrita — texto de opinião e argumentativo (tipo prova nacional 9.º ano)",
+    "failedAt": "2026-05-29T17:39:14.915Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Funções reais de variável real — propriedades, domínio e gráfico",
+    "failedAt": "2026-05-29T17:44:51.281Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Funções polinomiais — linear, afim e quadrática; zeros e variação",
+    "failedAt": "2026-05-29T17:50:26.985Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Geometria analítica — ponto, recta e mediatriz no plano cartesiano",
+    "failedAt": "2026-05-29T17:56:32.334Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Trigonometria — círculo trigonométrico, fórmulas e resolução de equações",
+    "failedAt": "2026-05-29T18:02:19.482Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Combinatória — arranjos, combinações e princípio fundamental da contagem",
+    "failedAt": "2026-05-29T18:08:09.880Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 10,
+    "topic": "Probabilidades — probabilidade condicionada, independência e teorema de Bayes",
+    "failedAt": "2026-05-29T18:13:52.859Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 11,
+    "topic": "Funções exponenciais e logarítmicas — propriedades, gráficos e equações",
+    "failedAt": "2026-05-29T18:19:30.673Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 11,
+    "topic": "Geometria no plano e no espaço — vectores, rectas e planos no espaço",
+    "failedAt": "2026-05-29T18:25:12.385Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 11,
+    "topic": "Sucessões — definição explícita e recursiva; progressões aritméticas e geométricas",
+    "failedAt": "2026-05-29T18:30:49.930Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 11,
+    "topic": "Introdução ao cálculo diferencial — taxa de variação média e instantânea",
+    "failedAt": "2026-05-29T18:37:19.600Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 12,
+    "topic": "Limites e continuidade — definição, propriedades e indeterminações",
+    "failedAt": "2026-05-29T18:42:59.407Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 12,
+    "topic": "Derivadas — regras de derivação, tangente e estudo de funções",
+    "failedAt": "2026-05-29T18:48:36.830Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 12,
+    "topic": "Primitivas e integrais — integrais indefinidos e definidos; cálculo de áreas",
+    "failedAt": "2026-05-29T18:54:14.566Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 12,
+    "topic": "Estatística — variáveis aleatórias, distribuição normal e inferência estatística",
+    "failedAt": "2026-05-29T18:59:49.963Z"
+  },
+  {
+    "subject": "Matemática A",
+    "yearLevel": 12,
+    "topic": "Revisão para exame nacional 12.º ano — tópicos integrados (questões tipo exame)",
+    "failedAt": "2026-05-29T19:05:25.433Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 10,
+    "topic": "Literatura — narrativa do século XX: análise de contos e novelas (Saramago, Torga)",
+    "failedAt": "2026-05-29T19:11:00.885Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 10,
+    "topic": "Poesia — Luís de Camões: épica (Os Lusíadas) e lírica (redondilhas e sonetos)",
+    "failedAt": "2026-05-29T19:17:15.435Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 10,
+    "topic": "Gramática — sintaxe avançada: coordenação, subordinação e transformações frásicas",
+    "failedAt": "2026-05-29T19:23:04.336Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 10,
+    "topic": "Texto argumentativo — estrutura, conectores e estratégias de argumentação",
+    "failedAt": "2026-05-29T19:28:44.238Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 11,
+    "topic": "Fernando Pessoa e heterónimos — Alberto Caeiro, Ricardo Reis, Álvaro de Campos",
+    "failedAt": "2026-05-29T19:34:21.370Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 11,
+    "topic": "Teatro — Almeida Garrett e Gil Vicente: análise de texto dramático",
+    "failedAt": "2026-05-29T19:39:59.564Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 11,
+    "topic": "Texto de imprensa — artigo de opinião, editorial e crónica: análise e produção",
+    "failedAt": "2026-05-29T19:45:37.598Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 11,
+    "topic": "Gramática — semântica e pragmática: conotação, pressupostos e actos de fala",
+    "failedAt": "2026-05-29T19:51:13.765Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 12,
+    "topic": "Poesia do século XX — Sophia de Mello Breyner, Eugénio de Andrade e contemporâneos",
+    "failedAt": "2026-05-29T19:56:49.333Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 12,
+    "topic": "Narrativa contemporânea — Lídia Jorge, António Lobo Antunes: análise estrutural e temática",
+    "failedAt": "2026-05-29T20:02:29.232Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 12,
+    "topic": "Gramática — revisão integrada para exame: sintaxe, semântica e processos lexicais",
+    "failedAt": "2026-05-29T20:08:05.785Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 12,
+    "topic": "Escrita formal — texto de opinião e interpretativo (tipo exame nacional 12.º ano)",
+    "failedAt": "2026-05-29T20:13:42.994Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 5,
+    "topic": "Medida — perímetro e área de figuras planas",
+    "failedAt": "2026-05-30T00:31:48.412Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 5,
+    "topic": "Medida — perímetro e área de figuras planas",
+    "failedAt": "2026-05-30T00:31:48.417Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 5,
+    "topic": "Estatística — tabelas de frequência, gráficos de barras e pictogramas",
+    "failedAt": "2026-05-30T00:39:25.890Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 5,
+    "topic": "Estatística — tabelas de frequência, gráficos de barras e pictogramas",
+    "failedAt": "2026-05-30T00:39:25.893Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Gramática — conjugação verbal: tempos do indicativo e do condicional",
+    "failedAt": "2026-05-30T01:10:58.372Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Gramática — conjugação verbal: tempos do indicativo e do condicional",
+    "failedAt": "2026-05-30T01:10:58.377Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Leitura e interpretação — texto expositivo-informativo",
+    "failedAt": "2026-05-30T01:16:59.982Z"
+  },
+  {
+    "subject": "Português",
+    "yearLevel": 6,
+    "topic": "Leitura e interpretação — texto expositivo-informativo",
+    "failedAt": "2026-05-30T01:16:59.986Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 5,
+    "topic": "A Idade Média em Portugal — feudalismo, Reconquista e fundação de Portugal",
+    "failedAt": "2026-05-30T01:25:40.661Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 5,
+    "topic": "A Idade Média em Portugal — feudalismo, Reconquista e fundação de Portugal",
+    "failedAt": "2026-05-30T01:25:40.670Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal nos séculos XVI e XVII — sociedade, cultura e poder",
+    "failedAt": "2026-05-30T01:32:17.300Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal nos séculos XVI e XVII — sociedade, cultura e poder",
+    "failedAt": "2026-05-30T01:32:17.303Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal no século XX — Estado Novo, 25 de Abril e democracia",
+    "failedAt": "2026-05-30T01:38:18.602Z"
+  },
+  {
+    "subject": "História e Geografia de Portugal",
+    "yearLevel": 6,
+    "topic": "Portugal no século XX — Estado Novo, 25 de Abril e democracia",
+    "failedAt": "2026-05-30T01:38:18.606Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Expressões algébricas — simplificação, valor numérico e operações com monómios e polinómios",
+    "failedAt": "2026-05-30T01:47:35.321Z"
+  },
+  {
+    "subject": "Matemática",
+    "yearLevel": 7,
+    "topic": "Expressões algébricas — simplificação, valor numérico e operações com monómios e polinómios",
+    "failedAt": "2026-05-30T01:47:35.332Z"
+  }
+]

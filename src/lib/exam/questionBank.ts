@@ -31,6 +31,8 @@ export interface BankQuestion {
   points: number
   allow_calculator: boolean
   quality_score: number
+  citation?: string
+  source_url?: string
 }
 
 export interface BankSearchParams {
@@ -162,6 +164,8 @@ export async function saveQuestions(
       points:           Number(q.points) || 5,
       allow_calculator: Boolean(q.allowCalculator),
       quality_score:    0.75,
+      citation:         q.citation ? String(q.citation) : null,
+      source_url:       q.sourceUrl ? String(q.sourceUrl) : null,
       created_by:       userId,
     }))
 
@@ -217,6 +221,7 @@ export function bankToExamQuestion(
     figure:          bq.figure ?? null,
     points:          bq.points,
     allowCalculator: bq.allow_calculator,
-    _bankId:         bq.id,   // rastreio interno, não vai para o cliente
+    citation:        bq.citation ?? null,   // para exibição opcional na UI
+    _bankId:         bq.id,                 // rastreio interno, não vai para o cliente
   }
 }

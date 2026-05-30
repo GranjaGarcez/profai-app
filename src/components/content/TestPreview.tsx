@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
 import ExamLauncher from '@/components/exam/ExamLauncher'
@@ -19,6 +19,7 @@ interface Question {
   points: number
   markScheme?: string
   allowCalculator?: boolean
+  _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
 }
 
 interface TestGroup {
@@ -729,6 +730,69 @@ export default function TestPreview({
   )
 }
 
+// ── Botões de feedback 👍/👎 ─────────────────────────────────────────────────
+function FeedbackButtons({ questionId }: { questionId: string }) {
+  const [vote, setVote] = useState<1 | -1 | null>(null)
+  const [loading, setLoading] = useState(false)
+  const sentRef = useRef(false)
+
+  async function handleVote(v: 1 | -1) {
+    if (loading || sentRef.current) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/questions/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, vote: v }),
+      })
+      if (res.ok) {
+        setVote(v)
+        sentRef.current = true  // só um voto por sessão de visualização
+      }
+    } catch {
+      // silencioso — não interrompe o professor
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <span className="no-print flex items-center gap-1 ml-auto shrink-0">
+      {vote !== null ? (
+        <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+          style={{ background: vote === 1 ? '#dcfce7' : '#fee2e2', color: vote === 1 ? '#166534' : '#991b1b' }}>
+          {vote === 1 ? '👍 Obrigado!' : '👎 Anotado'}
+        </span>
+      ) : (
+        <>
+          <button
+            onClick={() => handleVote(1)}
+            disabled={loading}
+            title="Questão de qualidade"
+            className="text-sm px-1.5 py-0.5 rounded-md transition-all"
+            style={{ background: 'transparent', color: '#6B7280', border: '1px solid transparent',
+              cursor: loading ? 'wait' : 'pointer' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#dcfce7'; (e.currentTarget as HTMLButtonElement).style.color = '#166534' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280' }}>
+            👍
+          </button>
+          <button
+            onClick={() => handleVote(-1)}
+            disabled={loading}
+            title="Questão com problemas"
+            className="text-sm px-1.5 py-0.5 rounded-md transition-all"
+            style={{ background: 'transparent', color: '#6B7280', border: '1px solid transparent',
+              cursor: loading ? 'wait' : 'pointer' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2'; (e.currentTarget as HTMLButtonElement).style.color = '#991b1b' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280' }}>
+            👎
+          </button>
+        </>
+      )}
+    </span>
+  )
+}
+
 // ── Bloco de uma questão ──────────────────────────────────────────────────────
 interface QuestionBlockProps {
   q: Question
@@ -793,7 +857,7 @@ function QuestionBlock({
             ) : null}
 
             {/* Pontuação */}
-            <span className="ml-auto text-xs font-black tabular-nums" style={{ color: '#C8A84B' }}>
+            <span className="text-xs font-black tabular-nums" style={{ color: '#C8A84B' }}>
               {editing ? (
                 <span className="flex items-center gap-1">
                   <input type="number" min={0} max={100} value={q.points}
@@ -806,6 +870,9 @@ function QuestionBlock({
                 <>({q.points} {q.points === 1 ? 'ponto' : 'pontos'})</>
               )}
             </span>
+
+            {/* Feedback 👍/👎 — só visível no ecrã, nunca impresso */}
+            {q._bankId && !editing && <FeedbackButtons questionId={q._bankId} />}
           </div>
 
           {/* Enunciado */}

@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TestGenerator from '@/components/teacher/TestGenerator'
+import BankStats from '@/components/teacher/BankStats'
 
 const quickCreate = [
   { id: 'test', label: 'Teste / Avaliação', icon: '✏️', desc: 'Gerar com IA em segundos', color: '#00B4D8' },
   { id: 'lesson_plan', label: 'Planificação', icon: '📋', desc: 'Plano de aula completo', color: '#C8A84B' },
   { id: 'rubric', label: 'Rubrica', icon: '⭐', desc: 'Critérios de avaliação', color: '#8B5CF6' },
   { id: 'differentiated', label: 'Diferenciação', icon: '🎯', desc: 'Níveis A, B e C', color: '#10B981' },
+  { id: 'import', label: 'Importar Questões', icon: '📥', desc: 'IAVE, livros, matematica.pt', color: '#0D1B2A' },
 ]
 
 export default function DashboardPage() {
@@ -59,7 +61,7 @@ export default function DashboardPage() {
           {quickCreate.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveTool(item.id)}
+              onClick={() => item.id === 'import' ? router.push('/dashboard/importar') : setActiveTool(item.id)}
               className="p-4 rounded-xl text-left border bg-white hover:shadow-md transition-all hover:-translate-y-0.5"
               style={{ borderColor: '#0D1B2A10' }}
             >
@@ -71,6 +73,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      <BankStats />
 
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7280' }}>

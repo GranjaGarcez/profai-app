@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "tsx scripts/seedQuestionBank.ts",
+    "seed:mat5": "tsx scripts/seedQuestionBank.ts --subject Matemática --year 5",
+    "seed:mat6": "tsx scripts/seedQuestionBank.ts --subject Matemática --year 6",
+    "seed:dry": "tsx scripts/seedQuestionBank.ts --dry-run",
+    "seed:retry": "tsx scripts/seedQuestionBank.ts --retry-failed"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -38,6 +43,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }
