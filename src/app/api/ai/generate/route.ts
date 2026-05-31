@@ -215,6 +215,7 @@ Antes de gerar o JSON, verifica mentalmente:
 ✓ Cada questão é específica ao tópico (não genérica)?`
 
 // Helper para chamar qualquer endpoint OpenAI-compatible via fetch
+// Devolve [texto, statusDiag] onde statusDiag ajuda a diagnosticar falhas
 async function callOpenAICompat(
   url: string,
   apiKey: string,
@@ -234,24 +235,29 @@ async function callOpenAICompat(
           { role: 'system', content: FALLBACK_SYSTEM_ENHANCED },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.5,   // mais determinístico em modo fallback
-        max_tokens: 8192,
+        temperature: 0.5,
+        max_tokens: 4096,   // reduzido de 8192 — evita rejeição em provedores com limite menor
       }),
       signal: AbortSignal.timeout(timeoutMs),
     })
     if (!res.ok) {
-      console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status}`)
+      // Ler corpo da resposta para diagnóstico (primeiros 200 chars)
+      let body = ''
+      try { body = (await res.text()).slice(0, 200) } catch { /* ignore */ }
+      console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status} | ${body}`)
       return null
     }
     const data = await res.json() as { choices: Array<{ message: { content: string } }> }
     const text = data.choices[0]?.message?.content ?? ''
     if (text.length > 50) {
-      console.log(`[PROFAI] ${label} OK`)
+      console.log(`[PROFAI] ${label} OK (${text.length} chars)`)
       return text
     }
+    console.warn(`[PROFAI] ${label} resposta curta: "${text.slice(0, 100)}"`)
     return null
   } catch (e) {
-    console.warn(`[PROFAI] ${label} erro:`, e instanceof Error ? e.message : e)
+    const msg = e instanceof Error ? e.message : String(e)
+    console.warn(`[PROFAI] ${label} erro: ${msg.slice(0, 120)}`)
     return null
   }
 }
@@ -265,6 +271,7 @@ interface GenerationResult { text: string; isFallback: boolean; modelUsed: strin
 // DEADLINE GLOBAL: 22s para toda a cascade → nunca ultrapassa o limite de 26s da Netlify
 async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const deadline = Date.now() + 22_000 // orçamento total — Netlify corta ao fim de 26s
+  const tried: string[] = []
 
   // ── TIER 1: Gemini 2.5 Flash — 3 chaves em round-robin ───────────────────
   const geminiKeys = [
@@ -286,9 +293,11 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
         ),
       ])
       const text = (result as Awaited<ReturnType<typeof model.generateContent>>).response.text()
+      tried.push('gemini')
       console.log('[PROFAI] ✓ Gemini 2.5 Flash')
       return { text, isFallback: false, modelUsed: 'gemini-2.5-flash' }
     } catch (e) {
+      tried.push('gemini-err')
       const msg = String(e)
       console.warn('[PROFAI] Gemini:', msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') ? 'quota' : msg.slice(0, 80))
     }
@@ -298,9 +307,9 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
   const ok = (minMs = 2_000) => Date.now() < deadline - minMs
 
-  // ── TIER 1: Groq — dois modelos (o segundo tem quota separada) ────────────
+  // ── TIER 1: Groq — dois modelos (quotas independentes) ───────────────────
   if (process.env.GROQ_API_KEY && ok()) {
-    // llama-3.3-70b (melhor qualidade, mas TPD pode estar esgotado após seed)
+    tried.push('groq-llama')
     const r1 = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
       process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
@@ -308,8 +317,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     )
     if (r1) return { text: r1, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
 
-    // qwen3-32b (validado, quota independente do llama)
     if (ok()) {
+      tried.push('groq-qwen')
       const r2 = await callOpenAICompat(
         'https://api.groq.com/openai/v1/chat/completions',
         process.env.GROQ_API_KEY, 'qwen-qwq-32b',
@@ -319,11 +328,11 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     }
   }
 
-  // ── TIER 2: fallback com prompt reforçado — banco cobre o máximo possível ─
+  // ── TIER 2: fallback com prompt reforçado ────────────────────────────────
   console.warn('[PROFAI] Tier 1 indisponível — a usar fallback com prompt reforçado')
 
-  // OpenRouter kimi-k2.6:free — 1.4s resposta, aprovado PT-PT
   if (process.env.OPENROUTER_API_KEY && ok()) {
+    tried.push('kimi-k2.6')
     const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -333,8 +342,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'kimi-k2.6-free' }
   }
 
-  // GitHub gpt-4o — 2.5s, aprovado
   if (process.env.GITHUB_API_KEY && ok()) {
+    tried.push('github-gpt4o')
     const r = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
       process.env.GITHUB_API_KEY, 'gpt-4o',
@@ -343,8 +352,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
 
-  // SambaNova DeepSeek-V3.1 — 1.9s, aprovado
   if (process.env.SAMBANOVA_API_KEY && ok()) {
+    tried.push('sambanova')
     const r = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
       process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
@@ -353,8 +362,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
   }
 
-  // Mistral small — 2.4s, aprovado
   if (process.env.MISTRAL_API_KEY && ok()) {
+    tried.push('mistral')
     const r = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
       process.env.MISTRAL_API_KEY, 'mistral-small-latest',
@@ -363,8 +372,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'mistral-small' }
   }
 
-  // OpenRouter nemotron-120B:free — 10s, aprovado (último recurso)
   if (process.env.OPENROUTER_API_KEY && ok()) {
+    tried.push('nemotron')
     const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
@@ -374,7 +383,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
   }
 
-  throw new Error('Os modelos de IA estão temporariamente sobrecarregados. Tenta novamente em 30 minutos.')
+  const elapsed = Math.round((22_000 - (deadline - Date.now())) / 1000)
+  throw new Error(`Todos os modelos falharam (${elapsed}s). Tentados: ${tried.join(', ') || 'nenhum'}. Tenta novamente.`)
 }
 
 export async function POST(request: NextRequest) {
