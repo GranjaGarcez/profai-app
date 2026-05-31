@@ -221,12 +221,13 @@ async function callOpenAICompat(
   model: string,
   prompt: string,
   timeoutMs = 25_000,
-  label = ''
+  label = '',
+  extraHeaders: Record<string, string> = {}
 ): Promise<string | null> {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
       body: JSON.stringify({
         model,
         messages: [
@@ -341,6 +342,29 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'Mistral:mistral-small'
     )
     if (text) return { text, isFallback: true, modelUsed: 'mistral-small' }
+  }
+
+  // ── OpenRouter free models (aprovados: kimi-k2.6 1.4s, nemotron-3-super 10s) ─
+  // OPENROUTER_API_KEY já está definida em Netlify — sem nova env var necessária
+  if (process.env.OPENROUTER_API_KEY && Date.now() < deadline - 2_000) {
+    const orHeaders = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
+    const kimiText = await callOpenAICompat(
+      'https://openrouter.ai/api/v1/chat/completions',
+      process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2:free',
+      prompt, Math.max(2_000, Math.min(10_000, deadline - Date.now())), 'OR:kimi-k2:free',
+      orHeaders
+    )
+    if (kimiText) return { text: kimiText, isFallback: true, modelUsed: 'kimi-k2-free' }
+
+    if (Date.now() < deadline - 2_000) {
+      const nemText = await callOpenAICompat(
+        'https://openrouter.ai/api/v1/chat/completions',
+        process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
+        prompt, Math.max(2_000, Math.min(10_000, deadline - Date.now())), 'OR:nemotron-3-super:free',
+        orHeaders
+      )
+      if (nemText) return { text: nemText, isFallback: true, modelUsed: 'nemotron-3-super-free' }
+    }
   }
 
   throw new Error('Os modelos de IA estão temporariamente sobrecarregados. Tenta novamente em 30 minutos.')
