@@ -261,7 +261,10 @@ interface GenerationResult { text: string; isFallback: boolean; modelUsed: strin
 // TIER 1 (ouro): Gemini 2.5 Flash + Groq llama-3.3-70b → isFallback: false
 // TIER 2 (fallback com prompt reforçado): SambaNova + GitHub gpt-4o + Mistral → isFallback: true
 // isFallback:true → banco em primeiro lugar + aviso ao utilizador
+// DEADLINE GLOBAL: 22s para toda a cascade → nunca ultrapassa o limite de 26s da Netlify
 async function generateWithFallback(prompt: string): Promise<GenerationResult> {
+  const deadline = Date.now() + 22_000 // orçamento total — Netlify corta ao fim de 26s
+
   // ── TIER 1: Gemini 2.5 Flash — 3 chaves em round-robin ───────────────────
   const geminiKeys = [
     process.env.GEMINI_API_KEY,
@@ -270,12 +273,15 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   ].filter((k): k is string => !!k)
 
   for (const key of geminiKeys) {
+    const remaining = deadline - Date.now()
+    if (remaining < 3_000) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
     try {
       const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.5-flash' })
+      const geminiTimeout = Math.min(20_000, Math.max(1_000, remaining - 1_000))
       const result = await Promise.race([
         model.generateContent(prompt),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('gemini_timeout')), 22_000)
+          setTimeout(() => reject(new Error('gemini_timeout')), geminiTimeout)
         ),
       ])
       const text = (result as Awaited<ReturnType<typeof model.generateContent>>).response.text()
@@ -288,11 +294,12 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   }
 
   // ── TIER 1: Groq llama-3.3-70b — validado para PT-PT ─────────────────────
-  if (process.env.GROQ_API_KEY) {
+  if (process.env.GROQ_API_KEY && Date.now() < deadline - 2_000) {
+    const groqTimeout = Math.max(2_000, Math.min(8_000, deadline - Date.now()))
     const text = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
       process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-      prompt, 25_000, 'Groq:llama-3.3-70b'
+      prompt, groqTimeout, 'Groq:llama-3.3-70b'
     )
     if (text) return { text, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
   }
@@ -300,36 +307,38 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   // ── TIER 2: fallback com prompt reforçado — banco cobre o máximo possível ─
   console.warn('[PROFAI] Tier 1 indisponível — a usar fallback com prompt reforçado')
 
-  if (process.env.SAMBANOVA_API_KEY) {
-    const text = await callOpenAICompat(
+  if (process.env.SAMBANOVA_API_KEY && Date.now() < deadline - 2_000) {
+    const t1 = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
       process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
-      prompt, 30_000, 'SambaNova:DeepSeek-V3.1'
+      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'SambaNova:DeepSeek-V3.1'
     )
-    if (text) return { text, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
+    if (t1) return { text: t1, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
 
-    const text2 = await callOpenAICompat(
-      'https://api.sambanova.ai/v1/chat/completions',
-      process.env.SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct',
-      prompt, 30_000, 'SambaNova:Llama-3.3-70B'
-    )
-    if (text2) return { text: text2, isFallback: true, modelUsed: 'sambanova-llama-3.3-70b' }
+    if (Date.now() < deadline - 2_000) {
+      const t2 = await callOpenAICompat(
+        'https://api.sambanova.ai/v1/chat/completions',
+        process.env.SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct',
+        prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'SambaNova:Llama-3.3-70B'
+      )
+      if (t2) return { text: t2, isFallback: true, modelUsed: 'sambanova-llama-3.3-70b' }
+    }
   }
 
-  if (process.env.GITHUB_API_KEY) {
+  if (process.env.GITHUB_API_KEY && Date.now() < deadline - 2_000) {
     const text = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
       process.env.GITHUB_API_KEY, 'gpt-4o',
-      prompt, 30_000, 'GitHub:gpt-4o'
+      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'GitHub:gpt-4o'
     )
     if (text) return { text, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
 
-  if (process.env.MISTRAL_API_KEY) {
+  if (process.env.MISTRAL_API_KEY && Date.now() < deadline - 2_000) {
     const text = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
       process.env.MISTRAL_API_KEY, 'mistral-small-latest',
-      prompt, 25_000, 'Mistral:mistral-small'
+      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'Mistral:mistral-small'
     )
     if (text) return { text, isFallback: true, modelUsed: 'mistral-small' }
   }
