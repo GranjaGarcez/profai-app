@@ -40,6 +40,8 @@ interface TestContent {
   instructions?: string
   groups?: TestGroup[]
   questions?: Question[]
+  _qualityWarning?: boolean
+  _modelUsed?: string
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
@@ -436,6 +438,22 @@ export default function TestPreview({
       )}
       {showLauncher && contentItemId && (
         <ExamLauncher contentItemId={contentItemId} contentTitle={editableTest.title} onClose={() => setShowLauncher(false)} />
+      )}
+
+      {/* ── Aviso de qualidade (modelo fallback) ──────────────────────────── */}
+      {editableTest._qualityWarning && (
+        <div className="no-print mb-4 flex items-start gap-3 rounded-xl border px-4 py-3"
+          style={{ background: '#fffbeb', borderColor: '#f59e0b50' }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
+              Algumas questões foram geradas por um modelo de IA alternativo
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+              Os nossos modelos principais estavam temporariamente sobrecarregados. Revê as questões geradas por IA antes de usar — as questões do banco (assinaladas com ★) têm qualidade verificada.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* ── Barra de acções ────────────────────────────────────────────────── */}

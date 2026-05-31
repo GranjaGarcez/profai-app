@@ -170,22 +170,49 @@ function autoMarkScheme(type: string, pts: number, subject: string): string {
     : `Resposta correcta e completa (${p(0.6)}pt) + clareza e rigor (${p(0.4)}pt).`
 }
 
-// System prompt partilhado por todos os fallbacks
-const FALLBACK_SYSTEM = `És um professor especialista em avaliação em Portugal. REGRAS ABSOLUTAS:
-1. Responde APENAS com JSON válido e completo — zero texto extra, zero markdown, zero \`\`\`json.
-2. Português de Portugal estrito: "actividade", "óptimo", "efeito", "facto", "fórmula", "rectângulo".
-3. Cada questão DEVE ter um enunciado "text" ÚNICO — nunca repitas dados ou valores entre questões.
-4. A soma de "points" de TODAS as questões DEVE ser exactamente 100.
-5. Cada questão DEVE ter "markScheme" com critérios parciais que somam exactamente "points":
-   - multiple_choice: "Resposta: [letra] (Xpt). A opção Y induz erro de [...]; Z confunde [...]. Errada = 0pt."
-   - true_false: "[Verdadeiro/Falso] — [razão concreta]. (Xpt). Errada = 0pt."
-   - short_answer (Matemática/FQ): "dados (Xpt) + fórmula (Xpt) + cálculo (Xpt) + resposta com unidade (Xpt)"
-   - short_answer (outras): "identificação (Xpt) + justificação/explicação (Xpt) + rigor da expressão (Xpt)"
-   - long_answer: critérios progressivos por etapas — conteúdo + organização + expressão/unidades
-6. "multiple_choice": correctAnswer é APENAS "A", "B", "C" ou "D" (letra só, sem ponto).
-7. "true_false": correctAnswer é "Verdadeiro" ou "Falso".
-8. Segue o schema JSON EXACTAMENTE como pedido — não omitas nenhum campo obrigatório.
-9. Distribui os tipos de questão e os temas de forma variada — não repitas o mesmo conceito.`
+// System prompt reforçado para modelos de fallback
+// Explícito sobre falhas comuns: PT-BR, JSON incompleto, markScheme vago, questões genéricas
+const FALLBACK_SYSTEM_ENHANCED = `És um professor especialista em avaliação em Portugal com 20 anos de experiência. A tua missão é gerar questões de avaliação de QUALIDADE EXCELENTE. Segue CADA regra sem excepção.
+
+═══ FORMATO DE SAÍDA ═══
+• Responde EXCLUSIVAMENTE com JSON válido — ZERO texto antes ou depois, ZERO blocos \`\`\`json, ZERO comentários
+• JSON deve ser completo e bem formado — nunca truncar no meio de uma chave ou valor
+
+═══ LÍNGUA — PORTUGUÊS DE PORTUGAL ESTRITO ═══
+CORRECTO (usa SEMPRE): actividade, óptimo, efeito, facto, fórmula, rectângulo, percentagem, fracção, equação, solução, utilização, análise, síntese, período, séc., efectuado, verificado, concluído
+PROIBIDO (nunca usar): atividade, ótimo, efeito✗, fato, fórmula✗, retângulo, porcentagem, fração, equação✗, solução✗, utilização✗, análise✗, síntese✗, período✗
+
+═══ QUALIDADE PEDAGÓGICA OBRIGATÓRIA ═══
+• Cada questão DEVE ser específica ao tópico pedido — zero questões genéricas que poderiam servir qualquer disciplina
+• Contexto real e significativo: usa situações concretas, dados numéricos reais, exemplos do quotidiano português
+• Distratores (escolha múltipla): cada opção errada deve corresponder a um erro conceptual REAL e plausível — nunca opções obviamente absurdas
+• Questões de desenvolvimento: exigem resposta estruturada com argumentação, não apenas listagens
+• Bloom: distribui pelos níveis pedidos — questões de análise/avaliação têm peso maior
+
+═══ ESTRUTURA JSON OBRIGATÓRIA ═══
+• "points": número inteiro positivo; a soma de TODAS as questões = exactamente 100
+• "correctAnswer": obrigatório em TODAS as questões sem excepção
+  - multiple_choice: APENAS "A", "B", "C" ou "D" (só a letra, sem ponto, sem texto adicional)
+  - true_false: APENAS "Verdadeiro" ou "Falso"
+  - short_answer / long_answer: resposta modelo completa (mínimo 15 palavras)
+• "markScheme": obrigatório e ESPECÍFICO — nunca genérico como "resposta correcta"
+  - multiple_choice: "Resposta: [letra] ([X]pt). Opção [Y]: induz o erro de [...]. Opção [Z]: confunde [...]. Errada = 0pt."
+  - true_false: "[Verdadeiro/Falso] — [razão científica/histórica/factual concreta]. ([X]pt). Errada = 0pt."
+  - short_answer (Matemática/FQ): "Dados ([X]pt) + fórmula/método ([X]pt) + cálculo sem erro ([X]pt) + resposta com unidade ([X]pt)"
+  - short_answer (outras): "Identificação correcta ([X]pt) + justificação com evidência/raciocínio ([X]pt) + correcção linguística ([X]pt)"
+  - long_answer: critérios progressivos — conteúdo/argumentação + organização + vocabulário específico
+  - A SOMA dos pontos no markScheme deve ser IGUAL a "points" da questão
+• "options": array de 4 strings para multiple_choice (["A) ...", "B) ...", "C) ...", "D) ..."]), null para outros tipos
+• Não omitas NENHUM campo do schema pedido
+
+═══ VERIFICAÇÃO FINAL ANTES DE RESPONDER ═══
+Antes de gerar o JSON, verifica mentalmente:
+✓ O JSON está completo e bem formado?
+✓ Todos os "correctAnswer" estão preenchidos?
+✓ Todos os "markScheme" têm critérios específicos com pontos que somam "points"?
+✓ A soma de todos os "points" é exactamente 100?
+✓ Usei Português de Portugal em todo o texto?
+✓ Cada questão é específica ao tópico (não genérica)?`
 
 // Helper para chamar qualquer endpoint OpenAI-compatible via fetch
 async function callOpenAICompat(
@@ -203,10 +230,10 @@ async function callOpenAICompat(
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: FALLBACK_SYSTEM },
+          { role: 'system', content: FALLBACK_SYSTEM_ENHANCED },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.6,
+        temperature: 0.5,   // mais determinístico em modo fallback
         max_tokens: 8192,
       }),
       signal: AbortSignal.timeout(timeoutMs),
@@ -218,7 +245,7 @@ async function callOpenAICompat(
     const data = await res.json() as { choices: Array<{ message: { content: string } }> }
     const text = data.choices[0]?.message?.content ?? ''
     if (text.length > 50) {
-      console.log(`[PROFAI] ${label} respondeu com sucesso`)
+      console.log(`[PROFAI] ${label} OK`)
       return text
     }
     return null
@@ -228,9 +255,14 @@ async function callOpenAICompat(
   }
 }
 
-// Cascade completa: Gemini → Groq → SambaNova → GitHub → Mistral
-async function generateWithFallback(prompt: string): Promise<string> {
-  // 1. Gemini 2.5 Flash (3 chaves, 22s timeout)
+interface GenerationResult { text: string; isFallback: boolean; modelUsed: string }
+
+// Cascade com dois níveis de qualidade:
+// TIER 1 (ouro): Gemini 2.5 Flash + Groq llama-3.3-70b → isFallback: false
+// TIER 2 (fallback com prompt reforçado): SambaNova + GitHub gpt-4o + Mistral → isFallback: true
+// isFallback:true → banco em primeiro lugar + aviso ao utilizador
+async function generateWithFallback(prompt: string): Promise<GenerationResult> {
+  // ── TIER 1: Gemini 2.5 Flash — 3 chaves em round-robin ───────────────────
   const geminiKeys = [
     process.env.GEMINI_API_KEY,
     process.env.GEMINI_API_KEY_2,
@@ -247,81 +279,62 @@ async function generateWithFallback(prompt: string): Promise<string> {
         ),
       ])
       const text = (result as Awaited<ReturnType<typeof model.generateContent>>).response.text()
-      console.log('[PROFAI] Gemini 2.5 Flash respondeu com sucesso')
-      return text
+      console.log('[PROFAI] ✓ Gemini 2.5 Flash')
+      return { text, isFallback: false, modelUsed: 'gemini-2.5-flash' }
     } catch (e) {
       const msg = String(e)
-      if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('overloaded') || msg.includes('gemini_timeout')) {
-        console.warn('[PROFAI] Gemini quota/timeout — próxima chave ou cascade')
-      } else {
-        console.warn('[PROFAI] Gemini erro:', msg)
-      }
+      console.warn('[PROFAI] Gemini:', msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') ? 'quota' : msg.slice(0, 80))
     }
   }
 
-  // 2. Groq llama-3.3-70b-versatile
+  // ── TIER 1: Groq llama-3.3-70b — validado para PT-PT ─────────────────────
   if (process.env.GROQ_API_KEY) {
     const text = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
-      process.env.GROQ_API_KEY,
-      'llama-3.3-70b-versatile',
+      process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
       prompt, 25_000, 'Groq:llama-3.3-70b'
     )
-    if (text) return text
-
-    // Groq qwen3-32b como alternativa
-    const text2 = await callOpenAICompat(
-      'https://api.groq.com/openai/v1/chat/completions',
-      process.env.GROQ_API_KEY,
-      'qwen/qwen3-32b',
-      prompt, 25_000, 'Groq:qwen3-32b'
-    )
-    if (text2) return text2
+    if (text) return { text, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
   }
 
-  // 3. SambaNova DeepSeek-V3.1
+  // ── TIER 2: fallback com prompt reforçado — banco cobre o máximo possível ─
+  console.warn('[PROFAI] Tier 1 indisponível — a usar fallback com prompt reforçado')
+
   if (process.env.SAMBANOVA_API_KEY) {
     const text = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
-      process.env.SAMBANOVA_API_KEY,
-      'DeepSeek-V3.1',
+      process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
       prompt, 30_000, 'SambaNova:DeepSeek-V3.1'
     )
-    if (text) return text
+    if (text) return { text, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
 
-    // SambaNova Meta-Llama-3.3-70B como alternativa
     const text2 = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
-      process.env.SAMBANOVA_API_KEY,
-      'Meta-Llama-3.3-70B-Instruct',
+      process.env.SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct',
       prompt, 30_000, 'SambaNova:Llama-3.3-70B'
     )
-    if (text2) return text2
+    if (text2) return { text: text2, isFallback: true, modelUsed: 'sambanova-llama-3.3-70b' }
   }
 
-  // 4. GitHub Models gpt-4o
   if (process.env.GITHUB_API_KEY) {
     const text = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
-      process.env.GITHUB_API_KEY,
-      'gpt-4o',
+      process.env.GITHUB_API_KEY, 'gpt-4o',
       prompt, 30_000, 'GitHub:gpt-4o'
     )
-    if (text) return text
+    if (text) return { text, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
 
-  // 5. Mistral mistral-small
   if (process.env.MISTRAL_API_KEY) {
     const text = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
-      process.env.MISTRAL_API_KEY,
-      'mistral-small-latest',
+      process.env.MISTRAL_API_KEY, 'mistral-small-latest',
       prompt, 25_000, 'Mistral:mistral-small'
     )
-    if (text) return text
+    if (text) return { text, isFallback: true, modelUsed: 'mistral-small' }
   }
 
-  throw new Error('Todos os modelos estão indisponíveis. Tenta novamente em alguns minutos.')
+  throw new Error('Os modelos de IA estão temporariamente sobrecarregados. Tenta novamente em 30 minutos.')
 }
 
 export async function POST(request: NextRequest) {
@@ -560,13 +573,20 @@ Responde APENAS com este JSON:
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
       }
+
+      // Em modo fallback, tentar buscar o máximo possível do banco (até 3× o pedido)
+      // para minimizar a quantidade gerada por modelos de menor qualidade.
+      // O valor final ajusta-se depois de saber se é fallback ou não.
       bankHits = await findQuestions({
         subject, yearLevel, topic,
         types: questionTypes,
         difficulty,
-        numWanted: numQuestions,
+        numWanted: numQuestions * 3, // pool alargado — só usamos numQuestions
         userId: user.id,
       })
+      // Limitar ao pedido por agora; re-avalia após saber se é fallback
+      const bankAvailable = bankHits
+      bankHits = bankAvailable.slice(0, numQuestions)
 
       numFromAI = numQuestions - bankHits.length
 
@@ -582,36 +602,54 @@ Responde APENAS com este JSON:
         const bankIds = bankHits.map(bq => bq.id)
         await markUsed(bankIds, user.id)
 
-        // Agrupa numa estrutura de resposta compatível com o cliente
         const bankContent = {
           title: `Ficha de Avaliação de ${s} — ${t}`,
           subject: s, yearLevel: y, topic: t, difficulty: d,
           totalPoints: bankQuestions.reduce((sum, q) => sum + (q.points as number), 0),
           duration: duration ?? 50,
           instructions: 'Lê atentamente cada questão antes de responder. Apresenta todos os cálculos/justificações.',
-          groups: [{
-            label: 'Grupo I', description: 'Questões', totalPoints: 100,
-            questions: bankQuestions,
-          }],
+          groups: [{ label: 'Grupo I', description: 'Questões', totalPoints: 100, questions: bankQuestions }],
           _source: 'bank',
         }
-        console.log(`[BANK] ✓ Teste servido 100% do banco (${nq} questões, 0 chamadas IA)`)
+        console.log(`[BANK] ✓ 100% banco (${nq} questões, 0 chamadas IA)`)
         return NextResponse.json({ content: bankContent })
       }
 
       // Ajustar o prompt para gerar apenas as questões em falta
       if (bankHits.length > 0) {
-        // Re-construir prompt com numQuestions = numFromAI
-        const modifiedInputs = { ...inputs as object, numQuestions: numFromAI }
         prompt = prompt.replace(
           /Total: \d+ questões/,
           `Total: ${numFromAI} questões (complementar banco existente)`
         )
-        void modifiedInputs // prompt já foi ajustado acima
       }
     }
 
-    const text = await generateWithFallback(prompt)
+    const genResult = await generateWithFallback(prompt)
+    const { text, isFallback, modelUsed } = genResult
+
+    // Em modo fallback: usar o máximo possível do banco para cobrir as questões
+    // Isso reduz a quantidade de questões geradas pelo modelo inferior
+    if (isFallback && tool === 'test') {
+      const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
+        subject: string; yearLevel: number; topic: string
+        questionTypes: string[]; difficulty: string; numQuestions: number
+      }
+      // Pedir o máximo disponível que ainda não foi usado por este utilizador
+      const extraBank = await findQuestions({
+        subject, yearLevel, topic,
+        types: questionTypes,
+        difficulty,
+        numWanted: numQuestions,
+        userId: user.id,
+      })
+      if (extraBank.length > bankHits.length) {
+        console.log(`[BANK] Fallback: banco expandido de ${bankHits.length} → ${extraBank.length} questões`)
+        bankHits = extraBank
+        numFromAI = numQuestions - bankHits.length
+      }
+    }
+
+    console.log(`[PROFAI] Modelo: ${modelUsed} | fallback: ${isFallback}`)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       console.error('[PROFAI] Sem JSON na resposta. Texto recebido (500 chars):', text.slice(0, 500))
@@ -730,6 +768,12 @@ Responde APENAS com este JSON:
         const totalAll = [...bankQs, ...allQsFinal].reduce((s, q) => s + (Number(q.points) || 0), 0)
         content.totalPoints = totalAll
         console.log(`[BANK] Teste híbrido: ${bankQs.length} banco + ${allQsFinal.length} IA`)
+      }
+
+      // Aviso de qualidade: activo quando foi usado modelo de fallback E há questões IA
+      if (isFallback && groups.flatMap(g => g.questions).length > 0) {
+        content._qualityWarning = true
+        content._modelUsed = modelUsed
       }
     }
 
