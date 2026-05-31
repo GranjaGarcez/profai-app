@@ -294,77 +294,84 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     }
   }
 
-  // ── TIER 1: Groq llama-3.3-70b — validado para PT-PT ─────────────────────
-  if (process.env.GROQ_API_KEY && Date.now() < deadline - 2_000) {
-    const groqTimeout = Math.max(2_000, Math.min(8_000, deadline - Date.now()))
-    const text = await callOpenAICompat(
+  // Helper: tempo restante, mínimo 2s, máximo maxMs
+  const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
+  const ok = (minMs = 2_000) => Date.now() < deadline - minMs
+
+  // ── TIER 1: Groq — dois modelos (o segundo tem quota separada) ────────────
+  if (process.env.GROQ_API_KEY && ok()) {
+    // llama-3.3-70b (melhor qualidade, mas TPD pode estar esgotado após seed)
+    const r1 = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
       process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-      prompt, groqTimeout, 'Groq:llama-3.3-70b'
+      prompt, t(6_000), 'Groq:llama-3.3-70b'
     )
-    if (text) return { text, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
+    if (r1) return { text: r1, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
+
+    // qwen3-32b (validado, quota independente do llama)
+    if (ok()) {
+      const r2 = await callOpenAICompat(
+        'https://api.groq.com/openai/v1/chat/completions',
+        process.env.GROQ_API_KEY, 'qwen-qwq-32b',
+        prompt, t(6_000), 'Groq:qwen-qwq-32b'
+      )
+      if (r2) return { text: r2, isFallback: false, modelUsed: 'groq-qwen-qwq-32b' }
+    }
   }
 
   // ── TIER 2: fallback com prompt reforçado — banco cobre o máximo possível ─
   console.warn('[PROFAI] Tier 1 indisponível — a usar fallback com prompt reforçado')
 
-  if (process.env.SAMBANOVA_API_KEY && Date.now() < deadline - 2_000) {
-    const t1 = await callOpenAICompat(
-      'https://api.sambanova.ai/v1/chat/completions',
-      process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
-      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'SambaNova:DeepSeek-V3.1'
+  // OpenRouter kimi-k2.6:free — 1.4s resposta, aprovado PT-PT
+  if (process.env.OPENROUTER_API_KEY && ok()) {
+    const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
+    const r = await callOpenAICompat(
+      'https://openrouter.ai/api/v1/chat/completions',
+      process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2.6:free',
+      prompt, t(5_000), 'OR:kimi-k2.6:free', orH
     )
-    if (t1) return { text: t1, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
-
-    if (Date.now() < deadline - 2_000) {
-      const t2 = await callOpenAICompat(
-        'https://api.sambanova.ai/v1/chat/completions',
-        process.env.SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct',
-        prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'SambaNova:Llama-3.3-70B'
-      )
-      if (t2) return { text: t2, isFallback: true, modelUsed: 'sambanova-llama-3.3-70b' }
-    }
+    if (r) return { text: r, isFallback: true, modelUsed: 'kimi-k2.6-free' }
   }
 
-  if (process.env.GITHUB_API_KEY && Date.now() < deadline - 2_000) {
-    const text = await callOpenAICompat(
+  // GitHub gpt-4o — 2.5s, aprovado
+  if (process.env.GITHUB_API_KEY && ok()) {
+    const r = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
       process.env.GITHUB_API_KEY, 'gpt-4o',
-      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'GitHub:gpt-4o'
+      prompt, t(5_000), 'GitHub:gpt-4o'
     )
-    if (text) return { text, isFallback: true, modelUsed: 'github-gpt-4o' }
+    if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
 
-  if (process.env.MISTRAL_API_KEY && Date.now() < deadline - 2_000) {
-    const text = await callOpenAICompat(
+  // SambaNova DeepSeek-V3.1 — 1.9s, aprovado
+  if (process.env.SAMBANOVA_API_KEY && ok()) {
+    const r = await callOpenAICompat(
+      'https://api.sambanova.ai/v1/chat/completions',
+      process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
+      prompt, t(5_000), 'SambaNova:DeepSeek-V3.1'
+    )
+    if (r) return { text: r, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
+  }
+
+  // Mistral small — 2.4s, aprovado
+  if (process.env.MISTRAL_API_KEY && ok()) {
+    const r = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
       process.env.MISTRAL_API_KEY, 'mistral-small-latest',
-      prompt, Math.max(2_000, Math.min(8_000, deadline - Date.now())), 'Mistral:mistral-small'
+      prompt, t(5_000), 'Mistral:mistral-small'
     )
-    if (text) return { text, isFallback: true, modelUsed: 'mistral-small' }
+    if (r) return { text: r, isFallback: true, modelUsed: 'mistral-small' }
   }
 
-  // ── OpenRouter free models (aprovados: kimi-k2.6 1.4s, nemotron-3-super 10s) ─
-  // OPENROUTER_API_KEY já está definida em Netlify — sem nova env var necessária
-  if (process.env.OPENROUTER_API_KEY && Date.now() < deadline - 2_000) {
-    const orHeaders = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
-    const kimiText = await callOpenAICompat(
+  // OpenRouter nemotron-120B:free — 10s, aprovado (último recurso)
+  if (process.env.OPENROUTER_API_KEY && ok()) {
+    const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
+    const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
-      process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2:free',
-      prompt, Math.max(2_000, Math.min(10_000, deadline - Date.now())), 'OR:kimi-k2:free',
-      orHeaders
+      process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
+      prompt, t(8_000), 'OR:nemotron-3-super:free', orH
     )
-    if (kimiText) return { text: kimiText, isFallback: true, modelUsed: 'kimi-k2-free' }
-
-    if (Date.now() < deadline - 2_000) {
-      const nemText = await callOpenAICompat(
-        'https://openrouter.ai/api/v1/chat/completions',
-        process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
-        prompt, Math.max(2_000, Math.min(10_000, deadline - Date.now())), 'OR:nemotron-3-super:free',
-        orHeaders
-      )
-      if (nemText) return { text: nemText, isFallback: true, modelUsed: 'nemotron-3-super-free' }
-    }
+    if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
   }
 
   throw new Error('Os modelos de IA estão temporariamente sobrecarregados. Tenta novamente em 30 minutos.')
