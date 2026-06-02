@@ -270,7 +270,7 @@ interface GenerationResult { text: string; isFallback: boolean; modelUsed: strin
 // isFallback:true → banco em primeiro lugar + aviso ao utilizador
 // DEADLINE GLOBAL: 22s para toda a cascade → nunca ultrapassa o limite de 26s da Netlify
 async function generateWithFallback(prompt: string): Promise<GenerationResult> {
-  const deadline = Date.now() + 22_000 // orçamento total — Netlify corta ao fim de 26s
+  const deadline = Date.now() + 50_000 // orçamento total — Render suporta 60s (era 22s no Netlify)
   const tried: string[] = []
 
   // ── TIER 1: Gemini 2.5 Flash — 3 chaves em round-robin ───────────────────
@@ -285,7 +285,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (remaining < 3_000) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
     try {
       const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.5-flash' })
-      const geminiTimeout = Math.min(20_000, Math.max(1_000, remaining - 1_000))
+      const geminiTimeout = Math.min(14_000, Math.max(1_000, remaining - 2_000))
       const result = await Promise.race([
         model.generateContent(prompt),
         new Promise<never>((_, reject) =>
