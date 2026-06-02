@@ -11,8 +11,9 @@
 ## Stack
 - Next.js 16 (App Router) · TypeScript · Tailwind 4
 - Supabase (auth + postgres + RLS)
-- Deploy: Netlify (plugin-nextjs, timeout 26s por função)
-- Gemini 2.5 Flash (primário, 22s timeout) + Groq llama-3.3-70b (fallback)
+- Deploy: **Render** (profai-app.onrender.com, free tier, 60s timeout)
+- Gemini 2.5 Flash (primário, 14s timeout) + Groq llama-3.3-70b (fallback)
+- Deadline cascade: 50s (era 22s no Netlify)
 
 ---
 
@@ -199,13 +200,12 @@ NIM_API_KEY_2                       ✅ definida (nvapi-...) — segunda chave N
 - [x] `mistralai/mistral-small-4-119b-2603` aprovado pedagogicamente (PT-PT, markScheme, 2.7s)
 - [x] NIM integrado na cascade como Tier 2 (posição 6, antes de SambaNova)
 - [x] Round-robin entre 2 chaves NIM implementado
-- [x] TypeScript sem erros ✅
-
-## Pendente (migração Vercel — ⚠️ CRÍTICO)
-- [ ] Fazer deploy em Vercel (Netlify free tier esgotado)
-  - Conectar repositório GitHub a Vercel
-  - Copiar TODAS as env vars (incluindo as novas NIM_API_KEY + NIM_API_KEY_2)
-  - Actualizar HTTP-Referer em OpenRouter calls (de netlify.app para nova URL Vercel)
+- [x] **Migração Netlify → Render concluída** ✅
+  - URL: https://profai-app.onrender.com
+  - Deadline 22s → 50s; Gemini timeout 20s → 14s
+  - HTTP-Referer actualizado para onrender.com
+  - Supabase Site URL actualizado
+- [x] **App a gerar testes ao vivo** ✅ (testado: pediu 20, gerou 11 via Tier 2)
 
 ## Bugs conhecidos (já corrigidos nesta sessão)
 - ✅ OpenRouter 402 não chamava `logFailed()` — corrigido
