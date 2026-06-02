@@ -6,7 +6,7 @@
 ---
 
 ## Último update
-2026-05-30 (sessão 3 — noite)
+2026-06-02 (sessão 5)
 
 ## Stack
 - Next.js 16 (App Router) · TypeScript · Tailwind 4
@@ -73,6 +73,20 @@ Seed correu sem erros — 940/940 geradas e guardadas. Cascade funcionou: Gemini
 
 ---
 
+## NVIDIA NIM — Estado (2026-06-02)
+- Base URL: `https://integrate.api.nvidia.com/v1/chat/completions` (OpenAI-compatible)
+- 2 chaves: `NIM_API_KEY` + `NIM_API_KEY_2` — ambas ✅ funcionais (prefixo `nvapi-`)
+- Free tier: **forever free**, 40 RPM/chave (80 RPM total com 2 chaves), sem créditos
+- 118 modelos disponíveis; modelos com conta básica testados:
+  - `meta/llama-3.3-70b-instruct` ✅ funcional (3s)
+  - `mistralai/mistral-small-4-119b-2603` ✅ **APROVADO** — PT-PT correcto, markScheme correcto, 2.7s
+  - `nvidia/llama-3.3-nemotron-super-49b-v1.5` ✅ funcional, PT-PT correcto (3.1s)
+  - `deepseek-ai/deepseek-v4-flash` ✅ funcional
+  - `nvidia/nemotron-3-super-120b-a12b` ✅ funcional (já validado via OR)
+  - `nvidia/nemotron-3-super-120b-a12b` — 10s+ e reasoning leak → não integrado directamente
+- Modelos indisponíveis (conta básica): `mistral-large`, `mistral-large-2`, `llama-3.1-nemotron-70b`, `qwen2.5-72b`
+- **Cascade**: NIM mistral-small-4-119b inserido como Tier 2 (antes de SambaNova), `isFallback: true`
+
 ## OpenRouter — Situação actual (2026-05-30)
 - `google/gemini-2.5-flash` via OpenRouter: **NÃO gratuito** (erro 402) — removido da cascade
 - `openai/gpt-oss-120b:free`: testado — **reprovado** (erro matemático no markScheme + português do Brasil)
@@ -80,20 +94,17 @@ Seed correu sem erros — 940/940 geradas e guardadas. Cascade funcionou: Gemini
 - `nvidia/nemotron-3-super-120b-a12b:free`: ✅ **APROVADO** — 120B, PT-PT correcto, markScheme 4 critérios, 10s — na cascade
 - `moonshotai/kimi-k2.6:free`: ✅ **APROVADO** — PT-PT correcto, LaTeX, "fracção"/"efectuados", 1.4s (!!) — na cascade
 - `qwen/qwen3-235b-a22b:free`, `deepseek/deepseek-r1:free`: **indisponíveis** (404 — endpoints removidos)
-- **Cascade completa (2026-05-30):**
-  1. Gemini 2.5 Flash — 3 keys, round-robin ← melhor qualidade
-  2. Groq: llama-3.3-70b-versatile (0.6s) ✅
-  3. Groq: qwen/qwen3-32b (1.8s) ✅
-  4. SambaNova: DeepSeek-V3.1 (1.9s) ✅
-  5. SambaNova: Meta-Llama-3.3-70B (1.5s) ✅
-  6. Cerebras: gpt-oss-120b (0.6s) ✅
-  7. GitHub: gpt-4o (2.5s) ✅
-  8. Mistral: mistral-small (2.4s) ✅
-  9. OR: deepseek-v4-flash:free
-  10. OR: nemotron-3-super-120b:free (10s) ✅
-  11. Kimi K2.6 (1.4s) ✅
-  12. Ollama qwen3:8b (local)
-  13. logFailed()
+- **Cascade completa (2026-06-02):**
+  1. Gemini 2.5 Flash — 3 keys, round-robin ← melhor qualidade [Tier 1]
+  2. Groq: llama-3.3-70b-versatile [Tier 1]
+  3. Groq: qwen-qwq-32b [Tier 1]
+  4. OR: kimi-k2.6:free (1.4s) [Tier 2]
+  5. GitHub: gpt-4o (2.5s) [Tier 2]
+  6. NIM: mistral-small-4-119b (2.7s) ← NOVO ✅ [Tier 2]
+  7. SambaNova: DeepSeek-V3.1 (1.9s) [Tier 2]
+  8. Mistral: mistral-small (2.4s) [Tier 2]
+  9. OR: nemotron-3-super-120b:free (10s) [Tier 2]
+  10. Erro claro ao utilizador
 - **Hyperbolic**: exige créditos (402) — removido
 - **Together AI**: exige €5 cartão — removido
 - **Cerebras**: catálogo mudou (llama saiu, só gpt-oss-120b e zai-glm-4.7)
@@ -168,9 +179,11 @@ scripts/pipeline.sh                 — pipeline orquestrador Aider+Groq
 NEXT_PUBLIC_SUPABASE_URL            ✅ definida
 NEXT_PUBLIC_SUPABASE_ANON_KEY       ✅ definida
 SUPABASE_SERVICE_ROLE_KEY           ✅ definida
-GEMINI_API_KEY                      ✅ definida
+GEMINI_API_KEY                      ✅ definida (+ GEMINI_API_KEY_2 + GEMINI_API_KEY_3)
 GROQ_API_KEY                        ✅ definida
 OPENROUTER_API_KEY                  ✅ definida (Gemini 2.5 Flash não gratuito lá)
+NIM_API_KEY                         ✅ definida (nvapi-...) — NVIDIA NIM
+NIM_API_KEY_2                       ✅ definida (nvapi-...) — segunda chave NIM (80 RPM total)
 ```
 
 ## Modo de trabalho (PERMANENTE)
@@ -180,6 +193,24 @@ OPENROUTER_API_KEY                  ✅ definida (Gemini 2.5 Flash não gratuito
 - OpenRouter disponível para Aider: `aider --model openrouter/google/gemini-2.5-flash`
 - ~700 tokens/tarefa em modo orquestrador (vs ~70.000 em modo directo)
 
+## Concluído sessão 5 (2026-06-02)
+- [x] NVIDIA NIM investigado: 118 modelos, free forever, 40 RPM/chave
+- [x] Chaves NIM_API_KEY e NIM_API_KEY_2 testadas e validadas ✅
+- [x] `mistralai/mistral-small-4-119b-2603` aprovado pedagogicamente (PT-PT, markScheme, 2.7s)
+- [x] NIM integrado na cascade como Tier 2 (posição 6, antes de SambaNova)
+- [x] Round-robin entre 2 chaves NIM implementado
+- [x] TypeScript sem erros ✅
+
+## Pendente (migração Vercel — ⚠️ CRÍTICO)
+- [ ] Fazer deploy em Vercel (Netlify free tier esgotado)
+  - Conectar repositório GitHub a Vercel
+  - Copiar TODAS as env vars (incluindo as novas NIM_API_KEY + NIM_API_KEY_2)
+  - Actualizar HTTP-Referer em OpenRouter calls (de netlify.app para nova URL Vercel)
+
 ## Bugs conhecidos (já corrigidos nesta sessão)
 - ✅ OpenRouter 402 não chamava `logFailed()` — corrigido
 - ✅ `seed-failed.json` acumulava entradas duplicadas — limpo e reconstruído manualmente
+- ✅ Groq 429 propagado ao utilizador (groq-sdk) — substituído por fetch raw (`callOpenAICompat`)
+- ✅ HTML em vez de JSON (`Unexpected token '<'`) — deadline global 22s em `generateWithFallback`
+  - Causa: Gemini timeout 22s + Groq lento > 26s Netlify → HTML 524
+  - Fix: `const deadline = Date.now() + 22_000`; cada modelo usa `min(max, restante)`

@@ -352,6 +352,22 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
 
+  // NIM (NVIDIA) — round-robin entre 2 chaves, 40 RPM cada, OpenAI-compatible
+  // Validado: mistral-small-4-119b (2.7s, PT-PT correcto, markScheme correcto)
+  if (ok()) {
+    const nimKeys = [process.env.NIM_API_KEY, process.env.NIM_API_KEY_2].filter((k): k is string => !!k)
+    if (nimKeys.length > 0) {
+      const nimKey = nimKeys[Math.floor(Date.now() / 1000) % nimKeys.length]
+      tried.push('nim-mistral-small-4')
+      const r = await callOpenAICompat(
+        'https://integrate.api.nvidia.com/v1/chat/completions',
+        nimKey, 'mistralai/mistral-small-4-119b-2603',
+        prompt, t(6_000), 'NIM:mistral-small-4-119b'
+      )
+      if (r) return { text: r, isFallback: true, modelUsed: 'nim-mistral-small-4-119b' }
+    }
+  }
+
   if (process.env.SAMBANOVA_API_KEY && ok()) {
     tried.push('sambanova')
     const r = await callOpenAICompat(
