@@ -333,7 +333,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
 
   if (process.env.OPENROUTER_API_KEY && ok()) {
     tried.push('kimi-k2.6')
-    const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
+    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2.6:free',
@@ -390,7 +390,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
 
   if (process.env.OPENROUTER_API_KEY && ok()) {
     tried.push('nemotron')
-    const orH = { 'HTTP-Referer': 'https://profai-app.netlify.app', 'X-Title': 'PROF.IA' }
+    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
