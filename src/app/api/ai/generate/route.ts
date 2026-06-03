@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
@@ -6,9 +5,6 @@ import { findQuestions, saveQuestions, markUsed, bankToExamQuestion } from '@/li
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
-
-// Inicialização lazy — evita falha de build quando env vars não estão disponíveis em build time
-function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
 
 // ── Perfis disciplinares de estrutura e cotação ────────────────────────────────
 function yearContext(yearLevel: number): string {
@@ -215,7 +211,7 @@ Antes de gerar o JSON, verifica mentalmente:
 ✓ Cada questão é específica ao tópico (não genérica)?`
 
 // Helper para chamar qualquer endpoint OpenAI-compatible via fetch
-// Devolve [texto, statusDiag] onde statusDiag ajuda a diagnosticar falhas
+// systemPrompt: null → só mensagem user (útil para Tier 1 cujo prompt já tem tudo)
 async function callOpenAICompat(
   url: string,
   apiKey: string,
@@ -223,18 +219,19 @@ async function callOpenAICompat(
   prompt: string,
   timeoutMs = 25_000,
   label = '',
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
+  systemPrompt: string | null = FALLBACK_SYSTEM_ENHANCED
 ): Promise<string | null> {
   try {
+    const messages = systemPrompt
+      ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
+      : [{ role: 'user', content: prompt }]
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: FALLBACK_SYSTEM_ENHANCED },
-          { role: 'user', content: prompt },
-        ],
+        messages,
         temperature: 0.5,
         max_tokens: 4096,   // reduzido de 8192 — evita rejeição em provedores com limite menor
       }),
@@ -273,7 +270,12 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const deadline = Date.now() + 50_000 // orçamento total — Render suporta 60s (era 22s no Netlify)
   const tried: string[] = []
 
-  // ── TIER 1: Gemini 2.5 Flash — 3 chaves em round-robin ───────────────────
+  // Helper: tempo restante, mínimo 2s, máximo maxMs
+  const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
+  const ok = (minMs = 2_000) => Date.now() < deadline - minMs
+
+  // ── TIER 1: Gemini 2.5 Flash — 3 chaves via REST OpenAI-compatible ───────
+  // SDK substituído por fetch — mais fiável em ambientes Linux/Render
   const geminiKeys = [
     process.env.GEMINI_API_KEY,
     process.env.GEMINI_API_KEY_2,
@@ -281,31 +283,19 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   ].filter((k): k is string => !!k)
 
   for (const key of geminiKeys) {
-    const remaining = deadline - Date.now()
-    if (remaining < 3_000) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
-    try {
-      const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.5-flash' })
-      const geminiTimeout = Math.min(14_000, Math.max(1_000, remaining - 2_000))
-      const result = await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('gemini_timeout')), geminiTimeout)
-        ),
-      ])
-      const text = (result as Awaited<ReturnType<typeof model.generateContent>>).response.text()
-      tried.push('gemini')
-      console.log('[PROFAI] ✓ Gemini 2.5 Flash')
-      return { text, isFallback: false, modelUsed: 'gemini-2.5-flash' }
-    } catch (e) {
-      tried.push('gemini-err')
-      const msg = String(e)
-      console.warn('[PROFAI] Gemini:', msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') ? 'quota' : msg.slice(0, 80))
+    if (!ok(3_000)) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
+    tried.push('gemini')
+    const r = await callOpenAICompat(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      key, 'gemini-2.5-flash', prompt, t(14_000), 'Gemini:2.5-flash',
+      {}, null  // sem system message — prompt já tem todas as instruções
+    )
+    if (r) {
+      console.log('[PROFAI] ✓ Gemini 2.5 Flash REST')
+      return { text: r, isFallback: false, modelUsed: 'gemini-2.5-flash' }
     }
+    tried[tried.length - 1] = 'gemini-err'
   }
-
-  // Helper: tempo restante, mínimo 2s, máximo maxMs
-  const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
-  const ok = (minMs = 2_000) => Date.now() < deadline - minMs
 
   // ── TIER 1: Groq — dois modelos (quotas independentes) ───────────────────
   if (process.env.GROQ_API_KEY && ok()) {
