@@ -6,6 +6,53 @@ import { findQuestions, saveQuestions, markUsed, bankToExamQuestion } from '@/li
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
 
+// ── Taxonomia de Bloom — validação determinística (validator.py port) ─────────
+const BLOOM_LEVELS = ['Lembrar', 'Compreender', 'Aplicar', 'Analisar', 'Avaliar', 'Criar'] as const
+type BloomLevel = typeof BLOOM_LEVELS[number]
+
+// Mapeamento de variantes em inglês e PT-BR para PT-PT canónico
+const BLOOM_ALIASES: Record<string, BloomLevel> = {
+  'Recordar': 'Lembrar',  'Remember': 'Lembrar',   'Knowledge': 'Lembrar',
+  'Compreender': 'Compreender', 'Understand': 'Compreender', 'Comprehension': 'Compreender',
+  'Aplicar': 'Aplicar',   'Apply': 'Aplicar',       'Application': 'Aplicar',
+  'Analisar': 'Analisar', 'Analyse': 'Analisar',    'Analyze': 'Analisar',   'Analysis': 'Analisar',
+  'Avaliar': 'Avaliar',   'Evaluate': 'Avaliar',    'Evaluation': 'Avaliar',
+  'Criar': 'Criar',       'Create': 'Criar',        'Synthesis': 'Criar',    'Sintetizar': 'Criar',
+}
+
+function normalizeBloom(raw: string | undefined): BloomLevel | undefined {
+  if (!raw) return undefined
+  const s = raw.trim()
+  if (BLOOM_LEVELS.includes(s as BloomLevel)) return s as BloomLevel
+  if (s in BLOOM_ALIASES) return BLOOM_ALIASES[s]
+  // Tentativa por prefixo (ex: "Anali" → "Analisar")
+  return BLOOM_LEVELS.find(l => s.toLowerCase().startsWith(l.toLowerCase().slice(0, 4)))
+}
+
+// Prompt do crítico adversarial (adaptado de prompts.py::prompt_critico)
+// Usa modelo DIFERENTE do gerador para diversidade de perspectiva
+function buildCriticPrompt(subject: string, yearLevel: number, topic: string,
+                            questions: Array<Record<string, unknown>>): string {
+  const sample = questions.slice(0, 10).map((q, i) =>
+    `Q${i + 1} [${q.type}|${q.bloomLevel}|${q.points}pt]: ${String(q.text ?? '').slice(0, 90)}`
+  ).join('\n')
+  return `És revisor crítico independente de fichas de avaliação. A tua função é DESCOBRIR falhas — não elogiar. Parte do princípio de que a ficha tem defeitos e procura-os.
+
+FICHA: ${subject} · ${yearLevel}.º ano · Tópico: "${topic}"
+AMOSTRA DE QUESTÕES (máx. 10):
+${sample}
+
+AUDITA sem complacência — verifica CADA questão da amostra:
+1. alinhamento_topico: cada questão avalia realmente "${topic}"? Ou é genérica?
+2. nivel_cognitivo_real: o bloom declarado corresponde ao que é realmente exigido? Um "Analisar" não pode resolver-se por evocação simples.
+3. ambiguidade: há enunciados com mais de uma leitura razoável? Dupla negação? Distratores absurdos?
+4. adequacao_ano: linguagem e exigência são próprias do ${yearLevel}.º ano (${yearLevel <= 6 ? '10-12 anos' : yearLevel <= 9 ? '12-15 anos' : '15-18 anos'})?
+5. markScheme: os critérios são específicos (com pontos parcelares) ou vagos ("resposta correcta")?
+
+Devolve EXCLUSIVAMENTE este JSON (sem texto antes ou depois):
+{"aprovado": bool, "score": 0-10, "problemas": [{"tipo": str, "gravidade": "alta|media|baixa", "descricao": str, "questao": int}]}`
+}
+
 // ── Perfis disciplinares de estrutura e cotação ────────────────────────────────
 function yearContext(yearLevel: number): string {
   if (yearLevel <= 4) return `NÍVEL: ${yearLevel}.º ano (1.º ciclo) — linguagem muito simples e concreta; problemas de 1–2 passos; contextos familiares; apoio visual; Bloom predominante: Recordar/Compreender. Seleção pode ter até 40% do total; respostas longas formais são raras.`
@@ -620,6 +667,8 @@ Responde APENAS com este JSON:
   }
 
   try {
+    const genStartMs = Date.now() // Para calcular tempo disponível ao crítico adversarial
+
     // ── Question Bank: verificar se há questões reutilizáveis ──────────────
     let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
     let numFromAI = tool === 'test' ? (inputs as Record<string, unknown>).numQuestions as number : 0
@@ -724,7 +773,7 @@ Responde APENAS com este JSON:
       type QRaw = {
         index: number; figure: unknown; points?: number; type?: string
         text?: string; correctAnswer?: unknown; markScheme?: string; options?: unknown[]
-        _bankId?: string
+        _bankId?: string; bloomLevel?: string
       }
       type GRaw = { label: string; questions: QRaw[]; totalPoints?: number }
       const groups = (content.groups ?? []) as GRaw[]
@@ -757,6 +806,10 @@ Responde APENAS com este JSON:
             const subj = String((inputs as Record<string, unknown>)?.subject ?? '')
             q.markScheme = autoMarkScheme(q.type ?? 'short_answer', pts, subj)
           }
+          // 3b. Normalizar bloomLevel para taxonomia PT-PT canónica (validator.py port)
+          const rawBloom = q.bloomLevel as string | undefined
+          const normalised = normalizeBloom(rawBloom)
+          if (normalised) q.bloomLevel = normalised
         }
       }
 
@@ -789,7 +842,6 @@ Responde APENAS com este JSON:
       const bankIds = bankHits.map(bq => bq.id)
       if (subject && topic) {
         try {
-          // Filtrar igual ao saveQuestions internamente, para alinhar índices
           const saveable = allQsFinal.filter(
             q => q.text && String(q.text ?? '').trim().length > 10
           )
@@ -797,9 +849,7 @@ Responde APENAS com este JSON:
             subject: String(subject), yearLevel: Number(yearLevel),
             topic: String(topic), difficulty: String(difficulty ?? 'medium'),
           }, user.id)
-          // Injectar _bankId — permite ao cliente submeter feedback 👍/👎
           saveable.forEach((q, i) => { if (savedIds[i]) q._bankId = savedIds[i] })
-          // Marcar IA + banco como usados
           markUsed([...savedIds, ...bankIds], user.id).catch(
             err => console.warn('[BANK] markUsed falhou:', err)
           )
@@ -811,19 +861,77 @@ Responde APENAS com este JSON:
       // Injectar questões do banco no início (já validadas, alta qualidade)
       if (bankHits.length > 0) {
         const bankQs = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1))
-        // Re-indexar questões IA a seguir às do banco
         let nextIdx = bankQs.length + 1
         for (const g of groups) for (const q of g.questions) q.index = nextIdx++
-
-        // Inserir grupo "Banco de Questões" no início
         content.groups = [
           { label: 'Banco', description: '', totalPoints: bankQs.reduce((s, q) => s + (q.points as number), 0), questions: bankQs },
           ...groups,
         ]
-        // Actualizar totalPoints
         const totalAll = [...bankQs, ...allQsFinal].reduce((s, q) => s + (Number(q.points) || 0), 0)
         content.totalPoints = totalAll
         console.log(`[BANK] Teste híbrido: ${bankQs.length} banco + ${allQsFinal.length} IA`)
+      }
+
+      // ── Distribuição Bloom (validator.py port) ─────────────────────────────
+      // Zero chamadas API — análise determinística da cobertura cognitiva
+      const bloomCounts = Object.fromEntries(BLOOM_LEVELS.map(l => [l, 0])) as Record<string, number>
+      for (const g of (content.groups as typeof groups)) {
+        for (const q of g.questions) {
+          const bl = String(q.bloomLevel ?? '')
+          if (bl in bloomCounts) bloomCounts[bl]++
+        }
+      }
+      const totalQs = Object.values(bloomCounts).reduce((s, v) => s + v, 0)
+      const higherOrder = (bloomCounts['Analisar'] ?? 0) + (bloomCounts['Avaliar'] ?? 0) + (bloomCounts['Criar'] ?? 0)
+      const higherPct = totalQs > 0 ? Math.round(higherOrder / totalQs * 100) : 0
+      content._bloomDistribution = bloomCounts
+      if (higherPct < 25 && totalQs >= 5) {
+        const msg = `Bloom: ${higherPct}% de ordem superior (Analisar+Avaliar+Criar). Ideal ≥ 30% para o ${yearLevel}.º ano.`
+        console.warn(`[PROFAI] ${msg}`)
+        content._bloomWarning = msg
+      }
+      console.log(`[PROFAI] Bloom: ${JSON.stringify(bloomCounts)} | ${higherPct}% ordem superior`)
+
+      // ── Crítico adversarial leve (inspirado em prompts.py::prompt_critico) ─
+      // Corre apenas em Tier 1 (Gemini/Groq como gerador), com modelo DIFERENTE
+      // Não bloqueia: se falhar ou demorar, a ficha é entregue sem crítica
+      if (!isFallback && process.env.GROQ_API_KEY && genStartMs) {
+        const elapsed = Date.now() - genStartMs
+        const remainingForCritic = 50_000 - elapsed
+        if (remainingForCritic > 6_000) {
+          const allQsForCritic = (content.groups as typeof groups).flatMap(g => g.questions)
+          const criticPrompt = buildCriticPrompt(
+            String(subject ?? ''), Number(yearLevel ?? 0),
+            String(topic ?? ''), allQsForCritic as Array<Record<string, unknown>>
+          )
+          // Usa llama-3.3-70b como crítico — modelo DIFERENTE de Gemini (adversarial)
+          const rawCritic = await callOpenAICompat(
+            'https://api.groq.com/openai/v1/chat/completions',
+            process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
+            criticPrompt, Math.min(5_000, remainingForCritic - 1_000),
+            'Crítico:Groq:llama', {}, null
+          )
+          if (rawCritic) {
+            try {
+              const jsonMatch = rawCritic.match(/\{[\s\S]*\}/)
+              if (jsonMatch) {
+                const critica = JSON.parse(jsonMatch[0]) as {
+                  aprovado: boolean; score: number
+                  problemas: Array<{ tipo: string; gravidade: string; descricao: string; questao: number }>
+                }
+                content._criticScore = critica.score
+                if (!critica.aprovado && critica.problemas?.length > 0) {
+                  const high = critica.problemas.filter(p => p.gravidade === 'alta')
+                  content._criticWarnings = critica.problemas
+                  console.warn(`[CRÍTICO] Score: ${critica.score}/10 | ${high.length} problema(s) alta gravidade`)
+                } else {
+                  content._criticApproved = true
+                  console.log(`[CRÍTICO] ✓ Aprovado (score ${critica.score}/10)`)
+                }
+              }
+            } catch { /* parse falhou — ignora silenciosamente */ }
+          }
+        }
       }
 
       // Aviso de qualidade: activo quando foi usado modelo de fallback E há questões IA
