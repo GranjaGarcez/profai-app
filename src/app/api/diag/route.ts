@@ -20,31 +20,29 @@ export async function GET() {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gemini-2.5-flash', messages: [{ role: 'user', content: 'ok' }], max_tokens: 3 }),
+      body: JSON.stringify({ model: 'gemini-2.5-flash', messages: [{ role: 'user', content: 'Gera uma pergunta de matemática para o 5.º ano sobre frações. Responde em JSON: {"text":"...","answer":"..."}' }], max_tokens: 4096 }),
       signal: ctrl.signal,
     })
-    geminiStatus = `HTTP ${r.status}`
-    if (!r.ok) {
-      const t = await r.text()
-      geminiStatus += ` | ${t.slice(0, 100)}`
-    }
-  } catch (e) { geminiStatus = `ERRO: ${String(e).slice(0, 100)}` }
+    const t0g = Date.now()
+    const bodyG = await r.text()
+    const elG = Date.now() - t0g
+    geminiStatus = `HTTP ${r.status} (${elG}ms) | ${bodyG.slice(0, 120)}`
+  } catch (e) { geminiStatus = `ERRO: ${String(e).slice(0, 120)}` }
 
   try {
     const ctrl = new AbortController()
-    setTimeout(() => ctrl.abort(), 6000)
+    setTimeout(() => ctrl.abort(), 12_000)
+    const t0gr = Date.now()
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'ok' }], max_tokens: 3 }),
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Gera uma pergunta de matemática para o 5.º ano sobre frações. Responde em JSON: {"text":"...","answer":"..."}' }], max_tokens: 4096 }),
       signal: ctrl.signal,
     })
-    groqStatus = `HTTP ${r.status}`
-    if (!r.ok) {
-      const t = await r.text()
-      groqStatus += ` | ${t.slice(0, 100)}`
-    }
-  } catch (e) { groqStatus = `ERRO: ${String(e).slice(0, 100)}` }
+    const bodyGr = await r.text()
+    const elGr = Date.now() - t0gr
+    groqStatus = `HTTP ${r.status} (${elGr}ms) | ${bodyGr.slice(0, 120)}`
+  } catch (e) { groqStatus = `ERRO: ${String(e).slice(0, 120)}` }
 
   return NextResponse.json({ envStatus, geminiStatus, groqStatus })
 }
