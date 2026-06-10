@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
-// Rota de uso único para criar o utilizador administrador confirmado.
-// Protegida por SETUP_TOKEN (env var). Desactivar após uso em produção.
 export async function POST(request: NextRequest) {
   const setupToken = process.env.SETUP_TOKEN
   if (!setupToken) {
@@ -27,36 +24,73 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email e password (mín. 8 caracteres) obrigatórios.' }, { status: 400 })
   }
 
-  const supabase = createAdminClient()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  // Verificar se o utilizador já existe
-  const { data: existing } = await supabase.auth.admin.listUsers()
-  const exists = existing?.users?.find(u => u.email === email)
-
-  if (exists) {
-    // Actualizar password e confirmar email se ainda não estiver confirmado
-    const { error } = await supabase.auth.admin.updateUserById(exists.id, {
-      password,
-      email_confirm: true,
-    })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ ok: true, action: 'updated', message: 'Utilizador actualizado e confirmado.' })
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({
+      error: 'Variáveis Supabase em falta no servidor.',
+      missing: {
+        NEXT_PUBLIC_SUPABASE_URL: !supabaseUrl,
+        SUPABASE_SERVICE_ROLE_KEY: !serviceKey,
+      }
+    }, { status: 500 })
   }
 
-  // Criar novo utilizador confirmado (sem precisar de email)
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { role: 'admin', name: 'Administrador' },
+  // Usar REST API directamente — mais robusto que o SDK em alguns ambientes
+  const adminUrl = `${supabaseUrl}/auth/v1/admin/users`
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': serviceKey,
+    'Authorization': `Bearer ${serviceKey}`,
+  }
+
+  // Verificar se utilizador já existe
+  const listRes = await fetch(adminUrl, { headers })
+  if (!listRes.ok) {
+    const txt = await listRes.text()
+    return NextResponse.json({ error: `Falha ao listar utilizadores: ${listRes.status} ${txt}` }, { status: 500 })
+  }
+
+  const { users } = await listRes.json() as { users: Array<{ id: string; email: string }> }
+  const existing = users?.find(u => u.email === email)
+
+  if (existing) {
+    // Actualizar password e confirmar
+    const updateRes = await fetch(`${adminUrl}/${existing.id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ password, email_confirm: true }),
+    })
+    if (!updateRes.ok) {
+      const txt = await updateRes.text()
+      return NextResponse.json({ error: `Falha ao actualizar: ${updateRes.status} ${txt}` }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true, action: 'updated', message: 'Conta actualizada e confirmada. Podes entrar em /login.' })
+  }
+
+  // Criar utilizador novo confirmado
+  const createRes = await fetch(adminUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { role: 'admin' },
+    }),
   })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!createRes.ok) {
+    const txt = await createRes.text()
+    return NextResponse.json({ error: `Falha ao criar: ${createRes.status} ${txt}` }, { status: 500 })
+  }
 
+  const created = await createRes.json() as { id: string }
   return NextResponse.json({
     ok: true,
     action: 'created',
-    message: 'Utilizador criado com sucesso. Podes entrar em /login.',
-    user_id: data.user.id,
+    message: 'Conta criada com sucesso. Podes entrar em /login.',
+    user_id: created.id,
   })
 }
