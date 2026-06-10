@@ -47,60 +47,62 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 
-  // Usar REST API directamente — mais robusto que o SDK em alguns ambientes
-  const adminUrl = `${supabaseUrl}/auth/v1/admin/users`
-  const headers = {
-    'Content-Type': 'application/json',
-    'apikey': serviceKey,
-    'Authorization': `Bearer ${serviceKey}`,
-  }
-
-  // Verificar se utilizador já existe
-  const listRes = await fetch(adminUrl, { headers })
-  if (!listRes.ok) {
-    const txt = await listRes.text()
-    return NextResponse.json({ error: `Falha ao listar utilizadores: ${listRes.status} ${txt}` }, { status: 500 })
-  }
-
-  const { users } = await listRes.json() as { users: Array<{ id: string; email: string }> }
-  const existing = users?.find(u => u.email === email)
-
-  if (existing) {
-    // Actualizar password e confirmar
-    const updateRes = await fetch(`${adminUrl}/${existing.id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ password, email_confirm: true }),
-    })
-    if (!updateRes.ok) {
-      const txt = await updateRes.text()
-      return NextResponse.json({ error: `Falha ao actualizar: ${updateRes.status} ${txt}` }, { status: 500 })
+  try {
+    const adminUrl = `${supabaseUrl}/auth/v1/admin/users`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
     }
-    return NextResponse.json({ ok: true, action: 'updated', message: 'Conta actualizada e confirmada. Podes entrar em /login.' })
+
+    // Verificar se utilizador já existe
+    const listRes = await fetch(adminUrl, { headers })
+    const listText = await listRes.text()
+    if (!listRes.ok) {
+      return NextResponse.json({ error: `listUsers ${listRes.status}`, detail: listText }, { status: 500 })
+    }
+
+    let users: Array<{ id: string; email: string }> = []
+    try {
+      const parsed = JSON.parse(listText)
+      users = parsed.users ?? parsed ?? []
+    } catch {
+      return NextResponse.json({ error: 'JSON inválido de listUsers', raw: listText.slice(0, 200) }, { status: 500 })
+    }
+
+    const existing = users.find(u => u.email === email)
+
+    if (existing) {
+      const updateRes = await fetch(`${adminUrl}/${existing.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ password, email_confirm: true }),
+      })
+      const updateText = await updateRes.text()
+      if (!updateRes.ok) {
+        return NextResponse.json({ error: `updateUser ${updateRes.status}`, detail: updateText }, { status: 500 })
+      }
+      return NextResponse.json({ ok: true, action: 'updated', message: 'Conta actualizada e confirmada. Podes entrar em /login.' })
+    }
+
+    const createRes = await fetch(adminUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { role: 'admin' } }),
+    })
+    const createText = await createRes.text()
+    if (!createRes.ok) {
+      return NextResponse.json({ error: `createUser ${createRes.status}`, detail: createText }, { status: 500 })
+    }
+
+    const created = JSON.parse(createText) as { id: string }
+    return NextResponse.json({
+      ok: true,
+      action: 'created',
+      message: 'Conta criada com sucesso. Podes entrar em /login.',
+      user_id: created.id,
+    })
+  } catch (e) {
+    return NextResponse.json({ error: 'Excepção não tratada', detail: String(e) }, { status: 500 })
   }
-
-  // Criar utilizador novo confirmado
-  const createRes = await fetch(adminUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { role: 'admin' },
-    }),
-  })
-
-  if (!createRes.ok) {
-    const txt = await createRes.text()
-    return NextResponse.json({ error: `Falha ao criar: ${createRes.status} ${txt}` }, { status: 500 })
-  }
-
-  const created = await createRes.json() as { id: string }
-  return NextResponse.json({
-    ok: true,
-    action: 'created',
-    message: 'Conta criada com sucesso. Podes entrar em /login.',
-    user_id: created.id,
-  })
 }
