@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// GET: diagnóstico de vars (sem dados sensíveis)
+export async function GET() {
+  return NextResponse.json({
+    SETUP_TOKEN: !!process.env.SETUP_TOKEN,
+    NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabase_url_value: process.env.NEXT_PUBLIC_SUPABASE_URL ?? null,
+  })
+}
+
 export async function POST(request: NextRequest) {
   const setupToken = process.env.SETUP_TOKEN
   if (!setupToken) {
