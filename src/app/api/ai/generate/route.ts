@@ -257,6 +257,26 @@ Antes de gerar o JSON, verifica mentalmente:
 ✓ Usei Português de Portugal em todo o texto?
 ✓ Cada questão é específica ao tópico (não genérica)?`
 
+// Tenta fechar um JSON truncado adicionando os caracteres em falta
+function repairTruncatedJson(raw: string): string {
+  // Remover vírgula final antes de fechar (trailing comma)
+  let s = raw.trimEnd().replace(/,\s*$/, '')
+  // Contar chavetas e colchetes por fechar
+  const stack: string[] = []
+  let inString = false
+  let escape = false
+  for (const ch of s) {
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']')
+    else if (ch === '}' || ch === ']') stack.pop()
+  }
+  // Fechar o que ficou aberto (em ordem inversa)
+  return s + stack.reverse().join('')
+}
+
 // Helper para chamar qualquer endpoint OpenAI-compatible via fetch
 // systemPrompt: null → só mensagem user (útil para Tier 1 cujo prompt já tem tudo)
 async function callOpenAICompat(
@@ -280,7 +300,7 @@ async function callOpenAICompat(
         model,
         messages,
         temperature: 0.5,
-        max_tokens: 4096,   // reduzido de 8192 — evita rejeição em provedores com limite menor
+        max_tokens: 8192,   // Groq suporta 32k; outros providers toleram 8k
       }),
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -763,8 +783,15 @@ Responde APENAS com este JSON:
     try {
       content = JSON.parse(jsonMatch[0])
     } catch {
-      console.error('[PROFAI] JSON inválido (primeiros 1000 chars):', jsonMatch[0].slice(0, 1000))
-      throw new Error('JSON malformado — a IA devolveu uma resposta incompleta. Tenta novamente.')
+      // Tentar reparar JSON truncado: fechar colchetes/chavetas em falta
+      const repaired = repairTruncatedJson(jsonMatch[0])
+      try {
+        content = JSON.parse(repaired)
+        console.warn('[PROFAI] JSON reparado com sucesso (estava truncado)')
+      } catch {
+        console.error('[PROFAI] JSON irreparável (primeiros 500 chars):', jsonMatch[0].slice(0, 500))
+        throw new Error('JSON malformado — a IA devolveu uma resposta incompleta. Tenta novamente.')
+      }
     }
 
     // ── Validação e reparação estrutural (zero chamadas IA extra) ────────────
