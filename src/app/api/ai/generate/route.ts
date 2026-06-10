@@ -321,36 +321,13 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
   const ok = (minMs = 2_000) => Date.now() < deadline - minMs
 
-  // ── TIER 1: Gemini 2.5 Flash — 3 chaves via REST OpenAI-compatible ───────
-  // SDK substituído por fetch — mais fiável em ambientes Linux/Render
-  const geminiKeys = [
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-  ].filter((k): k is string => !!k)
-
-  for (const key of geminiKeys) {
-    if (!ok(3_000)) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
-    tried.push('gemini')
-    const r = await callOpenAICompat(
-      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-      key, 'gemini-2.5-flash', prompt, t(14_000), 'Gemini:2.5-flash',
-      {}, null  // sem system message — prompt já tem todas as instruções
-    )
-    if (r) {
-      console.log('[PROFAI] ✓ Gemini 2.5 Flash REST')
-      return { text: r, isFallback: false, modelUsed: 'gemini-2.5-flash' }
-    }
-    tried[tried.length - 1] = 'gemini-err'
-  }
-
-  // ── TIER 1: Groq — dois modelos (quotas independentes) ───────────────────
+  // ── TIER 1: Groq — rápido e fiável a partir do Render (~300ms) ──────────────
   if (process.env.GROQ_API_KEY && ok()) {
     tried.push('groq-llama')
     const r1 = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
       process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-      prompt, t(6_000), 'Groq:llama-3.3-70b'
+      prompt, t(12_000), 'Groq:llama-3.3-70b'
     )
     if (r1) return { text: r1, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
 
@@ -359,10 +336,32 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       const r2 = await callOpenAICompat(
         'https://api.groq.com/openai/v1/chat/completions',
         process.env.GROQ_API_KEY, 'qwen-qwq-32b',
-        prompt, t(6_000), 'Groq:qwen-qwq-32b'
+        prompt, t(12_000), 'Groq:qwen-qwq-32b'
       )
       if (r2) return { text: r2, isFallback: false, modelUsed: 'groq-qwen-qwq-32b' }
     }
+  }
+
+  // ── TIER 1: Gemini 2.5 Flash — alta latência no Render, usar só se Groq falhar
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+  ].filter((k): k is string => !!k)
+
+  for (const key of geminiKeys) {
+    if (!ok(5_000)) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
+    tried.push('gemini')
+    const r = await callOpenAICompat(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      key, 'gemini-2.5-flash', prompt, t(14_000), 'Gemini:2.5-flash',
+      {}, null
+    )
+    if (r) {
+      console.log('[PROFAI] ✓ Gemini 2.5 Flash REST')
+      return { text: r, isFallback: false, modelUsed: 'gemini-2.5-flash' }
+    }
+    tried[tried.length - 1] = 'gemini-err'
   }
 
   // ── TIER 2: fallback com prompt reforçado ────────────────────────────────
@@ -436,7 +435,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
   }
 
-  const elapsed = Math.round((22_000 - (deadline - Date.now())) / 1000)
+  const elapsed = Math.round((Date.now() - (deadline - 50_000)) / 1000)
   throw new Error(`Todos os modelos falharam (${elapsed}s). Tentados: ${tried.join(', ') || 'nenhum'}. Tenta novamente.`)
 }
 
