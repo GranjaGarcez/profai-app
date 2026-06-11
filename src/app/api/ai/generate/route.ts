@@ -493,10 +493,11 @@ export async function POST(request: NextRequest) {
     const curriculumConstraint = getCurriculumConstraint(subject, yearLevel)
 
     // ── Figuras matemáticas ─────────────────────────────────────────────────
-    const minFigures = Math.max(2, Math.floor(numQuestions / 3))
+    // Figuras são opcionais — apenas quando genuinamente úteis para a questão
+    // Não forçar um mínimo para não condicionar a estrutura pedagógica
     const figureNote = isMath ? `
-FIGURAS SVG — REGRA OBRIGATÓRIA:
-Num teste de ${numQuestions} questões TENS DE incluir pelo menos ${minFigures} questões com "figure" diferente de null.
+FIGURAS SVG — USAR APENAS QUANDO GENUINAMENTE ÚTIL:
+Inclui uma figura SVG numa questão SE E SÓ SE a presença visual melhora significativamente a compreensão ou é necessária para resolver o problema. NÃO adiciones figuras para atingir um mínimo — a qualidade pedagógica é prioritária.
 Analisa o tópico e aplica a seguinte lógica:
 
 MAPEAMENTO TÓPICO → FIGURA (usa SEMPRE que o tópico for relevante):
@@ -535,7 +536,7 @@ SINTAXE EXACTA dos tipos disponíveis (copia e adapta com valores reais para o $
   {"type":"cone","radiusLabel":"4 cm","heightLabel":"9 cm"}
   {"type":"sphere","radiusLabel":"5 cm"}
 
-VERIFICAÇÃO FINAL: Antes de fechar o JSON, conta quantas questões têm figure != null. Se for menos de ${minFigures}, adiciona figuras às questões que mais se adequam.` : ''
+Para questões onde uma figura não acrescenta nada → "figure": null (não inventes contexto visual forçado).` : ''
 
     // ── Perfil disciplinar (estrutura + cotação) ────────────────────────────
     const hasMultipleTypes = questionTypes.length > 1
@@ -568,6 +569,12 @@ ${scoringRule}
 8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
+
+VARIEDADE E RIQUEZA — REGRAS ABSOLUTAS:
+• Cobre pelo menos ${Math.min(numQuestions, Math.ceil(numQuestions * 0.6))} sub-aspectos DISTINTOS de "${topic}" — nunca repitas o mesmo conceito, procedimento ou contexto em questões diferentes.
+• Cada questão avalia algo diferente: um conceito, uma aplicação, um erro conceptual frequente, uma conexão com outro tópico, uma situação do mundo real distinta.
+• Proibido: duas questões com o mesmo tipo de cálculo/raciocínio aplicado a números diferentes (isso não é avaliação — é repetição).
+• A variedade de contextos (situações do mundo real) é tão importante quanto a variedade de conceitos.
 
 Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
 {
