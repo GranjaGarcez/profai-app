@@ -329,63 +329,32 @@ async function callOpenAICompat(
 interface GenerationResult { text: string; isFallback: boolean; modelUsed: string }
 
 // Cascade com dois níveis de qualidade:
-// TIER 1 (ouro): Gemini 2.5 Flash + Groq llama-3.3-70b → isFallback: false
-// TIER 2 (fallback com prompt reforçado): SambaNova + GitHub gpt-4o + Mistral → isFallback: true
-// isFallback:true → banco em primeiro lugar + aviso ao utilizador
-// DEADLINE GLOBAL: 22s para toda a cascade → nunca ultrapassa o limite de 26s da Netlify
+// TIER 1 (ouro): Groq llama-3.3-70b → isFallback: false (~300ms do Render)
+// TIER 2 (fallback com aviso amber): kimi, GitHub gpt-4o, NIM, SambaNova, Mistral, nemotron
+// Gemini REMOVIDO: AbortError confirmado do Render (latência > 14s sempre)
+// DEADLINE GLOBAL: 58s (Render suporta 60s, 2s de margem)
 async function generateWithFallback(prompt: string): Promise<GenerationResult> {
-  const deadline = Date.now() + 50_000 // orçamento total — Render suporta 60s (era 22s no Netlify)
+  const BUDGET = 58_000
+  const deadline = Date.now() + BUDGET
   const tried: string[] = []
 
-  // Helper: tempo restante, mínimo 2s, máximo maxMs
-  const t = (maxMs: number) => Math.max(2_000, Math.min(maxMs, deadline - Date.now()))
-  const ok = (minMs = 2_000) => Date.now() < deadline - minMs
+  // Helper: tempo restante, mínimo 3s, máximo maxMs
+  const t = (maxMs: number) => Math.max(3_000, Math.min(maxMs, deadline - Date.now()))
+  const ok = (minMs = 3_000) => Date.now() < deadline - minMs
 
-  // ── TIER 1: Groq — rápido e fiável a partir do Render (~300ms) ──────────────
+  // ── TIER 1: Groq llama — ~300ms do Render, resposta em JSON estruturado ─────
   if (process.env.GROQ_API_KEY && ok()) {
     tried.push('groq-llama')
     const r1 = await callOpenAICompat(
       'https://api.groq.com/openai/v1/chat/completions',
       process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-      prompt, t(12_000), 'Groq:llama-3.3-70b'
+      prompt, t(20_000), 'Groq:llama-3.3-70b'
     )
     if (r1) return { text: r1, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
-
-    if (ok()) {
-      tried.push('groq-qwen')
-      const r2 = await callOpenAICompat(
-        'https://api.groq.com/openai/v1/chat/completions',
-        process.env.GROQ_API_KEY, 'qwen-qwq-32b',
-        prompt, t(12_000), 'Groq:qwen-qwq-32b'
-      )
-      if (r2) return { text: r2, isFallback: false, modelUsed: 'groq-qwen-qwq-32b' }
-    }
   }
 
-  // ── TIER 1: Gemini 2.5 Flash — alta latência no Render, usar só se Groq falhar
-  const geminiKeys = [
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-  ].filter((k): k is string => !!k)
-
-  for (const key of geminiKeys) {
-    if (!ok(5_000)) { console.warn('[PROFAI] Gemini: sem tempo restante'); break }
-    tried.push('gemini')
-    const r = await callOpenAICompat(
-      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-      key, 'gemini-2.5-flash', prompt, t(14_000), 'Gemini:2.5-flash',
-      {}, null
-    )
-    if (r) {
-      console.log('[PROFAI] ✓ Gemini 2.5 Flash REST')
-      return { text: r, isFallback: false, modelUsed: 'gemini-2.5-flash' }
-    }
-    tried[tried.length - 1] = 'gemini-err'
-  }
-
-  // ── TIER 2: fallback com prompt reforçado ────────────────────────────────
-  console.warn('[PROFAI] Tier 1 indisponível — a usar fallback com prompt reforçado')
+  // ── TIER 2: fallback com prompt reforçado (banner amber no UI) ───────────────
+  console.warn('[PROFAI] Groq indisponível — a usar Tier 2 com aviso ao utilizador')
 
   if (process.env.OPENROUTER_API_KEY && ok()) {
     tried.push('kimi-k2.6')
@@ -393,7 +362,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2.6:free',
-      prompt, t(5_000), 'OR:kimi-k2.6:free', orH
+      prompt, t(22_000), 'OR:kimi-k2.6:free', orH
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'kimi-k2.6-free' }
   }
@@ -403,7 +372,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
       process.env.GITHUB_API_KEY, 'gpt-4o',
-      prompt, t(5_000), 'GitHub:gpt-4o'
+      prompt, t(22_000), 'GitHub:gpt-4o'
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
@@ -418,7 +387,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       const r = await callOpenAICompat(
         'https://integrate.api.nvidia.com/v1/chat/completions',
         nimKey, 'mistralai/mistral-small-4-119b-2603',
-        prompt, t(6_000), 'NIM:mistral-small-4-119b'
+        prompt, t(18_000), 'NIM:mistral-small-4-119b'
       )
       if (r) return { text: r, isFallback: true, modelUsed: 'nim-mistral-small-4-119b' }
     }
@@ -429,7 +398,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
       process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
-      prompt, t(5_000), 'SambaNova:DeepSeek-V3.1'
+      prompt, t(15_000), 'SambaNova:DeepSeek-V3.1'
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
   }
@@ -439,7 +408,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
       process.env.MISTRAL_API_KEY, 'mistral-small-latest',
-      prompt, t(5_000), 'Mistral:mistral-small'
+      prompt, t(12_000), 'Mistral:mistral-small'
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'mistral-small' }
   }
@@ -450,12 +419,12 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
-      prompt, t(8_000), 'OR:nemotron-3-super:free', orH
+      prompt, t(12_000), 'OR:nemotron-3-super:free', orH
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
   }
 
-  const elapsed = Math.round((Date.now() - (deadline - 50_000)) / 1000)
+  const elapsed = Math.round((Date.now() - (deadline - BUDGET)) / 1000)
   throw new Error(`Todos os modelos falharam (${elapsed}s). Tentados: ${tried.join(', ') || 'nenhum'}. Tenta novamente.`)
 }
 
