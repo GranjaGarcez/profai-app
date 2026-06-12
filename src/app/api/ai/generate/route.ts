@@ -287,7 +287,8 @@ async function callOpenAICompat(
   timeoutMs = 25_000,
   label = '',
   extraHeaders: Record<string, string> = {},
-  systemPrompt: string | null = FALLBACK_SYSTEM_ENHANCED
+  systemPrompt: string | null = FALLBACK_SYSTEM_ENHANCED,
+  maxTokens = 8192
 ): Promise<string | null> {
   try {
     const messages = systemPrompt
@@ -300,7 +301,7 @@ async function callOpenAICompat(
         model,
         messages,
         temperature: 0.5,
-        max_tokens: 8192,   // Groq suporta 32k; outros providers toleram 8k
+        max_tokens: maxTokens,
       }),
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -352,7 +353,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
         callOpenAICompat(
           'https://api.groq.com/openai/v1/chat/completions',
           process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-          prompt, 20_000, 'Groq:llama-3.3-70b'
+          prompt, 20_000, 'Groq:llama-3.3-70b',
+          {}, FALLBACK_SYSTEM_ENHANCED, 16_000
         ).then(text => text ? { text, model: 'groq-llama-3.3-70b' } : null)
       )
     }
@@ -369,7 +371,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
         callOpenAICompat(
           'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
           key, 'gemini-2.5-flash', prompt, 25_000, `Gemini:2.5-flash-${i + 1}`,
-          {}, null
+          {}, null, 16_000
         ).then(text => text ? { text, model: 'gemini-2.5-flash' } : null)
       )
     }
@@ -396,7 +398,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2.6:free',
-      prompt, t(22_000), 'OR:kimi-k2.6:free', orH
+      prompt, t(22_000), 'OR:kimi-k2.6:free', orH,
+      FALLBACK_SYSTEM_ENHANCED, 12_000
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'kimi-k2.6-free' }
   }
@@ -406,7 +409,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://models.inference.ai.azure.com/chat/completions',
       process.env.GITHUB_API_KEY, 'gpt-4o',
-      prompt, t(22_000), 'GitHub:gpt-4o'
+      prompt, t(22_000), 'GitHub:gpt-4o',
+      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
   }
@@ -421,7 +425,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       const r = await callOpenAICompat(
         'https://integrate.api.nvidia.com/v1/chat/completions',
         nimKey, 'mistralai/mistral-small-4-119b-2603',
-        prompt, t(18_000), 'NIM:mistral-small-4-119b'
+        prompt, t(18_000), 'NIM:mistral-small-4-119b',
+        {}, FALLBACK_SYSTEM_ENHANCED, 12_000
       )
       if (r) return { text: r, isFallback: true, modelUsed: 'nim-mistral-small-4-119b' }
     }
@@ -432,7 +437,8 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://api.sambanova.ai/v1/chat/completions',
       process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
-      prompt, t(15_000), 'SambaNova:DeepSeek-V3.1'
+      prompt, t(15_000), 'SambaNova:DeepSeek-V3.1',
+      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
   }
@@ -442,18 +448,20 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const r = await callOpenAICompat(
       'https://api.mistral.ai/v1/chat/completions',
       process.env.MISTRAL_API_KEY, 'mistral-small-latest',
-      prompt, t(12_000), 'Mistral:mistral-small'
+      prompt, t(12_000), 'Mistral:mistral-small',
+      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'mistral-small' }
   }
 
   if (process.env.OPENROUTER_API_KEY && ok()) {
     tried.push('nemotron')
-    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
+    const orH2 = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
     const r = await callOpenAICompat(
       'https://openrouter.ai/api/v1/chat/completions',
       process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
-      prompt, t(12_000), 'OR:nemotron-3-super:free', orH
+      prompt, t(12_000), 'OR:nemotron-3-super:free', orH2,
+      FALLBACK_SYSTEM_ENHANCED, 12_000
     )
     if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
   }
