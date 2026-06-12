@@ -329,9 +329,9 @@ async function callOpenAICompat(
 interface GenerationResult { text: string; isFallback: boolean; modelUsed: string }
 
 // Cascade com dois níveis de qualidade:
-// TIER 1 (ouro): Groq llama-3.3-70b → isFallback: false (~300ms do Render)
+// TIER 1 (ouro): Groq + Gemini em PARALELO — primeiro a responder ganha
+//   Groq: ~300ms, Gemini: 10-25s mas qualidade superior — Promise.any() evita espera sequencial
 // TIER 2 (fallback com aviso amber): kimi, GitHub gpt-4o, NIM, SambaNova, Mistral, nemotron
-// Gemini REMOVIDO: AbortError confirmado do Render (latência > 14s sempre)
 // DEADLINE GLOBAL: 58s (Render suporta 60s, 2s de margem)
 async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const BUDGET = 58_000
@@ -342,19 +342,53 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
   const t = (maxMs: number) => Math.max(3_000, Math.min(maxMs, deadline - Date.now()))
   const ok = (minMs = 3_000) => Date.now() < deadline - minMs
 
-  // ── TIER 1: Groq llama — ~300ms do Render, resposta em JSON estruturado ─────
-  if (process.env.GROQ_API_KEY && ok()) {
-    tried.push('groq-llama')
-    const r1 = await callOpenAICompat(
-      'https://api.groq.com/openai/v1/chat/completions',
-      process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-      prompt, t(20_000), 'Groq:llama-3.3-70b'
-    )
-    if (r1) return { text: r1, isFallback: false, modelUsed: 'groq-llama-3.3-70b' }
+  // ── TIER 1: Groq + Gemini em PARALELO — Promise.any() → primeiro sucesso vence ─
+  {
+    const tasks: Array<Promise<{ text: string; model: string } | null>> = []
+
+    if (process.env.GROQ_API_KEY) {
+      tried.push('groq-llama')
+      tasks.push(
+        callOpenAICompat(
+          'https://api.groq.com/openai/v1/chat/completions',
+          process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
+          prompt, 20_000, 'Groq:llama-3.3-70b'
+        ).then(text => text ? { text, model: 'groq-llama-3.3-70b' } : null)
+      )
+    }
+
+    const geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+    ].filter((k): k is string => !!k)
+
+    for (const [i, key] of geminiKeys.entries()) {
+      tried.push(`gemini-${i + 1}`)
+      tasks.push(
+        callOpenAICompat(
+          'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+          key, 'gemini-2.5-flash', prompt, 25_000, `Gemini:2.5-flash-${i + 1}`,
+          {}, null
+        ).then(text => text ? { text, model: 'gemini-2.5-flash' } : null)
+      )
+    }
+
+    if (tasks.length > 0) {
+      try {
+        const winner = await Promise.any(
+          tasks.map(p => p.then(r => r ?? Promise.reject(new Error('sem resultado'))))
+        )
+        console.log(`[PROFAI] ✓ Tier 1 vencedor: ${winner.model}`)
+        return { text: winner.text, isFallback: false, modelUsed: winner.model }
+      } catch {
+        console.warn('[PROFAI] Tier 1 sem sucesso — a usar Tier 2')
+      }
+    }
   }
 
   // ── TIER 2: fallback com prompt reforçado (banner amber no UI) ───────────────
-  console.warn('[PROFAI] Groq indisponível — a usar Tier 2 com aviso ao utilizador')
+  console.warn('[PROFAI] Tier 1 indisponível — a usar Tier 2 com aviso ao utilizador')
 
   if (process.env.OPENROUTER_API_KEY && ok()) {
     tried.push('kimi-k2.6')
