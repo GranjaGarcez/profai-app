@@ -260,7 +260,10 @@ function FractionBarFig({ f }: { f: Fig }) {
 function BarChartFig({ f }: { f: Fig }) {
   const bars = (f.bars as Array<{ label: string; value: number }>) || []
   if (bars.length === 0) return null
-  const showValues = f.showValues !== false  // false → ocultar valores (aluno tem de os ler)
+  // hideValueFor: nome da barra cuja resposta é pedida → mostra "?" em vez do valor
+  // showValues: false → ocultar todos (aluno lê pela escala Y)
+  const hideFor = typeof f.hideValueFor === 'string' ? f.hideValueFor.toLowerCase() : null
+  const showValues = f.showValues !== false
   const maxV = Math.max(...bars.map(b => b.value), 1)
   const W = 360, H = 240
   const pL = 50, pB = 50, pR = 20, pT = 30
@@ -289,10 +292,16 @@ function BarChartFig({ f }: { f: Fig }) {
         const bH2 = (bar.value / maxV) * cH
         const bX  = pL + i * bGap + (bGap - bW) / 2
         const bY  = H - pB - bH2
+        const isHidden = hideFor !== null && bar.label.toLowerCase() === hideFor
         return (
           <g key={i}>
             <rect x={bX} y={bY} width={bW} height={bH2} fill={BLUE} opacity={0.75} rx={2} />
-            {showValues && <text x={bX+bW/2} y={bY-5} textAnchor="middle" style={{ ...T, fontSize: 11 }}>{bar.value}</text>}
+            {showValues && (
+              <text x={bX+bW/2} y={bY-5} textAnchor="middle"
+                style={{ ...T, fontSize: 11, fontWeight: isHidden ? 'bold' : 'normal' } as CSSProperties}>
+                {isHidden ? '?' : bar.value}
+              </text>
+            )}
             <text x={bX+bW/2} y={H-pB+16} textAnchor="middle" style={{ ...T, fontSize: 10 }}>{bar.label}</text>
           </g>
         )
@@ -313,7 +322,10 @@ const PIE_COLORS = [BLUE, GOLD, '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#3B
 function PieChartFig({ f }: { f: Fig }) {
   const slices = (f.slices as Array<{ label: string; value: number }>) || []
   if (slices.length === 0) return null
-  const showValues = f.showValues !== false  // false → ocultar percentagens (aluno calcula)
+  // hideValueFor: nome da categoria cuja resposta é pedida → mostra "?" em vez do valor
+  // showValues: false → ocultar TODOS os valores (só usar se todos forem pedidos)
+  const hideFor = typeof f.hideValueFor === 'string' ? f.hideValueFor.toLowerCase() : null
+  const showValues = f.showValues !== false
   const total = slices.reduce((s, sl) => s + sl.value, 0) || 1
   const W = 310, H = 260
   const cx = 130, cy = 120, r = 90
@@ -326,15 +338,16 @@ function PieChartFig({ f }: { f: Fig }) {
     const x1 = cx + r * Math.cos(start),   y1 = cy + r * Math.sin(start)
     const x2 = cx + r * Math.cos(angle),   y2 = cy + r * Math.sin(angle)
     const mid = start + sweep / 2
-    const lR = r * 0.65  // label interior ao sector
+    const lR = r * 0.65
+    const isHidden = hideFor !== null && sl.label.toLowerCase() === hideFor
     return {
       d: `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z`,
       color: PIE_COLORS[i % PIE_COLORS.length],
       label: sl.label,
-      value: sl.value,
+      pct: Math.round(sl.value / total * 100),
       lx: cx + lR * Math.cos(mid),
       ly: cy + lR * Math.sin(mid),
-      pct: Math.round(sl.value / total * 100),
+      isHidden,
     }
   })
 
@@ -346,17 +359,19 @@ function PieChartFig({ f }: { f: Fig }) {
           <path d={p.d} fill={p.color} stroke="white" strokeWidth="2" opacity={0.85} />
           {showValues && (
             <text x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle"
-              style={{ ...T, fontSize: 10, fontWeight: 'bold', fill: 'white' } as CSSProperties}>
-              {p.pct}%
+              style={{ ...T, fontSize: 11, fontWeight: 'bold', fill: 'white' } as CSSProperties}>
+              {p.isHidden ? '?' : `${p.pct}%`}
             </text>
           )}
         </g>
       ))}
-      {/* Legenda — mostra sempre os nomes, nunca os valores */}
+      {/* Legenda: nomes sempre visíveis; valor de contexto ou "?" */}
       {paths.map((p, i) => (
         <g key={`l${i}`}>
           <rect x={230} y={30 + i * 22} width={12} height={12} fill={p.color} opacity={0.85} rx={2} />
-          <text x={248} y={30 + i * 22 + 6} dominantBaseline="middle" style={{ ...T, fontSize: 10 }}>{p.label}</text>
+          <text x={248} y={30 + i * 22 + 6} dominantBaseline="middle" style={{ ...T, fontSize: 10 }}>
+            {p.label}{showValues ? ` (${p.isHidden ? '?' : p.pct}%)` : ''}
+          </text>
         </g>
       ))}
     </Svg>
