@@ -539,6 +539,13 @@ SINTAXE EXACTA dos tipos disponíveis (copia e adapta com valores reais para o $
   {"type":"fraction_bar","numerator":3,"denominator":4,"label":"3/4"}
   {"type":"bar_chart","title":"Título","yLabel":"N.º alunos","bars":[{"label":"Jan","value":5},{"label":"Fev","value":8},{"label":"Mar","value":3}]}
   {"type":"pie_chart","title":"Título","slices":[{"label":"Categoria A","value":60},{"label":"Categoria B","value":40}]}
+
+REGRA CRÍTICA — showValues (bar_chart e pie_chart):
+• Se a questão PEDE ao aluno que determine, calcule ou leia um valor do gráfico → adiciona "showValues": false
+  Exemplos: "Qual é a percentagem de...?", "Quantos alunos...?", "Calcula a amplitude do sector..."
+• Se o gráfico serve de contexto/apoio mas os valores não são a resposta em si → omite (true por defeito)
+  Exemplos: "Que conclusão retiras sobre a evolução?", "Compara as duas categorias"
+Nunca mostres os valores quando eles são exactamente o que o aluno tem de descobrir.
   {"type":"cuboid","widthLabel":"8 cm","heightLabel":"5 cm","depthLabel":"3 cm"}
   {"type":"cube","sideLabel":"4 cm"}
   {"type":"triangular_prism","baseLabel":"6 cm","heightLabel":"4 cm","depthLabel":"10 cm"}
