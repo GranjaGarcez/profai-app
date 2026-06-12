@@ -6,7 +6,7 @@ import MathFigure from '@/components/math/MathFigure'
 const SUBJECTS_PT = [
   'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
   'História', 'Geografia', 'Inglês', 'Espanhol', 'Francês',
-  'História e Geografia de Portugal', 'Educação Visual', 'Educação Tecnológica',
+  'História e Geografia de Portugal', 'Filosofia', 'Educação Visual', 'Educação Tecnológica',
   'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A',
 ]
 

@@ -1107,6 +1107,103 @@ const fisicaQuimicaA: SubjectCurriculum = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FILOSOFIA  (Ensino Secundário — 10.º e 11.º anos)
+// Fonte: Programa e AE de Filosofia 10-11 (DGE, 2018).
+// Referência de exame: Prova 714 (IAVE) — exame nacional de Filosofia.
+// NOTA: autores e temas restritos ao programa oficial DGE. Nozick, Nietzsche,
+//       fenomenologia (Husserl, Heidegger) NÃO constam nas AE oficiais.
+// ─────────────────────────────────────────────────────────────────────────────
+const filosofia: SubjectCurriculum = {
+  10: {
+    source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/10_filosofia_ff.pdf',
+    domains: [
+      {
+        name: 'Argumentação e Lógica',
+        topics: [
+          'Noção de argumento: premissas e conclusão; argumentos dedutivos e indutivos',
+          'Validade e verdade: distinção entre argumento válido e argumento com premissas verdadeiras',
+          'Validade e invalidade: forma lógica; contra-exemplo',
+          'Falácias informais: apelo à autoridade, ad hominem, apelo à emoção, generalização precipitada, falsa dicotomia, petição de princípio',
+          'Lógica formal elementar: conectivos proposicionais (negação, conjunção, disjunção, condicional); tabelas de verdade; modus ponens; modus tollens',
+        ],
+      },
+      {
+        name: 'Ética e Moral',
+        topics: [
+          'Distinção entre ética e moral; ética descritiva vs. normativa vs. metaética',
+          'Relativismo ético: relativismo individual e cultural; crítica e limites do relativismo',
+          'Ética de Kant: imperativo categórico (fórmula da lei universal e fórmula da humanidade); dever; autonomia; crítica às éticas consequencialistas',
+          'Utilitarismo (Mill): princípio da utilidade; maximização da felicidade; críticas ao utilitarismo',
+          'Ética das virtudes (Aristóteles): eudaimonia; virtude como disposição adquirida; virtude moral vs. intelectual; o justo meio',
+          'Problemas éticos actuais: eutanásia, bioética, genoma humano, reprodução assistida, ética ambiental',
+        ],
+      },
+      {
+        name: 'Filosofia Política',
+        topics: [
+          'Estado e contrato social: Hobbes (estado de natureza, Leviatã), Locke (direitos naturais, consentimento), Rousseau (vontade geral)',
+          'Liberalismo político: John Rawls — véu da ignorância; princípios de justiça (princípio da liberdade igual e princípio da diferença)',
+          'Democracia: valores democráticos; participação cívica; direitos fundamentais',
+          'Direitos humanos: fundamentos filosóficos; universalidade vs. relativismo; gerações de direitos',
+        ],
+      },
+    ],
+    canTest: 'Noção de argumento (premissas, conclusão, validade, verdade); falácias informais (apelo à autoridade, ad hominem, generalização precipitada, falsa dicotomia, petição de princípio); lógica formal elementar (conectivos, tabelas de verdade, modus ponens, modus tollens); distinção ética/moral; relativismo ético e seus limites; ética de Kant (imperativo categórico — fórmula universal e da humanidade, dever, autonomia); utilitarismo de Mill (princípio da utilidade); ética das virtudes de Aristóteles (eudaimonia, virtude, justo meio); bioética (eutanásia, genoma, reprodução assistida); contrato social (Hobbes, Locke, Rousseau); Rawls (véu da ignorância, princípios de justiça); direitos humanos (fundamentos e gerações).',
+    cannotTest: 'Teoria do conhecimento de Platão/Descartes/Hume (11.º); filosofia da ciência — Popper/Kuhn (11.º); filosofia da arte aprofundada (11.º); filosofia da religião aprofundada (11.º); Nozick (fora das AE).',
+  },
+
+  11: {
+    source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/11_filosofia_ff.pdf',
+    domains: [
+      {
+        name: 'Teoria do Conhecimento',
+        topics: [
+          'Platão: conhecimento como crença verdadeira justificada (Mênon, Teeteto); alegoria da caverna; mundo sensível vs. mundo inteligível; teoria da reminiscência',
+          'Descartes: dúvida metódica e hiperbólica; cogito ergo sum; res cogitans e res extensa; ideias inatas; racionalismo',
+          'Hume: impressões e ideias; princípio da cópia; problema da indução — hábito e costume como fundamento das expectativas; ceticismo moderado; empirismo; crítica à causalidade necessária',
+          'Problema de Gettier: limitações da definição clássica de conhecimento como crença verdadeira justificada',
+          'Ceticismo: radical (Descartes) e moderado (Hume); respostas ao ceticismo',
+        ],
+      },
+      {
+        name: 'Filosofia da Ciência',
+        topics: [
+          'Problema da demarcação: o que distingue ciência de pseudociência e de metafísica',
+          'Verificacionismo (Círculo de Viena): critério de significado empírico; limites do verificacionismo',
+          'Falsificacionismo de Popper: falsificabilidade como critério de demarcação; conjecturas e refutações; a ciência cresce por eliminação de erros; convenções e limites',
+          'Kuhn: ciência normal e paradigma; anomalia e crise; revolução científica; incomensurabilidade entre paradigmas',
+          'Implicações: objectividade científica; progresso científico; relativismo epistémico',
+        ],
+      },
+      {
+        name: 'Tema de Aprofundamento — Filosofia da Arte',
+        topics: [
+          'O que é a arte? Dificuldade de definição',
+          'Teoria mimética (Platão): arte como imitação da realidade sensível; crítica platónica à arte',
+          'Teoria expressivista: arte como expressão autêntica de sentimentos e emoções',
+          'Teoria institucional da arte (Dickie): estatuto artístico conferido pelo "mundo da arte"',
+          'Teoria não-essencialista (Wittgenstein): semelhança de família; inexistência de uma essência comum a todas as obras de arte',
+          'Juízo estético em Kant: desinteresse; universalidade e necessidade do juízo de gosto; sublime vs. belo',
+          'Arte e sociedade: função social da arte; arte contemporânea e fronteiras da arte',
+        ],
+      },
+      {
+        name: 'Tema de Aprofundamento — Filosofia da Religião',
+        topics: [
+          'Argumento cosmológico: Tomás de Aquino (1.ª, 2.ª e 3.ª vias); argumento Kalam; objecções (regressão ao infinito, necessidade)',
+          'Argumento teleológico (do desígnio): Paley (analogia do relógio e do relojoeiro); crítica de Hume (Diálogos sobre a Religião Natural)',
+          'Argumento ontológico de Anselmo: "ser do qual nada maior pode ser pensado"; objecção de Kant (existência não é predicado real)',
+          'Problema do mal: teodiceia; mal físico vs. mal moral; argumento do livre-arbítrio; incompatibilidade com a omnipotência e omnibenevolência divinas',
+          'Fideísmo de Pascal: argumento da aposta; fé para além da razão',
+        ],
+      },
+    ],
+    canTest: 'Platão (crença verdadeira justificada, alegoria da caverna, mundo sensível vs. inteligível, reminiscência); Descartes (dúvida metódica, cogito, res cogitans/extensa, ideias inatas, racionalismo); Hume (impressões/ideias, problema da indução, hábito e costume, ceticismo moderado, empirismo, crítica à causalidade); problema de Gettier; Popper — falsificacionismo (falsificabilidade, conjecturas e refutações); Kuhn (paradigma, ciência normal vs. revolucionária, revolução científica, incomensurabilidade); Filosofia da Arte — teoria mimética (Platão), expressivista, institucional (Dickie), não-essencialista (Wittgenstein), juízo estético de Kant (desinteresse, universalidade, sublime/belo); Filosofia da Religião — argumento cosmológico (Aquino, Kalam), teleológico (Paley, crítica de Hume), ontológico (Anselmo, objecção de Kant), problema do mal, fideísmo de Pascal.',
+    cannotTest: 'Argumentação e lógica formal detalhada (10.º); ética normativa (10.º); filosofia política e Rawls (10.º); Nozick (fora das AE); Nietzsche (fora das AE 11.º); fenomenologia — Husserl, Heidegger (fora das AE); metafísica formal.',
+  },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BASE DE DADOS PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export const CURRICULUM_DB: CurriculumDB = {
@@ -1126,6 +1223,7 @@ export const CURRICULUM_DB: CurriculumDB = {
   // Ensino Secundário (disciplinas próprias)
   'Biologia e Geologia':                biologiaGeologia,
   'Física e Química A':                 fisicaQuimicaA,
+  'Filosofia':                          filosofia,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -149,6 +149,23 @@ ${ctx}`,
     }
   }
 
+  // ── Filosofia ────────────────────────────────────────────────────────────────
+  if (s.includes('filosof')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Filosofia (${yearLevel}.º ano) — alinhada com a Prova 714 (IAVE):
+• Grupo I — Questões objectivas (20–25 pts): escolha múltipla e/ou V/F sobre conceitos filosóficos, teses dos autores e distinções conceptuais. 4–5 pts/questão. Distratores baseados em confusões conceptuais típicas dos alunos.
+• Grupo II — Análise de texto filosófico (30–40 pts): inclui OBRIGATORIAMENTE um excerto filosófico (primário ou secundário) de 80–200 palavras no campo "text" de uma questão (colocar o excerto no campo "text" da questão âncora). Questões de interpretação, identificação de tese, análise de argumento e conceptualização. 5–10 pts/questão.
+• Grupo III — Resposta de desenvolvimento (35–45 pts): uma questão aberta exigindo posição filosófica pessoal fundamentada com tese, argumentação, contra-argumento e conclusão. Rubrica IAVE: Tese/Problematização + Argumentação + Adequação conceptual e teórica + Comunicação. NUNCA menos de 35 pts neste grupo.
+REGRA ABSOLUTA: O excerto filosófico no Grupo II é OBRIGATÓRIO. Não inventar autores ou teses fora do programa DGE.
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
+   • Questões objectivas (EM/VF): 4–5 pts/questão, máximo 25 pts no grupo
+   • Análise de texto / Conceptualização: 5–10 pts/questão
+   • Desenvolvimento filosófico: MÍNIMO 35 pts — markScheme obrigatoriamente estruturado em: Tese/Problematização (20%) + Argumentação (45%) + Adequação conceptual e teórica (25%) + Comunicação e organização do discurso (10%)
+   • Distribuição típica: Objectivas ~22% | Análise texto ~35% | Desenvolvimento ~43%`,
+    }
+  }
+
   // ── Matemática / STEM (default) ──────────────────────────────────────────────
   if (hasMultipleTypes) {
     return {
@@ -206,6 +223,12 @@ function autoMarkScheme(type: string, pts: number, subject: string): string {
       return `Identificação correcta do fenómeno ou conceito científico (${p(0.25)}pt) + explicação científica correcta e fundamentada (${p(0.4)}pt) + terminologia científica adequada (${p(0.2)}pt) + conclusão pertinente (${p(0.15)}pt).`
     }
     return `Resposta científica correcta (${p(0.6)}pt) + justificação com terminologia científica adequada (${p(0.4)}pt).`
+  }
+  if (s.includes('filosof')) {
+    if (isLong) {
+      return `Tese/Problematização — identificação clara da questão filosófica e posição pessoal fundamentada (${p(0.2)}pt) + Argumentação — pelo menos dois argumentos filosóficos pertinentes com recurso a conceitos e autores do programa DGE (${p(0.45)}pt) + Adequação conceptual e teórica — uso correcto da terminologia filosófica e referências aos autores estudados (${p(0.25)}pt) + Comunicação — organização, coesão e clareza do discurso filosófico (${p(0.1)}pt).`
+    }
+    return `Identificação correcta do conceito, tese ou autor filosófico (${p(0.5)}pt) + explicação adequada com referência ao pensamento do autor no contexto do programa DGE (${p(0.5)}pt).`
   }
   // Genérico
   return isLong
@@ -497,6 +520,7 @@ export async function POST(request: NextRequest) {
       'História':           'Inclui fontes primárias ou secundárias curtas (excerto, imagem descrita) para análise. Avalia compreensão de causalidade, mudança e continuidade. Questões de desenvolvimento com tese.',
       'Geografia':          'Inclui análise de dados geográficos (descrição de gráfico, tabela, mapa simples). Avalia localização, distribuição e relações espaciais.',
       'História e Geografia de Portugal': 'Inclui fontes e dados histórico-geográficos. Avalia compreensão de processos históricos e características geográficas de Portugal.',
+      'Filosofia':          'DISCIPLINA: Filosofia (alinhado com Prova 714 IAVE). Toda a questão deve incluir o conceito filosófico exacto com o autor do programa. Grupo I: questões objectivas (EM/VF) sobre conceitos, teses e distinções conceptuais dos autores. Grupo II: inclui OBRIGATORIAMENTE um excerto filosófico (primário ou secundário, 80-200 palavras) no campo "text" de uma questão, seguido de questões de análise. Grupo III: questão de desenvolvimento exigindo tese, argumentação, contra-argumento e conclusão (rubrica IAVE). PROIBIDO inventar autores ou teses que não constem no programa oficial DGE.',
     }
     const subjectNote = subjectGuidelines[subject] ?? 'Cria questões rigorosas, contextualizadas e curricularmente alinhadas com as Aprendizagens Essenciais DGE.'
 
