@@ -158,11 +158,12 @@ ${ctx}`,
 • Grupo III — Resposta de desenvolvimento (35–45 pts): uma questão aberta exigindo posição filosófica pessoal fundamentada com tese, argumentação, contra-argumento e conclusão. Rubrica IAVE: Tese/Problematização + Argumentação + Adequação conceptual e teórica + Comunicação. NUNCA menos de 35 pts neste grupo.
 REGRA ABSOLUTA: O excerto filosófico no Grupo II é OBRIGATÓRIO. Não inventar autores ou teses fora do programa DGE.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Questões objectivas (EM/VF): 4–5 pts/questão, máximo 25 pts no grupo
-   • Análise de texto / Conceptualização: 5–10 pts/questão
-   • Desenvolvimento filosófico: MÍNIMO 35 pts — markScheme obrigatoriamente estruturado em: Tese/Problematização (20%) + Argumentação (45%) + Adequação conceptual e teórica (25%) + Comunicação e organização do discurso (10%)
-   • Distribuição típica: Objectivas ~22% | Análise texto ~35% | Desenvolvimento ~43%`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Questões objectivas (EM/VF): 5 pts/questão (valor fixo); máximo 25 pts no Grupo I
+   • Análise de texto / Conceptualização (resposta curta): 8 pts/questão (valor fixo); máximo 40 pts no Grupo II
+   • Desenvolvimento filosófico (1 questão): 35 pts (valor fixo); markScheme OBRIGATÓRIO com 4 parcelas exactas: Tese/Problematização (7pt) + Argumentação (16pt) + Adequação conceptual e teórica (9pt) + Comunicação (3pt) = 35pt
+   • Distribuição para 16 questões: 5 EM/VF × 5pt = 25pt | ~4–5 questões curtas × 8pt = 32–40pt | 1 desenvolvimento = 35pt → total = 100pt
+   • REGRA: "points" de cada questão tem sempre um valor inteiro concreto — nunca null, nunca 0, nunca omitido`,
     }
   }
 
@@ -601,7 +602,7 @@ ${curriculumConstraint}DIRECTRIZES PEDAGÓGICAS OBRIGATÓRIAS:
 4. LINGUAGEM: Clara, precisa, Português de Portugal estrito. Usa "rectângulo", "fórmula", "efeito", "facto", "óptimo", "actividade" (nunca formas brasileiras)
 5. CURRÍCULO: Alinhamento estrito com as AE da DGE — respeita SEMPRE a secção CURRÍCULO OBRIGATÓRIO acima
 ${scoringRule}
-7. CRITÉRIOS DE CORRECÇÃO — markScheme OBRIGATÓRIO e ESPECÍFICO em CADA questão; pontos parciais cuja SOMA = "points" da questão:
+7. CRITÉRIOS DE CORRECÇÃO — markScheme OBRIGATÓRIO e ESPECÍFICO em CADA questão; pontos parciais cuja SOMA = "points" da questão. NUNCA omitir pontos — cada parcela tem o valor exacto em pt:
    • Escolha múltipla: "Resposta: [letra] (Xpt). A opção [Y] induz o erro de [...]; A opção [Z] confunde [...]. Resposta errada = 0pt."
    • Verdadeiro/Falso: "[Verdadeiro/Falso] — [razão científica/histórica/linguística concreta]. (Xpt). Resposta errada = 0pt."
    • Matemática/FQ (resposta curta ou longa): "dados (Xpt) + fórmula/método (Xpt) + cálculo sem erro (Xpt) + resposta com unidade correcta (Xpt)"
@@ -609,7 +610,10 @@ ${scoringRule}
    • Português (expressão escrita): "conteúdo e pertinência (Xpt) + organização e coesão (Xpt) + correcção linguística e ortográfica (Xpt)"
    • CN (resposta aberta): "identificação do fenómeno (Xpt) + explicação científica (Xpt) + terminologia (Xpt) + conclusão (Xpt)"
    • HGP/História/Geografia (desenvolvimento): "conteúdo histórico/geográfico com factos (Xpt) + organização do discurso (Xpt) + vocabulário específico (Xpt)"
-   REGRA ABSOLUTA: A soma dos pontos parciais no markScheme = "points" da questão.
+   • Filosofia (EM/VF): "Resposta: [letra ou V/F] (Xpt). Distrator [Y] confunde [...] com [...] — erro conceptual típico. Resposta errada = 0pt. ✓ Cotação objectiva."
+   • Filosofia (análise de texto / questão conceptual): "Identificação correcta do conceito/tese/autor (Xpt) + explicação com referência explícita ao pensamento do autor no texto ou no programa (Xpt) + terminologia filosófica adequada (Xpt). ⚑ Proposta de cotação — verificar rigor conceptual na resposta do aluno."
+   • Filosofia (desenvolvimento / ensaio filosófico): "Tese/Problematização — posição clara sobre a questão filosófica (Xpt) + Argumentação — mínimo 2 argumentos com conceitos e autores do programa DGE (Xpt) + Adequação conceptual e teórica — terminologia e autores correctamente mobilizados (Xpt) + Comunicação — organização, coesão e clareza do discurso filosófico (Xpt). ⚑ Rubrica orientadora — cotação a ajustar pelo professor; questão de desenvolvimento com avaliação necessariamente holística."
+   REGRA ABSOLUTA: A soma dos pontos parciais no markScheme = "points" da questão. Cada Xpt é um número inteiro concreto, nunca um intervalo.
 8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
