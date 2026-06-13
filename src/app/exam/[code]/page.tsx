@@ -469,9 +469,11 @@ function QuestionCard({
   onChange: (v: string) => void
   onCalcEntry: (entry: CalcEntry) => void
 }) {
+  const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank']
+  const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
-  const isOpen  = !isMulti && !isTF
+  const isOpen  = !isMulti && !isTF && !isTextOnly
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [showKeyboard, setShowKeyboard] = useState(false)
@@ -497,6 +499,23 @@ function QuestionCard({
   }, [fracNum, fracDen, insertSymbol])
 
   const cat = MATH_SYMBOLS[activeCategory]
+
+  // Questão inválida (type='text' ou points=0) — bloco de leitura apenas
+  if (isTextOnly) {
+    return (
+      <div className="bg-white rounded-2xl overflow-hidden"
+        style={{ border: '1.5px solid #e2e8f0', boxShadow: '0 1px 4px rgba(13,27,42,0.04)' }}>
+        <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+          <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+            style={{ background: '#64748b', color: 'white' }}>{n}</span>
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f1f5f9', color: '#64748b' }}>Texto</span>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>{q.text}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden transition-all"

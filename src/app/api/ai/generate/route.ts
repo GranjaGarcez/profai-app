@@ -153,10 +153,12 @@ ${ctx}`,
   if (s.includes('filosof')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Filosofia (${yearLevel}.º ano) — alinhada com a Prova 714 (IAVE):
-• Grupo I — Questões objectivas (20–25 pts): escolha múltipla e/ou V/F sobre conceitos filosóficos, teses dos autores e distinções conceptuais. 4–5 pts/questão. Distratores baseados em confusões conceptuais típicas dos alunos.
-• Grupo II — Análise de texto filosófico (30–40 pts): inclui OBRIGATORIAMENTE um excerto filosófico (primário ou secundário) de 80–200 palavras no campo "text" de uma questão (colocar o excerto no campo "text" da questão âncora). Questões de interpretação, identificação de tese, análise de argumento e conceptualização. 5–10 pts/questão.
-• Grupo III — Resposta de desenvolvimento (35–45 pts): uma questão aberta exigindo posição filosófica pessoal fundamentada com tese, argumentação, contra-argumento e conclusão. Rubrica IAVE: Tese/Problematização + Argumentação + Adequação conceptual e teórica + Comunicação. NUNCA menos de 35 pts neste grupo.
-REGRA ABSOLUTA: O excerto filosófico no Grupo II é OBRIGATÓRIO. Não inventar autores ou teses fora do programa DGE.
+• Grupo I — Questões objectivas (20–25 pts): escolha múltipla e/ou V/F sobre conceitos filosóficos, teses dos autores e distinções conceptuais. 5 pts/questão. Distratores baseados em confusões conceptuais típicas dos alunos.
+• Grupo II — Análise de texto filosófico (30–40 pts): questões de tipo short_answer com 8 pts cada. CADA QUESTÃO DO GRUPO II contém o excerto filosófico incorporado no seu próprio campo "text", usando este formato exacto:
+  "text": "Excerto de [Autor, Obra]:\\n«[texto do excerto, 80–200 palavras]»\\n\\n[pergunta de interpretação]"
+  O excerto é parte do enunciado da questão — NÃO crias questões separadas para o texto. NÃO uses type='text' nem points=0.
+• Grupo III — Resposta de desenvolvimento (35 pts, 1 questão): long_answer. Exige tese, argumentação, contra-argumento e conclusão. Rubrica IAVE: Tese/Problematização (7pt) + Argumentação (16pt) + Adequação conceptual e teórica (9pt) + Comunicação (3pt).
+PROIBIDO ABSOLUTO: type='text', points=0 ou questões sem pergunta real. Cada item é uma questão com cotação e resposta esperada.
 ${ctx}`,
       scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
    • Questões objectivas (EM/VF): 5 pts/questão (valor fixo); máximo 25 pts no Grupo I
