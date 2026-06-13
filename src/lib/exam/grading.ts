@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
-import type { Question, GradingDetail, TestSnapshot } from './types'
+import type { Question, GradingDetail, RubricCriterion, TestSnapshot } from './types'
 import { getAllQuestions } from './types'
 
 // Inicialização lazy — evita falha de build quando as env vars não estão disponíveis em build time
@@ -55,6 +55,17 @@ COMO INTERPRETAR ESTE REGISTO:
 - Só penalizes cálculos da calculadora se forem claramente contraditórios com a resolução apresentada.`
     : ''
 
+  const isLong = q.type === 'long_answer'
+
+  const rubricInstruction = isLong ? `
+RUBRICA OBRIGATÓRIA: O markScheme contém critérios com pontuação máxima (ex: "Tese (7pt) + Argumentação (16pt)...").
+Identifica cada critério e avalia-o individualmente. Devolve o array "rubric" com todos os critérios encontrados.
+A soma dos "score" da rubrica DEVE ser igual ao "score" total.` : ''
+
+  const responseFormat = isLong
+    ? `{"score": <total 0–${q.points}>, "rubric": [{"criterion": "<nome>", "score": <pontos>, "max": <máximo>}], "feedback": "<frase curta PT-PT>", "confidence": <0.0–1.0>}`
+    : `{"score": <0–${q.points}>, "feedback": "<frase curta PT-PT>", "confidence": <0.0–1.0>}`
+
   const prompt = `És um professor experiente de ${subject} a corrigir a resposta de um aluno.
 
 QUESTÃO: ${q.text}
@@ -75,9 +86,10 @@ REGRAS DE CORRECÇÃO — aplica todas sem excepção:
 8. IN DUBIO PRO DISCIPULUM: em caso de dúvida genuína sobre se a resposta é correcta ou parcialmente correcta, decide sempre a favor do aluno. A confiança deve reflectir essa dúvida (valor baixo).
 9. O histórico da calculadora mostra a estratégia usada, não um rascunho limpo — procura a linha coerente e ignora ruído.
 10. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
+${rubricInstruction}
 
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
-{"score": <número de 0 a ${q.points}>, "feedback": "<frase curta em Português de Portugal>", "confidence": <0.0 a 1.0>}`
+${responseFormat}`
 
   try {
     const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
@@ -85,12 +97,13 @@ Responde APENAS com JSON válido (sem texto extra, sem markdown):
     const text = result.response.text()
     const match = text.match(/\{[\s\S]*?\}/)
     if (!match) throw new Error('no json')
-    const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number }
+    const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
     const score = Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
     return {
       score,
       max: q.points,
       feedback: parsed.feedback ?? '',
+      rubric: parsed.rubric?.length ? parsed.rubric : undefined,
       auto: true,
       ai_confidence: parsed.confidence ?? 0.8,
     }
@@ -105,14 +118,14 @@ Responde APENAS com JSON válido (sem texto extra, sem markdown):
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,
-        max_tokens: 256,
+        max_tokens: 512,
       })
       const text = completion.choices[0]?.message?.content ?? ''
-      const match = text.match(/\{[\s\S]*?\}/)
+      const match = text.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('no json')
-      const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number }
+      const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
       const score = Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
-      return { score, max: q.points, feedback: parsed.feedback ?? '', auto: true, ai_confidence: 0.7 }
+      return { score, max: q.points, feedback: parsed.feedback ?? '', rubric: parsed.rubric?.length ? parsed.rubric : undefined, auto: true, ai_confidence: 0.7 }
     } catch {
       // Falha total — marcar para revisão manual
       return {

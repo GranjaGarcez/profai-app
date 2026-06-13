@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { getAllQuestions } from '@/lib/exam/types'
-import type { TestSnapshot, Question, GradingDetail } from '@/lib/exam/types'
+import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -25,6 +25,75 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
   grading:   { label: 'A corrigir',  color: '#1e40af', bg: '#eff6ff' },
   graded:    { label: 'Corrigido',   color: '#166534', bg: '#f0fdf4' },
   reviewed:  { label: 'Revisto',     color: '#6b21a8', bg: '#faf5ff' },
+}
+
+// ── Tabela de rubrica por critério (long_answer) ───────────────────────────────
+function RubricTable({ rubric, confidence }: { rubric: RubricCriterion[]; confidence?: number }) {
+  const total    = rubric.reduce((s, r) => s + r.score, 0)
+  const totalMax = rubric.reduce((s, r) => s + r.max, 0)
+
+  function criterionColor(score: number, max: number) {
+    const pct = max > 0 ? score / max : 0
+    if (pct >= 0.75) return { bar: '#22c55e', text: '#166534', bg: '#f0fdf4' }
+    if (pct >= 0.5)  return { bar: '#f59e0b', text: '#92400e', bg: '#fffbeb' }
+    return                  { bar: '#ef4444', text: '#991b1b', bg: '#fef2f2' }
+  }
+
+  return (
+    <div className="pl-1">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium" style={{ color: '#9CA3AF' }}>Rubrica de correcção</p>
+        {confidence !== undefined && (
+          <span className="text-xs px-1.5 py-0.5 rounded"
+            style={{ background: confidence >= 0.8 ? '#f0f9ff' : '#fef3c7', color: confidence >= 0.8 ? '#0369a1' : '#92400e' }}>
+            IA {Math.round(confidence * 100)}%
+          </span>
+        )}
+      </div>
+
+      <div className="rounded-lg overflow-hidden border" style={{ borderColor: '#0D1B2A12' }}>
+        {rubric.map((r, i) => {
+          const c   = criterionColor(r.score, r.max)
+          const pct = r.max > 0 ? Math.round((r.score / r.max) * 100) : 0
+          return (
+            <div key={i}
+              className="grid items-center px-3 py-2 gap-2 text-xs"
+              style={{
+                gridTemplateColumns: '1fr auto auto',
+                borderBottom: i < rubric.length - 1 ? '1px solid #0D1B2A08' : 'none',
+                background: i % 2 === 0 ? '#fafafa' : 'white',
+              }}>
+              <div className="flex items-center gap-2 min-w-0">
+                {/* barra de progresso */}
+                <div className="w-16 h-1.5 rounded-full flex-shrink-0" style={{ background: '#e5e7eb' }}>
+                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: c.bar }} />
+                </div>
+                <span className="truncate font-medium" style={{ color: '#374151' }}>{r.criterion}</span>
+              </div>
+              <span className="font-mono font-bold flex-shrink-0" style={{ color: c.text }}>
+                {r.score}
+              </span>
+              <span className="font-mono flex-shrink-0" style={{ color: '#9CA3AF' }}>
+                / {r.max}
+              </span>
+            </div>
+          )
+        })}
+
+        {/* Linha de total */}
+        <div className="grid items-center px-3 py-2.5 gap-2 text-xs font-semibold"
+          style={{ gridTemplateColumns: '1fr auto auto', borderTop: '2px solid #0D1B2A10', background: '#f1f5f9' }}>
+          <span style={{ color: '#0D1B2A' }}>Total</span>
+          <span className="font-mono font-bold" style={{ color: '#0D1B2A' }}>{total}</span>
+          <span className="font-mono" style={{ color: '#6B7280' }}>/ {totalMax}</span>
+        </div>
+      </div>
+
+      <p className="text-xs mt-1.5 px-1" style={{ color: '#9CA3AF' }}>
+        ⚑ Rubrica orientadora — cotação a validar pelo professor
+      </p>
+    </div>
+  )
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -202,10 +271,22 @@ function SubmissionDetail({
                   )
                 })()}
 
-                {/* Feedback IA */}
-                {detail?.feedback && (
+                {/* Rubrica por critério (long_answer) ou Feedback simples */}
+                {detail?.rubric?.length ? (
+                  <RubricTable rubric={detail.rubric} confidence={detail.ai_confidence} />
+                ) : detail?.feedback ? (
                   <div className="pl-1">
                     <p className="text-xs font-medium mb-1" style={{ color: '#9CA3AF' }}>Feedback da IA</p>
+                    <p className="text-xs px-3 py-2 rounded-lg"
+                      style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d50' }}>
+                      {detail.feedback}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Feedback textual abaixo da rubrica */}
+                {detail?.rubric?.length && detail.feedback && (
+                  <div className="pl-1">
                     <p className="text-xs px-3 py-2 rounded-lg"
                       style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d50' }}>
                       {detail.feedback}
@@ -236,7 +317,8 @@ function SubmissionDetail({
                       {detail?.score ?? '?'}
                     </span>
                     <span style={{ color: '#9CA3AF' }}>/ {q.points} pt</span>
-                    {detail?.ai_confidence !== undefined && (
+                    {/* Badge de confiança só quando não há rubrica (a rubrica já mostra o badge) */}
+                    {detail?.ai_confidence !== undefined && !detail.rubric?.length && (
                       <span className="text-xs px-1.5 py-0.5 rounded ml-1"
                         style={{
                           background: detail.ai_confidence >= 0.8 ? '#f0f9ff' : '#fef3c7',

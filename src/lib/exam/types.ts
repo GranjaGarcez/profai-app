@@ -50,12 +50,19 @@ export interface ExamSession {
   closed_at: string | null
 }
 
+export interface RubricCriterion {
+  criterion: string
+  score: number
+  max: number
+}
+
 export interface GradingDetail {
   score: number
   max: number
   feedback: string
   auto: boolean          // true = automático (MCQ/TF) ou IA; false = manual do prof
   ai_confidence?: number // 0-1, só para open answers
+  rubric?: RubricCriterion[] // só em long_answer — decomposição por critério
 }
 
 export interface ExamSubmission {
