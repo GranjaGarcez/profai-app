@@ -32,6 +32,16 @@ function gradeObjective(q: Question, rawAnswer: string): GradingDetail {
   }
 }
 
+// Clamp cada critério ao seu max e devolve undefined se input vazio
+function clampRubric(rubric: RubricCriterion[] | undefined): RubricCriterion[] | undefined {
+  if (!rubric?.length) return undefined
+  return rubric.map(r => ({
+    criterion: r.criterion,
+    max: Number(r.max) || 0,
+    score: Math.min(Math.max(0, Number(r.score) || 0), Number(r.max) || 0),
+  }))
+}
+
 // ── Correcção por IA (resposta aberta) ────────────────────────────────────────
 async function gradeOpenWithAI(
   q: Question,
@@ -98,12 +108,13 @@ ${responseFormat}`
     const match = text.match(/\{[\s\S]*?\}/)
     if (!match) throw new Error('no json')
     const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
-    const score = Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
+    const rubric = clampRubric(parsed.rubric)
+    const score  = rubric ? Math.min(rubric.reduce((s, r) => s + r.score, 0), q.points) : Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
     return {
       score,
       max: q.points,
       feedback: parsed.feedback ?? '',
-      rubric: parsed.rubric?.length ? parsed.rubric : undefined,
+      rubric,
       auto: true,
       ai_confidence: parsed.confidence ?? 0.8,
     }
@@ -124,8 +135,9 @@ ${responseFormat}`
       const match = text.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('no json')
       const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
-      const score = Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
-      return { score, max: q.points, feedback: parsed.feedback ?? '', rubric: parsed.rubric?.length ? parsed.rubric : undefined, auto: true, ai_confidence: 0.7 }
+      const rubric = clampRubric(parsed.rubric)
+      const score  = rubric ? Math.min(rubric.reduce((s, r) => s + r.score, 0), q.points) : Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
+      return { score, max: q.points, feedback: parsed.feedback ?? '', rubric, auto: true, ai_confidence: 0.7 }
     } catch {
       // Falha total — marcar para revisão manual
       return {
