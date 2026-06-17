@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 
@@ -102,6 +102,303 @@ const TYPE_LABEL: Record<string, string> = {
   short_answer:    'RC',
   long_answer:     'RL',
   fill_blank:      'CE',
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────────────
+
+function pctColor(pct: number): { bar: string; text: string; bg: string } {
+  if (pct >= 70) return { bar: '#22c55e', text: '#166534', bg: '#f0fdf4' }
+  if (pct >= 50) return { bar: '#f59e0b', text: '#92400e', bg: '#fffbeb' }
+  return              { bar: '#ef4444', text: '#991b1b', bg: '#fef2f2' }
+}
+
+function median(vals: number[]): number {
+  if (!vals.length) return 0
+  const s = [...vals].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+
+function stdev(vals: number[]): number {
+  if (vals.length < 2) return 0
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length
+  return Math.sqrt(vals.reduce((s, v) => s + (v - avg) ** 2, 0) / vals.length)
+}
+
+interface QuestionStat {
+  q: Question
+  avgScore: number
+  avgPct: number
+  errorRate: number   // % alunos com < 50% desta questão
+  n: number
+}
+
+function AnalyticsDashboard({
+  submissions,
+  questions,
+}: {
+  submissions: Submission[]
+  questions: Question[]
+}) {
+  const graded = useMemo(
+    () => submissions.filter(s => s.status === 'graded' || s.status === 'reviewed'),
+    [submissions],
+  )
+
+  const scores = useMemo(
+    () => graded.map(s => s.total_score ?? 0),
+    [graded],
+  )
+
+  const maxScore = graded[0]?.max_score ?? 100
+
+  const avg    = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0
+  const med    = median(scores)
+  const sd     = stdev(scores)
+  const minS   = scores.length ? Math.min(...scores) : 0
+  const maxS   = scores.length ? Math.max(...scores) : 0
+  const passN  = scores.filter(s => (s / maxScore) >= 0.5).length
+  const passPct = scores.length ? Math.round((passN / scores.length) * 100) : 0
+
+  // Por questão
+  const qStats: QuestionStat[] = useMemo(() => questions.map(q => {
+    const key = String(q.index)
+    const qScores = graded
+      .map(s => s.grading_details?.[key]?.score)
+      .filter((v): v is number => v !== undefined)
+    const n = qScores.length
+    const avgScore = n ? qScores.reduce((a, b) => a + b, 0) / n : 0
+    const avgPct   = q.points > 0 ? Math.round((avgScore / q.points) * 100) : 0
+    const errorRate = n ? Math.round((qScores.filter(s => (s / q.points) < 0.5).length / n) * 100) : 0
+    return { q, avgScore, avgPct, errorRate, n }
+  }), [graded, questions])
+
+  // Por nível Bloom
+  const bloomStats = useMemo(() => {
+    const map: Record<string, { total: number; sum: number }> = {}
+    qStats.forEach(({ q, avgPct }) => {
+      const b = q.bloomLevel ?? 'Não definido'
+      if (!map[b]) map[b] = { total: 0, sum: 0 }
+      map[b].total++
+      map[b].sum += avgPct
+    })
+    return Object.entries(map).map(([bloom, { total, sum }]) => ({
+      bloom,
+      avgPct: Math.round(sum / total),
+      count: total,
+    })).sort((a, b) => a.avgPct - b.avgPct)
+  }, [qStats])
+
+  // Alunos abaixo do limiar (< 50%)
+  const belowThreshold = useMemo(
+    () => graded
+      .filter(s => s.total_score !== null && (s.total_score! / maxScore) < 0.5)
+      .sort((a, b) => (a.total_score ?? 0) - (b.total_score ?? 0)),
+    [graded, maxScore],
+  )
+
+  if (graded.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: '#0D1B2A10' }}>
+        <p className="text-4xl mb-3">📊</p>
+        <p className="font-semibold" style={{ color: '#0D1B2A' }}>Sem correcções completas ainda</p>
+        <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+          A análise fica disponível assim que houver pelo menos uma submissão corrigida.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Estatísticas gerais ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Média', value: avg.toFixed(1), sub: `/ ${maxScore}` },
+          { label: 'Mediana', value: med.toFixed(1), sub: `DP ± ${sd.toFixed(1)}` },
+          { label: 'Mín / Máx', value: `${minS.toFixed(0)} / ${maxS.toFixed(0)}`, sub: 'valores' },
+          {
+            label: 'Aprovados ≥ 50%',
+            value: `${passPct}%`,
+            sub: `${passN} de ${scores.length}`,
+            highlight: passPct < 50,
+          },
+        ].map(({ label, value, sub, highlight }) => (
+          <div
+            key={label}
+            className="bg-white rounded-xl border p-4 text-center"
+            style={{
+              borderColor: highlight ? '#fca5a5' : '#0D1B2A10',
+              background: highlight ? '#fef2f2' : 'white',
+            }}
+          >
+            <p className="text-2xl font-bold font-mono" style={{ color: highlight ? '#dc2626' : '#0D1B2A' }}>
+              {value}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{label}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Performance por questão ── */}
+      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
+        <div className="px-5 py-3 border-b" style={{ borderColor: '#0D1B2A08' }}>
+          <h3 className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Performance por questão</h3>
+          <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+            Média de acerto (%) · Taxa de erro = alunos com &lt; 50% nessa questão
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #0D1B2A08' }}>
+                {['Q', 'Tipo', 'Bloom', 'Cotação', 'Média', 'Acerto', 'Taxa de erro'].map(h => (
+                  <th key={h} className="px-3 py-2.5 text-left font-semibold" style={{ color: '#6B7280' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {qStats.map(({ q, avgScore, avgPct, errorRate }, i) => {
+                const c = pctColor(avgPct)
+                return (
+                  <tr
+                    key={q.index}
+                    style={{ borderBottom: i < qStats.length - 1 ? '1px solid #0D1B2A05' : 'none' }}
+                  >
+                    <td className="px-3 py-2.5 font-mono font-bold" style={{ color: '#0D1B2A' }}>
+                      {q.index}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className="px-1.5 py-0.5 rounded font-medium" style={{ background: '#0D1B2A10', color: '#6B7280' }}>
+                        {TYPE_LABEL[q.type] ?? q.type}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5" style={{ color: '#6B7280' }}>
+                      {q.bloomLevel ?? '—'}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono" style={{ color: '#6B7280' }}>
+                      {q.points} pt
+                    </td>
+                    <td className="px-3 py-2.5 font-mono" style={{ color: '#0D1B2A' }}>
+                      {avgScore.toFixed(1)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        {/* barra */}
+                        <div className="w-20 h-2 rounded-full flex-shrink-0" style={{ background: '#e5e7eb' }}>
+                          <div
+                            className="h-2 rounded-full"
+                            style={{ width: `${avgPct}%`, background: c.bar }}
+                          />
+                        </div>
+                        <span className="font-mono font-semibold" style={{ color: c.text }}>
+                          {avgPct}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className="px-2 py-0.5 rounded font-mono font-semibold"
+                        style={errorRate >= 50
+                          ? { background: '#fef2f2', color: '#dc2626' }
+                          : errorRate >= 25
+                            ? { background: '#fffbeb', color: '#92400e' }
+                            : { background: '#f0fdf4', color: '#166534' }}
+                      >
+                        {errorRate}%
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Bloom + alunos abaixo do limiar ── */}
+      <div className="grid gap-4 sm:grid-cols-2">
+
+        {/* Bloom */}
+        {bloomStats.length > 0 && (
+          <div className="bg-white rounded-2xl border p-5" style={{ borderColor: '#0D1B2A10' }}>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#0D1B2A' }}>
+              Por nível de Bloom
+            </h3>
+            <div className="space-y-2">
+              {bloomStats.map(({ bloom, avgPct, count }) => {
+                const c = pctColor(avgPct)
+                return (
+                  <div key={bloom} className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="truncate font-medium" style={{ color: '#374151' }}>{bloom}</span>
+                        <span style={{ color: '#9CA3AF' }}>{count} quest.</span>
+                      </div>
+                      <div className="h-2 rounded-full" style={{ background: '#e5e7eb' }}>
+                        <div
+                          className="h-2 rounded-full transition-all"
+                          style={{ width: `${avgPct}%`, background: c.bar }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold flex-shrink-0 w-10 text-right" style={{ color: c.text }}>
+                      {avgPct}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Alunos abaixo do limiar */}
+        <div className="bg-white rounded-2xl border p-5" style={{ borderColor: '#0D1B2A10' }}>
+          <h3 className="text-sm font-semibold mb-3" style={{ color: '#0D1B2A' }}>
+            Alunos abaixo de 50%
+          </h3>
+          {belowThreshold.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-2xl mb-1">🎉</p>
+              <p className="text-sm font-medium" style={{ color: '#166534' }}>
+                Todos aprovados!
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
+                Nenhum aluno ficou abaixo do limiar de 50%.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {belowThreshold.map(s => {
+                const pct = s.total_score !== null && maxScore
+                  ? Math.round((s.total_score / maxScore) * 100)
+                  : 0
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs"
+                    style={{ background: '#fef2f2', border: '1px solid #fca5a530' }}
+                  >
+                    <div>
+                      <span className="font-medium" style={{ color: '#0D1B2A' }}>{s.student_name}</span>
+                      {s.student_class && (
+                        <span className="ml-2" style={{ color: '#9CA3AF' }}>{s.student_class}</span>
+                      )}
+                    </div>
+                    <span className="font-mono font-bold" style={{ color: '#dc2626' }}>
+                      {s.total_score?.toFixed(1)} / {maxScore} ({pct}%)
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Componente de detalhe de submissão ─────────────────────────────────────────
@@ -394,8 +691,10 @@ export default function GradingDashboard({
 }) {
   const [selected, setSelected] = useState<Submission | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
+  const [tab, setTab] = useState<'submissions' | 'analytics'>('submissions')
 
   const questions = getAllQuestions(testSnapshot as TestSnapshot)
+  const gradedCount = submissions.filter(s => s.status === 'graded' || s.status === 'reviewed').length
 
   const filtered = submissions.filter(s => {
     if (filter === 'pending') return s.status === 'submitted' || s.status === 'grading'
@@ -429,6 +728,34 @@ export default function GradingDashboard({
         />
       )}
 
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-1 border-b" style={{ borderColor: '#0D1B2A10' }}>
+        {([
+          { key: 'submissions', label: `Submissões (${submissions.length})` },
+          { key: 'analytics',   label: `Análise${gradedCount > 0 ? ` (${gradedCount} corrigidas)` : ''}` },
+        ] as const).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className="px-5 py-3 text-sm font-medium border-b-2 transition-colors"
+            style={{
+              borderBottomColor: tab === key ? '#00B4D8' : 'transparent',
+              color: tab === key ? '#00B4D8' : '#6B7280',
+              marginBottom: '-1px',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Análise ── */}
+      {tab === 'analytics' && (
+        <AnalyticsDashboard submissions={submissions} questions={questions} />
+      )}
+
+      {/* ── Tab: Submissões ── */}
+      {tab === 'submissions' && (
       <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
         {/* Filtros */}
         <div className="px-5 py-3 border-b flex items-center gap-2" style={{ borderColor: '#0D1B2A08' }}>
@@ -532,6 +859,7 @@ export default function GradingDashboard({
           </table>
         </div>
       </div>
+      )}
     </>
   )
 }

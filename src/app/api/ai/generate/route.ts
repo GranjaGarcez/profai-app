@@ -72,32 +72,59 @@ function getSubjectProfile(subject: string, hasMultipleTypes: boolean, yearLevel
   if (s.includes('português') || s.includes('portugues') || s.includes('língua')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Português (${yearLevel}.º ano):
-• Grupo I — Compreensão do texto (25–35 pts): transcreve um excerto literário ou não-literário no campo "text" de uma questão, seguido de questões de interpretação (escolha múltipla, V/F, resposta curta). O texto é parte do enunciado, não da resposta.
-• Grupo II — Gramática / Educação Literária (20–30 pts): conhecimento explícito da língua — classificação morfossintáctica, transformação frásica, coerência e coesão textual. Completar espaços e resposta curta.
-• Grupo III — Expressão Escrita (35–45 pts): produção de texto orientada. PESO DOMINANTE obrigatório. markScheme: conteúdo/pertinência 40% + organização/coesão 30% + correcção linguística 30%.
-REGRA: nunca menos de 35 pts na Expressão Escrita.
+• Grupo I — Compreensão do texto (20–30 pts): CADA questão de interpretação incorpora o excerto no seu próprio campo "text", usando o formato:
+  "text": "[Título da obra / tipo de texto]\\n«[excerto literário ou não-literário, 80–180 palavras]»\\n\\n[pergunta de compreensão]"
+  Tipos: multiple_choice (4 pts), true_false (4 pts), short_answer (5 pts). NÃO crias questões type='text' separadas. O excerto é parte do enunciado.
+• Grupo II — Gramática / Educação Literária (25–30 pts): conhecimento explícito da língua — classificação morfossintáctica, transformação frásica, coerência e coesão textual. Tipos: short_answer (5 pts), fill_blank (5 pts). Questões independentes, sem excerto obrigatório.
+• Grupo III — Expressão Escrita (40 pts, 1 questão): long_answer com produção de texto orientada. markScheme obrigatório com 3 parcelas: Conteúdo e pertinência (16pt) + Organização e coesão com introdução/desenvolvimento/conclusão (12pt) + Correcção linguística, ortográfica e pontuação (12pt).
+PROIBIDO ABSOLUTO: type='text', points=0 ou questões sem pergunta real.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Compreensão (EM/VF): 3–5 pts/questão
-   • Interpretação/Gramática (resposta curta/completar): 4–8 pts/questão
-   • Expressão Escrita: MÍNIMO 35 pts — com critérios parciais no markScheme (conteúdo + estrutura + correcção linguística)
-   • Distribuição típica: Compreensão ~30 pts | Gramática ~25 pts | Escrita ~45 pts`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • EM/VF (compreensão): 4 pts/questão (valor fixo)
+   • Resposta curta / completar (compreensão e gramática): 5 pts/questão (valor fixo)
+   • Expressão Escrita (long_answer, 1 questão): 40 pts fixos — markScheme: Conteúdo (16pt) + Organização (12pt) + Correcção linguística (12pt) = 40pt
+   • Distribuição exemplo: 5 EM/VF × 4pt = 20pt | 8 curtas × 5pt = 40pt | 1 escrita × 40pt = 40pt → 100pt
+   • REGRA: "points" tem sempre valor inteiro concreto — nunca null, nunca 0, nunca omitido`,
     }
   }
 
-  // ── História ────────────────────────────────────────────────────────────────
+  // ── História e Geografia de Portugal (2.º ciclo) — DEVE VIR ANTES DE História
+  if (s.includes('história e geograf') || s.includes('hgp') || s.includes('h.g.p')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — HGP (${yearLevel}.º ano — 2.º ciclo, 10–12 anos):
+• Grupo I — Identificação e selecção (20 pts): EM/VF sobre factos, datas, personagens e localizações. 4 pts/questão (valor fixo). 5 questões. Linguagem simples, directa, adequada a 10–12 anos.
+• Grupo II — Análise de documentos (40 pts): mapa, imagem histórica ou excerto simples INCORPORADO no campo "text" da questão que o analisa:
+  "text": "Documento [n.º]: [tipo e breve identificação]\\n[transcrição breve ou descrição do documento]\\n\\nQuestão: [pergunta de análise acessível]"
+  Questões de identificação, localização, observação e relação simples. 8 pts/questão (valor fixo). 5 questões. NÃO crias questões type='text'.
+• Grupo III — Desenvolvimento breve (40 pts, 1–2 questões): descrição ou explicação com máximo 2 parágrafos. Bloom: Compreender/Aplicar — NÃO exiges síntese historiográfica ou análise multicausal complexa. markScheme: Conteúdo factual correcto (20pt) + Organização com ideia central e desenvolvimento (12pt) + Vocabulário histórico/geográfico adequado ao 2.º ciclo (8pt).
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, linguagem de secundário, conceitos historiográficos fora do programa do 2.º ciclo.
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Seleção (EM/VF): 4 pts/questão (valor fixo); 5 questões = 20 pts
+   • Análise de documentos: 8 pts/questão (valor fixo); 5 questões = 40 pts
+   • Desenvolvimento breve: 40 pts total (1 × 40pt ou 2 × 20pt); markScheme: Conteúdo factual (20pt) + Organização (12pt) + Vocabulário 2.º ciclo (8pt)
+   • Distribuição: 20 + 40 + 40 = 100 pts exactamente
+   • REGRA: "points" tem sempre valor inteiro concreto — nunca null, nunca 0`,
+    }
+  }
+
+  // ── História (3.º ciclo e Secundário) ────────────────────────────────────────
   if (s.includes('história') || s.includes('historia')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — História (${yearLevel}.º ano):
-• Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre factos, cronologia e conceitos históricos. 3–4 pts/questão.
-• Grupo II — Análise de fontes / Resposta curta (30–40 pts): inclui OBRIGATORIAMENTE pelo menos uma fonte histórica (primária ou secundária) ou descrição de imagem histórica. Questões de interpretação, contextualização e causa-efeito. 5–10 pts/questão.
-• Grupo III — Resposta de desenvolvimento (35–50 pts): síntese com tese, argumentação com evidências históricas e conclusão. Discurso histórico coerente. 20–30 pts/questão.
+• Grupo I — Seleção (20 pts): escolha múltipla e/ou V/F sobre factos, cronologia e conceitos históricos. 4 pts/questão (valor fixo). 5 questões.
+• Grupo II — Análise de fontes / Resposta curta (40 pts): inclui OBRIGATORIAMENTE pelo menos uma fonte histórica incorporada no campo "text" da questão que a analisa:
+  "text": "Fonte [número]: [título, autor, data]\\n«[texto da fonte, 60–150 palavras]»\\n\\n[pergunta de análise/interpretação]"
+  Questões de interpretação, contextualização e causa-efeito. 6 pts/questão (valor fixo). NÃO crias questões type='text'.
+• Grupo III — Resposta de desenvolvimento (40 pts, 1–2 questões): síntese com tese, argumentação com evidências históricas e conclusão. markScheme obrigatório: Conteúdo histórico (20pt) + Organização do discurso (12pt) + Vocabulário histórico específico (8pt).
+PROIBIDO ABSOLUTO: type='text', points=0 ou questões sem pergunta real.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Seleção (EM/VF): 3–4 pts/questão, máximo 20 pts no grupo
-   • Análise de fontes / Resposta curta: 5–10 pts/questão
-   • Resposta de desenvolvimento: 20–30 pts — nunca menos de 35% do total; markScheme com critérios de conteúdo histórico + qualidade do discurso
-   • Distribuição típica: Seleção ~15% | Fontes/Curta ~35% | Desenvolvimento ~50%`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Seleção (EM/VF): 4 pts/questão (valor fixo); 5 questões = 20 pts
+   • Análise de fontes / Resposta curta: 6 pts/questão (valor fixo); exactamente 40 pts no grupo (ex: 6×6=36+1×4=40, ou 5×6=30+2×5=40, ou outra combinação que some 40)
+   • Resposta de desenvolvimento: 40 pts total (1 × 40pt ou 2 × 20pt); markScheme: Conteúdo histórico (20pt) + Organização do discurso (12pt) + Vocabulário histórico específico (8pt)
+   • Distribuição: 20 + 40 + 40 = 100 pts exactamente
+   • REGRA: "points" tem sempre valor inteiro concreto — nunca null, nunca 0`,
     }
   }
 
@@ -105,15 +132,15 @@ ${ctx}`,
   if (s.includes('geograf')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Geografia (${yearLevel}.º ano):
-• Grupo I — Seleção (máx. 20 pts): escolha múltipla e/ou V/F sobre conceitos, localizações e fenómenos geográficos. 3–4 pts/questão.
-• Grupo II — Interpretação de documentos / Resposta curta (30–40 pts): análise de gráficos, tabelas ou mapas com dados reais e actuais. 5–10 pts/questão.
-• Grupo III — Resposta de desenvolvimento (35–50 pts): síntese sobre fenómenos geográficos com exemplos concretos actuais. 15–25 pts/questão.
+• Grupo I — Seleção (20 pts): escolha múltipla e/ou V/F sobre conceitos, localizações e fenómenos geográficos. 4 pts/questão (valor fixo). 5 questões.
+• Grupo II — Interpretação de documentos / Resposta curta (40 pts): análise de dados geográficos reais — usa o campo "figure" para gráficos/tabelas (bar_chart, pie_chart) quando aplicável, ou incorpora dados no campo "text". Questões de observação, identificação e relação espacial. 8 pts/questão (valor fixo). 5 questões.
+• Grupo III — Resposta de desenvolvimento (40 pts, 1–2 questões): síntese sobre fenómenos geográficos com exemplos concretos actuais. markScheme: Conteúdo geográfico (20pt) + Organização e coesão (12pt) + Vocabulário geográfico específico (8pt).
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Seleção: 3–4 pts/questão, máximo 20 pts
-   • Interpretação / Curta: 5–10 pts/questão
-   • Desenvolvimento: 15–25 pts/questão — mínimo 35 pts no grupo
-   • Distribuição típica: Seleção ~15% | Interpretação ~35% | Desenvolvimento ~50%`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Seleção (EM/VF): 4 pts/questão (valor fixo); 5 questões = 20 pts
+   • Interpretação / Resposta curta: 8 pts/questão (valor fixo); 5 questões = 40 pts
+   • Desenvolvimento: 40 pts total; markScheme com parcelas de conteúdo + organização + vocabulário específico
+   • REGRA: "points" tem sempre valor inteiro concreto`,
     }
   }
 
@@ -121,15 +148,16 @@ ${ctx}`,
   if (s.includes('ciência') || s.includes('ciencia') || s.includes('natural') || s.includes('biolog')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Ciências Naturais (${yearLevel}.º ano):
-• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, classificações e nomenclatura científica. 3–5 pts/questão.
-• Grupo II — Interpretação de dados / Resposta curta (25–35 pts): inclui OBRIGATORIAMENTE análise de gráfico, tabela, esquema anatómico ou protocolo experimental. Observação, identificação e relação de variáveis. 5–10 pts/questão.
-• Grupo III — Situação-problema / Resposta longa (40–50 pts): método científico, explicação de fenómenos naturais, formulação de hipóteses. Justificação científica obrigatória. 10–20 pts/questão.
+• Grupo I — Seleção (20 pts): escolha múltipla e/ou V/F sobre conceitos, classificações e nomenclatura científica. 4 pts/questão (valor fixo). 5 questões. Distratores baseados em erros conceptuais reais.
+• Grupo II — Interpretação de dados / Resposta curta (36 pts): análise de dados científicos. Usa o campo "figure" (bar_chart, pie_chart, etc.) para gráficos; incorpora protocolos ou esquemas no campo "text". Questões de observação, identificação e relação de variáveis. 6 pts/questão (valor fixo). 6 questões.
+• Grupo III — Situação-problema / Resposta longa (44 pts): método científico, explicação de fenómenos, formulação de hipóteses e conclusões. Justificação científica obrigatória. markScheme: identificação do fenómeno + explicação fundamentada + terminologia + conclusão. 11 pts/questão (4 questões) ou outra combinação que some 44 pts.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Seleção (EM/VF): 3–5 pts/questão, máximo 25 pts no grupo
-   • Interpretação/Resposta curta: 5–10 pts/questão
-   • Situação-problema/Longa: 10–20 pts/questão — mínimo 40 pts no grupo
-   • Distribuição típica: Seleção ~20% | Interpretação ~30% | Situação-problema ~50%`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Seleção (EM/VF): 4 pts/questão (valor fixo); 5 questões = 20 pts
+   • Interpretação / Resposta curta: 6 pts/questão (valor fixo); 6 questões = 36 pts
+   • Situação-problema / Resposta longa: 11 pts/questão (valor fixo); 4 questões = 44 pts → 20+36+44 = 100 pts
+   • markScheme das longas (11pt): Identificação do fenómeno/conceito (3pt) + Explicação científica fundamentada (4pt) + Terminologia científica adequada (2pt) + Conclusão ou proposta de solução (2pt) = 11pt
+   • REGRA: "points" tem sempre valor inteiro concreto — nunca null, nunca 0`,
     }
   }
 
@@ -137,15 +165,16 @@ ${ctx}`,
   if (s.includes('físic') || s.includes('fisic') || s.includes('quím') || s.includes('quim')) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Físico-Química (${yearLevel}.º ano):
-• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F sobre conceitos, definições e grandezas. 3–5 pts/questão.
-• Grupo II — Interpretação experimental / Resposta curta (25–35 pts): dados laboratoriais, gráficos ou tabelas com unidades obrigatórias. Variáveis, procedimento, conclusões. 5–10 pts/questão.
-• Grupo III — Resolução de problemas (40–50 pts): fórmulas em contexto real; estrutura obrigatória: dados → fórmula → cálculo → resposta com unidade. Multi-passo. 10–20 pts/questão.
+• Grupo I — Seleção (20 pts): escolha múltipla e/ou V/F sobre conceitos, definições e grandezas. 4 pts/questão (valor fixo). 5 questões.
+• Grupo II — Interpretação experimental / Resposta curta (30 pts): dados laboratoriais, gráficos (usar campo "figure") ou tabelas com unidades obrigatórias. Variáveis, procedimento, conclusões. 6 pts/questão (valor fixo). 5 questões.
+• Grupo III — Resolução de problemas (50 pts): fórmulas em contexto real. Estrutura de resposta OBRIGATÓRIA: Dados → Fórmula → Desenvolvimento do cálculo → Resposta com unidade. Multi-passo. 10 pts/questão (valor fixo). 5 questões.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO (totalPoints = 100, pontos sempre inteiros):
-   • Seleção: 3–5 pts/questão, máximo 25 pts
-   • Interpretação experimental: 5–10 pts/questão; unidades obrigatórias nas respostas
-   • Resolução de problemas: 10–20 pts/questão — mínimo 40 pts no grupo; markScheme detalha pontos por dados + fórmula + cálculo + unidade
-   • Distribuição típica: Seleção ~20% | Interpretação ~30% | Resolução ~50%`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Seleção (EM/VF): 4 pts/questão (valor fixo); 5 questões = 20 pts
+   • Interpretação experimental: 6 pts/questão (valor fixo); 5 questões = 30 pts
+   • Resolução de problemas: 10 pts/questão (valor fixo); 5 questões = 50 pts
+   • markScheme de problemas: Dados (2pt) + Fórmula/método (3pt) + Cálculo sem erro (3pt) + Resposta com unidade (2pt) = 10pt
+   • REGRA: "points" tem sempre valor inteiro concreto — nunca null, nunca 0`,
     }
   }
 
@@ -173,15 +202,17 @@ ${ctx}`,
   if (hasMultipleTypes) {
     return {
       structureNote: `ESTRUTURA OBRIGATÓRIA — Matemática (${yearLevel}.º ano):
-• Grupo I — Seleção (20–25 pts): escolha múltipla e/ou V/F. Distratores baseados em erros conceptuais típicos. 3–5 pts (EM), 2–3 pts (VF).
-• Grupo II — Cálculo e resposta curta (25–30 pts): aplicação directa com apresentação de cálculos obrigatória. 5–10 pts/questão.
-• Grupo III — Resolução de problemas (45–55 pts): multi-passo com contexto real; modelação matemática, estratégia e raciocínio; cálculos e justificação obrigatórios. 10–20 pts/questão.
+• Grupo I — Seleção (20 pts): escolha múltipla e/ou V/F. Distratores baseados em erros conceptuais típicos. EM: 4 pts/questão; VF: 2 pts/questão.
+• Grupo II — Cálculo e resposta curta (30 pts): aplicação directa com apresentação de cálculos obrigatória. 6 pts/questão. 5 questões.
+• Grupo III — Resolução de problemas (50 pts): multi-passo com contexto real; modelação, estratégia e raciocínio; cálculos e justificação obrigatórios. markScheme: dados (2pt) + fórmula/método (3pt) + cálculo correcto (3pt) + resposta com unidade (2pt). 10 pts/questão. 5 questões.
 ${ctx}`,
-      scoringRule: `6. COTAÇÃO — segue RIGOROSAMENTE esta matriz (totalPoints = 100 exactamente, pontos sempre inteiros):
-   • Escolha múltipla: 3–5 pts/questão (total do grupo ≤ 25 pts)
-   • Verdadeiro/Falso: 2–3 pts/questão (total do grupo ≤ 15 pts)
-   • Resposta curta / Cálculo: 5–10 pts/questão (total do grupo 25–35 pts)
-   • Resolução / Resposta longa: 10–20 pts/questão (total do grupo ≥ 45 pts)`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Escolha múltipla: 4 pts/questão (valor de referência); ajusta se necessário, mantém coerência dentro do grupo
+   • Verdadeiro/Falso: 2 pts/questão (valor fixo)
+   • Resposta curta / Cálculo: 6 pts/questão (valor de referência); markScheme: dados + método + cálculo + resultado
+   • Resolução / Resposta longa: 10 pts/questão (valor de referência); markScheme com 4 parcelas: dados (2pt) + fórmula/método (3pt) + cálculo (3pt) + resposta com unidade (2pt)
+   • Distribuição alvo: Seleção ~20 pts | Cálculo ~30 pts | Resolução ~50 pts → total 100 pts
+   • REGRA: cada "points" tem um valor inteiro concreto — nunca null, nunca 0, nunca omitido`,
     }
   }
 
@@ -515,15 +546,62 @@ export async function POST(request: NextRequest) {
 
     // ── Directrizes por disciplina ──────────────────────────────────────────
     const subjectGuidelines: Record<string, string> = {
-      'Matemática':         'Inclui problemas com contexto real e significativo. Equilibra cálculo, raciocínio e resolução de problemas. Distratores baseados em erros conceptuais típicos (ex: confundir perímetro com área). Exige apresentação de cálculos nas respostas longas.',
-      'Matemática A':       'Inclui problemas com contexto real. Exige demonstração de raciocínio matemático formal. Distratores rigorosos. Problemas multi-passo.',
-      'Português':          'Inclui pelo menos um excerto textual (100-150 palavras, adequado ao nível) com questões de compreensão leitora. Avalia gramática em contexto, não isolada. Questão de expressão escrita orientada.',
-      'Ciências Naturais':  'Baseia-te em situações observáveis do mundo natural. Inclui interpretação de dados, esquemas ou situações-problema científicas. Promove o raciocínio científico e o método experimental.',
-      'Físico-Química':     'Inclui situações experimentais ou problemas com dados reais. Exige aplicação de fórmulas com unidades correctas. Contextualiza com fenómenos do quotidiano.',
-      'História':           'Inclui fontes primárias ou secundárias curtas (excerto, imagem descrita) para análise. Avalia compreensão de causalidade, mudança e continuidade. Questões de desenvolvimento com tese.',
-      'Geografia':          'Inclui análise de dados geográficos (descrição de gráfico, tabela, mapa simples). Avalia localização, distribuição e relações espaciais.',
-      'História e Geografia de Portugal': 'Inclui fontes e dados histórico-geográficos. Avalia compreensão de processos históricos e características geográficas de Portugal.',
-      'Filosofia':          'DISCIPLINA: Filosofia (alinhado com Prova 714 IAVE). Toda a questão deve incluir o conceito filosófico exacto com o autor do programa. Grupo I: questões objectivas (EM/VF) sobre conceitos, teses e distinções conceptuais dos autores. Grupo II: inclui OBRIGATORIAMENTE um excerto filosófico (primário ou secundário, 80-200 palavras) no campo "text" de uma questão, seguido de questões de análise. Grupo III: questão de desenvolvimento exigindo tese, argumentação, contra-argumento e conclusão (rubrica IAVE). PROIBIDO inventar autores ou teses que não constem no programa oficial DGE.',
+      'Matemática': `CONTEÚDO E CONTEXTO — Matemática:
+• Usa contextos reais portugueses: preços em euros, distâncias em Portugal, dados populacionais do INE, desportos, receitas, plantas de habitações
+• Distratores de EM devem corresponder a erros conceptuais reais: confundir perímetro/área, esquecer converter unidades, inverter numerador/denominador, erro de sinal em subtracção
+• Proibido: valores sem contexto ("calcule 3/4 de x"), problemas que não especificam unidades, resposta que está visualmente óbvia num gráfico`,
+
+      'Matemática A': `CONTEÚDO E CONTEXTO — Matemática A (Secundário):
+• Domínios típicos por ano: 10.º (funções, geometria analítica, trigonometria), 11.º (limites, derivadas, probabilidades), 12.º (integrais, distribuições)
+• Exige demonstração de raciocínio formal: hipóteses, deduções, justificação de cada passo
+• Distratores rigorosos: resultado de um erro conceptual específico (sinal, limite errado, confundir derivada com primitiva)
+• Problemas multi-passo com dependência entre alíneas — erro numa alínea não deve inviabilizar as seguintes`,
+
+      'Português': `CONTEÚDO E CONTEXTO — Português:
+• Géneros textuais variados por ano: 5.º (narrativa, poesia, banda desenhada), 6.º (notícia, conto, texto de opinião), 7.º–9.º (crónica, texto argumentativo, texto dramático)
+• Gramática em contexto: perguntas sobre texto real, não exercícios abstractos; tópicos DGE — classes de palavras, funções sintácticas, tipos/formas de frase, coesão, pontuação
+• Expressão escrita orientada e real para o nível: 5.º–6.º (narrar, descrever, carta), 7.º–9.º (texto de opinião, crónica, resumo), 10.º–12.º (texto argumentativo, comentário)
+• Proibido: excertos inventados, autores fictícios, temas de adultos inadequados para a faixa etária`,
+
+      'Ciências Naturais': `CONTEÚDO E CONTEXTO — Ciências Naturais (DGE):
+• Tópicos DGE por ano: 5.º (diversidade dos seres vivos, ecossistemas, rochas e minerais), 6.º (reprodução, corpo humano, saúde e doença, sustentabilidade), 7.º (célula, reprodução, evolução), 8.º (sistema nervoso, herança biológica, ecosistemas), 9.º (microbiologia, biotecnologia)
+• Contextualiza com ecossistemas portugueses reais: Reserva Natural do Paul de Arzila, Ria Formosa, Douro vinhateiro, floresta mediterrânea
+• Usa dados reais: espécies protegidas em Portugal, taxa de biodiversidade da Serra da Estrela, problemas ambientais actuais em Portugal
+• Proibido: inventar espécies, inventar doenças, dados não verificáveis, nomes científicos errados`,
+
+      'Físico-Química': `CONTEÚDO E CONTEXTO — Físico-Química (DGE):
+• Tópicos DGE por ano: 7.º (substâncias e misturas, som e luz), 8.º (reacções químicas, electricidade), 9.º (classificação dos materiais, forças e movimentos), 10.º (energia, termodinâmica), 11.º (óptica, electromagnetismo), 12.º (física quântica, radioactividade)
+• Usa sempre unidades SI correctas; problemas com dados explícitos (massa, velocidade, temperatura, etc.)
+• Contextualiza com situações reais portuguesas: Barragem do Alqueva (energia hídrica), Parque Solar de Amareleja, laboratório escolar típico
+• Proibido: fórmulas sem definir variáveis, problemas sem dados suficientes, valores físicos impossíveis (velocidades > c, massas negativas)`,
+
+      'História': `CONTEÚDO E CONTEXTO — História (3.º ciclo e Secundário):
+• As fontes incorporadas nas questões devem ser REAIS ou claramente identificadas como reconstituições didácticas — nunca inventadas sem aviso
+• Privilegia fontes portuguesas ou sobre Portugal: Crónica de D. João I (Fernão Lopes), Carta de Pêro Vaz de Caminha, discursos de Salazar, cartazes do Estado Novo, dados demográficos históricos do INE
+• Questões de desenvolvimento exigem causalidade multicausal, comparação histórica ou perspectiva historiográfica — não apenas listagem de factos
+• Vocabulário histórico rigoroso: "expansão marítima" (não "descobertas"), "Revolução de Abril" (não "25 de Abril"), "Estado Novo" (não "ditadura" sem contexto)
+• Proibido: anacronismos, atribuir intenções não documentadas a figuras históricas, confundir períodos históricos`,
+
+      'Geografia': `CONTEÚDO E CONTEXTO — Geografia:
+• Usa dados geográficos reais e actuais: dados climáticos do IPMA, população por NUT do INE, mapa de uso do solo de Portugal, índices de desenvolvimento humano da ONU
+• Tópicos DGE por ano: 7.º (Terra: estudos e representações, meios naturais), 8.º (população e povoamento, actividades económicas), 9.º (contrastes de desenvolvimento, ambiente e sustentabilidade)
+• Questões de desenvolvimento com relações espaciais explícitas: por que razão, de que forma, qual o impacto — não apenas localizar ou descrever
+• Conecta sempre com problemáticas actuais: alterações climáticas, desertificação do interior, migrações internas, urbanização litoral
+• Proibido: dados geográficos inventados, atribuir características erradas a regiões portuguesas`,
+
+      'História e Geografia de Portugal': `CONTEÚDO E CONTEXTO — HGP (2.º ciclo, 10–12 anos):
+• Tópicos DGE por ano: 5.º (Portugal físico — relevo, rios, clima, regiões; Portugal histórico da Pré-História à Reconquista), 6.º (Grandes Navegações, Império Português, século XX, Portugal na UE; actividades económicas e população)
+• Linguagem simples e directa: frases curtas, vocabulário do 2.º ciclo, sem jargão historiográfico ou geográfico avançado
+• Documentos usados nas questões: mapas simples de Portugal, imagens de monumentos ou artefactos, excertos curtos de crónicas medievais adaptados ou de manuais escolares
+• Questões de desenvolvimento pedem DESCREVER ou EXPLICAR (não "analisar" ou "avaliar" no sentido de Bloom secundário)
+• Proibido: análise de fontes ao nível secundário, conceitos fora do programa do 2.º ciclo, questões sobre eventos pós-2010 sem suporte curricular`,
+
+      'Filosofia': `CONTEÚDO E CONTEXTO — Filosofia (Prova 714 IAVE, alinhamento estrito):
+• Toda a questão menciona o conceito filosófico exacto e o autor do programa DGE (nunca inventados)
+• 10.º ano: Argumentação e Lógica (falácias, validade, dedução/indução), Ética (Kant, Mill, Aristóteles), Filosofia Política (Rawls, Hobbes, Locke, Rousseau)
+• 11.º ano: Teoria do Conhecimento (Platão, Descartes, Hume), Filosofia da Ciência (Popper, Kuhn), Estética (conceito de arte, critérios estéticos), Filosofia da Religião
+• Questão de desenvolvimento: exige tese pessoal, argumentação filosófica com conceitos e autores do programa, contra-argumento e conclusão — nunca simples resumo
+• Proibido: Nietzsche, Heidegger, Sartre, Nozick, fenomenologia (não estão nas AE); inventar teses ou obras de autores reais; usar PT-BR na terminologia filosófica`,
     }
     const subjectNote = subjectGuidelines[subject] ?? 'Cria questões rigorosas, contextualizadas e curricularmente alinhadas com as Aprendizagens Essenciais DGE.'
 
@@ -608,10 +686,12 @@ ${scoringRule}
    • Escolha múltipla: "Resposta: [letra] (Xpt). A opção [Y] induz o erro de [...]; A opção [Z] confunde [...]. Resposta errada = 0pt."
    • Verdadeiro/Falso: "[Verdadeiro/Falso] — [razão científica/histórica/linguística concreta]. (Xpt). Resposta errada = 0pt."
    • Matemática/FQ (resposta curta ou longa): "dados (Xpt) + fórmula/método (Xpt) + cálculo sem erro (Xpt) + resposta com unidade correcta (Xpt)"
-   • Português (resposta curta): "identificação (Xpt) + justificação com referência ao texto (Xpt) + correcção linguística (Xpt)"
-   • Português (expressão escrita): "conteúdo e pertinência (Xpt) + organização e coesão (Xpt) + correcção linguística e ortográfica (Xpt)"
-   • CN (resposta aberta): "identificação do fenómeno (Xpt) + explicação científica (Xpt) + terminologia (Xpt) + conclusão (Xpt)"
-   • HGP/História/Geografia (desenvolvimento): "conteúdo histórico/geográfico com factos (Xpt) + organização do discurso (Xpt) + vocabulário específico (Xpt)"
+   • Português (resposta curta): "identificação (Xpt) + justificação com referência ao texto (Xpt) + correcção linguística (Xpt). ✓ Cotação semi-objectiva — verificar referência textual concreta."
+   • Português (expressão escrita / long_answer): "Conteúdo e pertinência — adequação ao tema, profundidade e relevância das ideias (Xpt) + Organização e coesão — estrutura introdução/desenvolvimento/conclusão e conectores (Xpt) + Correcção linguística, ortográfica e de pontuação (Xpt). ⚑ Rubrica orientadora — cotação a validar pelo professor; avaliação holística da produção escrita."
+   • CN (resposta curta): "identificação do fenómeno/conceito (Xpt) + explicação científica fundamentada (Xpt) + terminologia correcta (Xpt). ✓ Cotação semi-objectiva."
+   • CN (situação-problema / long_answer): "Identificação do fenómeno ou variáveis (Xpt) + Explicação científica fundamentada com causa-efeito (Xpt) + Terminologia científica correcta (Xpt) + Conclusão ou proposta de solução (Xpt). ⚑ Proposta de cotação — verificar rigor científico e uso de terminologia das AE."
+   • HGP/História/Geografia (resposta curta): "identificação de facto/conceito histórico-geográfico (Xpt) + contextualização (Xpt). ✓ Cotação semi-objectiva."
+   • HGP/História/Geografia (desenvolvimento / long_answer): "Conteúdo histórico/geográfico com factos e exemplos concretos (Xpt) + Organização do discurso com introdução/desenvolvimento/conclusão (Xpt) + Vocabulário histórico/geográfico específico e adequado (Xpt). ⚑ Rubrica orientadora — cotação a ajustar pelo professor; discurso histórico ou geográfico com avaliação necessariamente holística."
    • Filosofia (EM/VF): "Resposta: [letra ou V/F] (Xpt). Distrator [Y] confunde [...] com [...] — erro conceptual típico. Resposta errada = 0pt. ✓ Cotação objectiva."
    • Filosofia (análise de texto / questão conceptual): "Identificação correcta do conceito/tese/autor (Xpt) + explicação com referência explícita ao pensamento do autor no texto ou no programa (Xpt) + terminologia filosófica adequada (Xpt). ⚑ Proposta de cotação — verificar rigor conceptual na resposta do aluno."
    • Filosofia (desenvolvimento / ensaio filosófico): "Tese/Problematização — posição clara sobre a questão filosófica (Xpt) + Argumentação — mínimo 2 argumentos com conceitos e autores do programa DGE (Xpt) + Adequação conceptual e teórica — terminologia e autores correctamente mobilizados (Xpt) + Comunicação — organização, coesão e clareza do discurso filosófico (Xpt). ⚑ Rubrica orientadora — cotação a ajustar pelo professor; questão de desenvolvimento com avaliação necessariamente holística."
@@ -860,6 +940,32 @@ Responde APENAS com este JSON:
       }
       type GRaw = { label: string; questions: QRaw[]; totalPoints?: number }
       const groups = (content.groups ?? []) as GRaw[]
+
+      // 0. Fundir questões type='text' (âncoras indevidas, proibidas no prompt mas
+      //    ocasionalmente geradas) na questão seguinte — nunca devem existir como questão própria,
+      //    pois ficam com 0 pontos e geram corrigenda sem cotação correspondente.
+      for (const g of groups) {
+        const merged: QRaw[] = []
+        let pendingPrefix = ''
+        for (const q of g.questions ?? []) {
+          if (q.type === 'text') {
+            pendingPrefix += (pendingPrefix ? '\n\n' : '') + String(q.text ?? '').trim()
+            continue
+          }
+          if (pendingPrefix) {
+            q.text = `${pendingPrefix}\n\n${String(q.text ?? '').trim()}`
+            pendingPrefix = ''
+          }
+          merged.push(q)
+        }
+        if (pendingPrefix && merged.length > 0) {
+          const last = merged[merged.length - 1]
+          last.text = `${String(last.text ?? '').trim()}\n\n${pendingPrefix}`
+        } else if (pendingPrefix) {
+          console.warn('[PROFAI] Questão type=\'text\' órfã (sem questão seguinte) — descartada')
+        }
+        g.questions = merged
+      }
 
       // 1. Remover questões com texto duplicado
       const seenTexts = new Set<string>()

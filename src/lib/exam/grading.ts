@@ -105,7 +105,7 @@ ${responseFormat}`
     const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
     const result = await model.generateContent(prompt)
     const text = result.response.text()
-    const match = text.match(/\{[\s\S]*?\}/)
+    const match = text.match(/\{[\s\S]*\}/)
     if (!match) throw new Error('no json')
     const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
     const rubric = clampRubric(parsed.rubric)

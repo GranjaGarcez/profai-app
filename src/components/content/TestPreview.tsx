@@ -64,10 +64,36 @@ const ANSWER_LINES: Record<string, number> = {
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
 
+// Funde questões type='text' (âncoras indevidas de versões antigas, antes da
+// validação no backend impedir isto) na questão seguinte — nunca devem aparecer
+// como questão própria com 0 pontos e corrigenda sem cotação correspondente.
+function mergeOrphanTextQuestions(groups: TestGroup[]): TestGroup[] {
+  return groups.map(g => {
+    const merged: Question[] = []
+    let pendingPrefix = ''
+    for (const q of g.questions) {
+      if (q.type === 'text') {
+        pendingPrefix += (pendingPrefix ? '\n\n' : '') + (q.text ?? '').trim()
+        continue
+      }
+      if (pendingPrefix) {
+        q.text = `${pendingPrefix}\n\n${(q.text ?? '').trim()}`
+        pendingPrefix = ''
+      }
+      merged.push(q)
+    }
+    if (pendingPrefix && merged.length > 0) {
+      const last = merged[merged.length - 1]
+      last.text = `${(last.text ?? '').trim()}\n\n${pendingPrefix}`
+    }
+    return { ...g, questions: merged }
+  })
+}
+
 function normaliseGroups(test: TestContent): TestGroup[] {
-  if (test.groups && test.groups.length > 0) return test.groups
+  if (test.groups && test.groups.length > 0) return mergeOrphanTextQuestions(test.groups)
   if (test.questions && test.questions.length > 0) {
-    return [{ label: 'Questões', description: '', questions: test.questions }]
+    return mergeOrphanTextQuestions([{ label: 'Questões', description: '', questions: test.questions }])
   }
   return []
 }
@@ -385,27 +411,45 @@ export default function TestPreview({
   const rawTest = content as TestContent
   const [editableTest, setEditableTest] = useState<TestContent>(() => deepClone(rawTest))
   const [isEditing, setIsEditing] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<'ok' | 'error' | null>(null)
+  const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
+  const [printMode, setPrintMode] = useState<'student' | 'teacher'>('student')
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
 
+  function handlePrint(mode: 'student' | 'teacher') {
+    setPrintMode(mode)
+    setTimeout(() => {
+      window.onafterprint = () => {
+        setPrintMode('student')
+        window.onafterprint = null
+      }
+      window.print()
+    }, 50)
+  }
+
+  const markDirty = useCallback(() => { setIsDirty(true); setSaveMsg(null) }, [])
+
   const updateRoot = useCallback(<K extends keyof TestContent>(key: K, val: TestContent[K]) => {
-    setEditableTest(t => ({ ...t, [key]: val }))
-  }, [])
+    setEditableTest(t => ({ ...t, [key]: val })); markDirty()
+  }, [markDirty])
   const updateGroup = useCallback((gi: number, key: keyof TestGroup, val: unknown) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
       ;(groups[gi] as unknown as Record<string, unknown>)[key as string] = val
       return { ...t, groups }
-    })
-  }, [])
+    }); markDirty()
+  }, [markDirty])
   const updateQuestion = useCallback((gi: number, qi: number, key: keyof Question, val: unknown) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
       ;(groups[gi].questions[qi] as unknown as Record<string, unknown>)[key as string] = val
       return { ...t, groups }
-    })
-  }, [])
+    }); markDirty()
+  }, [markDirty])
   const updateOption = useCallback((gi: number, qi: number, oi: number, val: string) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
@@ -413,16 +457,103 @@ export default function TestPreview({
       opts[oi] = val
       groups[gi].questions[qi].options = opts
       return { ...t, groups }
-    })
-  }, [])
+    }); markDirty()
+  }, [markDirty])
   const recalcPoints = useCallback((gi: number) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
       groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
       const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
       return { ...t, groups, totalPoints: total }
-    })
-  }, [])
+    }); markDirty()
+  }, [markDirty])
+
+  const deleteQuestion = useCallback((gi: number, qi: number) => {
+    setEditableTest(t => {
+      const groups = deepClone(t.groups ?? [])
+      groups[gi].questions.splice(qi, 1)
+      groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
+      const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
+      return { ...t, groups, totalPoints: total }
+    }); markDirty()
+  }, [markDirty])
+
+  const addQuestion = useCallback((gi: number) => {
+    setEditableTest(t => {
+      const groups = deepClone(t.groups ?? [])
+      const maxIdx = groups.flatMap(g => g.questions).reduce((m, q) => Math.max(m, q.index ?? 0), 0)
+      groups[gi].questions.push({
+        index: maxIdx + 1,
+        type: 'short_answer',
+        text: 'Nova questão — edita o enunciado.',
+        correctAnswer: '',
+        points: 5,
+        markScheme: '',
+      })
+      groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
+      const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
+      return { ...t, groups, totalPoints: total }
+    }); markDirty()
+  }, [markDirty])
+
+  const handleSaveEdits = useCallback(async () => {
+    if (!contentItemId || isSaving) return
+    setIsSaving(true); setSaveMsg(null)
+    try {
+      const res = await fetch(`/api/content/${contentItemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editableTest }),
+      })
+      if (!res.ok) throw new Error()
+      setIsDirty(false); setSaveMsg('ok')
+      setTimeout(() => setSaveMsg(null), 3000)
+    } catch {
+      setSaveMsg('error')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [contentItemId, editableTest, isSaving])
+
+  const handleLaunch = useCallback(async () => {
+    if (isDirty && contentItemId) await handleSaveEdits()
+    setShowLauncher(true)
+  }, [isDirty, contentItemId, handleSaveEdits])
+
+  const handleRegenerate = useCallback(async (gi: number, qi: number) => {
+    const globalIdx = (editableTest.groups ?? [])
+      .slice(0, gi).flatMap(g => g.questions).length + qi
+    setRegeneratingIdx(globalIdx)
+    try {
+      const allTexts = (editableTest.groups ?? [])
+        .flatMap(g => g.questions)
+        .map(q => q.text)
+      const q = (editableTest.groups ?? [])[gi].questions[qi]
+      const res = await fetch('/api/ai/generate-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject:      editableTest.subject,
+          yearLevel:    editableTest.yearLevel,
+          topic:        editableTest.topic,
+          questionType: q.type,
+          points:       q.points,
+          existingTexts: allTexts,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.question) return
+      const newQ = { ...q, ...data.question, index: q.index, _bankId: undefined }
+      setEditableTest(t => {
+        const groups = deepClone(t.groups ?? [])
+        groups[gi].questions[qi] = newQ
+        return { ...t, groups }
+      })
+      markDirty()
+    } finally {
+      setRegeneratingIdx(null)
+    }
+  }, [editableTest, markDirty])
 
   const groups = normaliseGroups(editableTest)
   const allQuestions = groups.flatMap(g => g.questions)
@@ -485,10 +616,43 @@ export default function TestPreview({
 
           {/* Acções principais — à direita */}
           <div className="flex items-center gap-2 ml-auto">
-            <button onClick={() => window.print()}
+            {/* Guardar edições */}
+            {contentItemId && isDirty && (
+              <button onClick={handleSaveEdits} disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{
+                  background: isSaving ? '#e2e8f0' : '#0D1B2A',
+                  color: isSaving ? '#9CA3AF' : '#F7F3EE',
+                  border: '1px solid transparent',
+                  cursor: isSaving ? 'wait' : 'pointer',
+                }}>
+                <span style={{ fontSize: 14 }}>{isSaving ? '⏳' : '💾'}</span>
+                {isSaving ? 'A guardar…' : 'Guardar edições'}
+              </button>
+            )}
+            {saveMsg === 'ok' && (
+              <span className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                style={{ background: '#dcfce7', color: '#166534' }}>
+                ✓ Guardado
+              </span>
+            )}
+            {saveMsg === 'error' && (
+              <span className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                style={{ background: '#fee2e2', color: '#991b1b' }}>
+                ✗ Erro ao guardar
+              </span>
+            )}
+            <button onClick={() => handlePrint('student')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={{ background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: 14 }}>🖨️</span> Imprimir
+              style={{ background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0' }}
+              title="Versão para os alunos — sem respostas">
+              <span style={{ fontSize: 14 }}>🖨️</span> Alunos
+            </button>
+            <button onClick={() => handlePrint('teacher')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}
+              title="Versão do professor — com respostas e critérios de cotação">
+              <span style={{ fontSize: 14 }}>🔑</span> Professor
             </button>
             <button onClick={handleDocx}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
@@ -496,10 +660,11 @@ export default function TestPreview({
               <span style={{ fontSize: 14 }}>📄</span> Word
             </button>
             {contentItemId && (
-              <button onClick={() => setShowLauncher(true)}
+              <button onClick={handleLaunch}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all"
                 style={{ background: 'linear-gradient(135deg, #00B4D8, #0096b7)', boxShadow: '0 2px 8px rgba(0,180,216,0.35)' }}>
-                <span style={{ fontSize: 14 }}>🚀</span> Lançar Exame
+                <span style={{ fontSize: 14 }}>🚀</span>
+                {isDirty ? 'Guardar e Lançar' : 'Lançar Exame'}
               </button>
             )}
           </div>
@@ -509,7 +674,7 @@ export default function TestPreview({
         {isEditing && (
           <div className="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2"
             style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
-            ✏️ <span><strong>Modo de edição</strong> — clica em qualquer texto ou número para editar.</span>
+            ✏️ <span><strong>Modo de edição</strong> — clica em qualquer texto ou número para editar · usa 🗑 para apagar questões · usa + para adicionar.</span>
           </div>
         )}
         <div className="px-4 py-2 rounded-lg text-xs flex items-center gap-2"
@@ -522,8 +687,11 @@ export default function TestPreview({
       <ScoreBreakdown groups={groups} totalPoints={editableTest.totalPoints} subject={editableTest.subject} />
 
       {/* ── Documento ──────────────────────────────────────────────────────── */}
-      <div id="test-document" className="bg-white rounded-2xl overflow-hidden print-area"
-        style={{ border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(13,27,42,0.08)' }}>
+      <div
+        id="test-document"
+        className={`bg-white rounded-2xl overflow-hidden print-area${printMode === 'teacher' ? ' print-teacher' : ''}`}
+        style={{ border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(13,27,42,0.08)' }}
+      >
 
         {/* Banda de cor topo */}
         <div style={{ height: 5, background: 'linear-gradient(90deg, #0D1B2A 0%, #0D1B2A 65%, #00B4D8 100%)' }} />
@@ -697,21 +865,40 @@ export default function TestPreview({
 
               {/* Questões */}
               <div className="space-y-8">
-                {group.questions.map((q, qi) => (
-                  <QuestionBlock
-                    key={qi}
-                    q={q}
-                    globalIndex={allQuestions.indexOf(q) + 1}
-                    editing={isEditing}
-                    onChangeText={v => updateQuestion(gi, qi, 'text', v)}
-                    onChangeAnswer={v => updateQuestion(gi, qi, 'correctAnswer', v)}
-                    onChangePoints={v => { updateQuestion(gi, qi, 'points', v); recalcPoints(gi) }}
-                    onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
-                    onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
-                    onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
-                  />
-                ))}
+                {group.questions.map((q, qi) => {
+                  const gIdx = groups.slice(0, gi).flatMap(g => g.questions).length + qi
+                  return (
+                    <QuestionBlock
+                      key={qi}
+                      q={q}
+                      globalIndex={allQuestions.indexOf(q) + 1}
+                      editing={isEditing}
+                      onChangeText={v => updateQuestion(gi, qi, 'text', v)}
+                      onChangeAnswer={v => updateQuestion(gi, qi, 'correctAnswer', v)}
+                      onChangePoints={v => { updateQuestion(gi, qi, 'points', v); recalcPoints(gi) }}
+                      onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
+                      onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
+                      onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
+                      onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
+                      onRegenerate={() => handleRegenerate(gi, qi)}
+                      isRegenerating={regeneratingIdx === gIdx}
+                    />
+                  )
+                })}
               </div>
+
+              {/* Adicionar questão */}
+              {isEditing && (
+                <button
+                  onClick={() => addQuestion(gi)}
+                  className="no-print mt-4 w-full py-2.5 rounded-xl text-sm font-semibold border-2 border-dashed transition-all"
+                  style={{ borderColor: '#00B4D850', color: '#00B4D8', background: 'transparent' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e0f7fc' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                >
+                  + Adicionar questão ao {group.label}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -730,6 +917,9 @@ export default function TestPreview({
 
       {/* Estilos de impressão */}
       <style jsx global>{`
+        /* Corrigenda do professor — sempre oculta no ecrã */
+        .teacher-key { display: none; }
+
         @media print {
           body > * { display: none !important; }
           #test-document { display: block !important; }
@@ -741,6 +931,25 @@ export default function TestPreview({
           .no-print { display: none !important; }
           .group-block { page-break-inside: avoid; }
           .question-block { page-break-inside: avoid; }
+
+          /* Versão professor: mostrar corrigenda em cada questão */
+          #test-document.print-teacher .teacher-key {
+            display: block !important;
+          }
+          /* Cabeçalho de versão professor no topo */
+          #test-document.print-teacher::before {
+            content: "VERSÃO PROFESSOR — CORRIGENDA CONFIDENCIAL";
+            display: block;
+            text-align: center;
+            font-size: 9pt;
+            font-weight: bold;
+            letter-spacing: 0.12em;
+            color: #166534;
+            background: #dcfce7;
+            padding: 4pt 0;
+            border-bottom: 1.5pt solid #86efac;
+          }
+
           @page { margin: 2cm 2.5cm; size: A4 portrait; }
         }
       `}</style>
@@ -822,11 +1031,15 @@ interface QuestionBlockProps {
   onChangeMarkScheme: (v: string) => void
   onChangeOption: (oi: number, v: string) => void
   onChangeCalculator: (v: boolean) => void
+  onDelete?: () => void
+  onRegenerate?: () => void
+  isRegenerating?: boolean
 }
 
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
+  onDelete, onRegenerate, isRegenerating,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
   const isMulti = q.type === 'multiple_choice' || q.type === 'true_false'
@@ -889,6 +1102,41 @@ function QuestionBlock({
               )}
             </span>
 
+            {/* Acções de edição — só visíveis em modo edição */}
+            {editing && (
+              <span className="no-print flex items-center gap-1.5 ml-auto">
+                {/* Gerar alternativa */}
+                <button
+                  onClick={onRegenerate}
+                  disabled={isRegenerating}
+                  title="Gerar questão alternativa com IA"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
+                  style={{
+                    color: isRegenerating ? '#9CA3AF' : '#7c3aed',
+                    background: 'transparent',
+                    border: `1px solid ${isRegenerating ? '#e2e8f0' : '#ddd6fe'}`,
+                    cursor: isRegenerating ? 'wait' : 'pointer',
+                  }}
+                  onMouseEnter={e => { if (!isRegenerating) (e.currentTarget as HTMLButtonElement).style.background = '#ede9fe' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                >
+                  {isRegenerating ? '⏳' : '🔄'} {isRegenerating ? 'A gerar…' : 'Alternativa'}
+                </button>
+                {/* Eliminar */}
+                {onDelete && (
+                  <button
+                    onClick={onDelete}
+                    title="Eliminar questão"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
+                    style={{ color: '#ef4444', background: 'transparent', border: '1px solid #fca5a5' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    🗑 Eliminar
+                  </button>
+                )}
+              </span>
+            )}
             {/* Feedback 👍/👎 — só visível no ecrã, nunca impresso */}
             {q._bankId && !editing && <FeedbackButtons questionId={q._bankId} />}
           </div>
@@ -980,7 +1228,7 @@ function QuestionBlock({
             </div>
           )}
 
-          {/* ── Corrigenda (no-print) ── */}
+          {/* ── Corrigenda (no-print — só no ecrã, colapsável) ── */}
           <div className="no-print mt-3">
             <details>
               <summary className="text-xs font-semibold cursor-pointer select-none inline-flex items-center gap-1"
@@ -1011,6 +1259,24 @@ function QuestionBlock({
                 )}
               </div>
             </details>
+          </div>
+
+          {/* ── Corrigenda impressa (versão professor) — oculta no ecrã, visível via CSS em print-teacher ── */}
+          <div className="teacher-key mt-3 px-3 py-2.5 rounded-lg"
+            style={{ background: '#f0fdf4', border: '1.5px solid #86efac', pageBreakInside: 'avoid' }}>
+            <p style={{ fontSize: '8pt', fontWeight: 700, color: '#15803d', letterSpacing: '0.06em', marginBottom: '4pt', textTransform: 'uppercase' }}>
+              ✓ Corrigenda — Q{globalIndex}
+            </p>
+            {q.correctAnswer && (
+              <p style={{ fontSize: '9pt', color: '#166534', marginBottom: '3pt', lineHeight: 1.5 }}>
+                <strong>Resposta: </strong>{q.correctAnswer}
+              </p>
+            )}
+            {q.markScheme && (
+              <p style={{ fontSize: '9pt', color: '#374151', lineHeight: 1.5 }}>
+                <strong>Critérios de cotação: </strong>{q.markScheme}
+              </p>
+            )}
           </div>
         </div>
       </div>
