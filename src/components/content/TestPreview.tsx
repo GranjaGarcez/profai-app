@@ -184,6 +184,82 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
+  if (s.includes('inglês') || s.includes('ingles') || s.includes('espanhol') || s.includes('francês') || s.includes('frances')) {
+    return [
+      {
+        label: 'Compreensão escrita',
+        types: ['multiple_choice', 'true_false', 'short_answer'],
+        targetLabel: '~35%', okFn: p => p >= 25 && p <= 45,
+      },
+      {
+        label: 'Gramática / Vocabulário',
+        types: ['fill_blank'],
+        targetLabel: '~30%', okFn: p => p >= 20 && p <= 40,
+      },
+      {
+        label: 'Produção escrita',
+        types: ['long_answer'],
+        targetLabel: '≥ 30%', okFn: p => p >= 30,
+      },
+    ]
+  }
+  if (s.includes('educação física') || s.includes('educacao fisica')) {
+    return [
+      {
+        label: 'Regras e modalidades',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 30%', okFn: p => p <= 35,
+      },
+      {
+        label: 'Aptidão física e saúde',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '30–40%', okFn: p => p >= 25,
+      },
+      {
+        label: 'Situação aplicada',
+        types: ['long_answer'],
+        targetLabel: '≥ 30%', okFn: p => p >= 30,
+      },
+    ]
+  }
+  if (s.includes('educação visual') || s.includes('educacao visual')) {
+    return [
+      {
+        label: 'Elementos e linguagem visual',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 25%', okFn: p => p <= 30,
+      },
+      {
+        label: 'Análise de imagem',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '30–40%', okFn: p => p >= 25,
+      },
+      {
+        label: 'Justificação estética',
+        types: ['long_answer'],
+        targetLabel: '≥ 35%', okFn: p => p >= 35,
+      },
+    ]
+  }
+  if (s.includes('educação tecnológica') || s.includes('educacao tecnologica')) {
+    return [
+      {
+        label: 'Materiais e processos',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 25%', okFn: p => p <= 30,
+      },
+      {
+        label: 'Análise de objectos técnicos',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '30–40%', okFn: p => p >= 25,
+      },
+      {
+        label: 'Resolução de problema técnico',
+        types: ['long_answer'],
+        targetLabel: '≥ 35%', okFn: p => p >= 35,
+      },
+    ]
+  }
   return [
     {
       label: 'Seleção',

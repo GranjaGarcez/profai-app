@@ -42,6 +42,36 @@ function clampRubric(rubric: RubricCriterion[] | undefined): RubricCriterion[] |
   }))
 }
 
+// ── Nota de correcção específica por disciplina ────────────────────────────────
+function gradingSubjectNote(subject: string): string {
+  const s = subject.toLowerCase()
+  if (s.includes('inglês') || s.includes('ingles') || s.includes('espanhol') || s.includes('francês') || s.includes('frances')) {
+    const lang = (s.includes('inglês') || s.includes('ingles')) ? 'Inglês'
+      : s.includes('espanhol') ? 'Espanhol' : 'Francês'
+    return `\nNOTA ESPECÍFICA — LÍNGUA ESTRANGEIRA (${lang}):
+- A resposta do aluno DEVE estar escrita em ${lang}. Se estiver em português quando a questão pedia resposta em ${lang}, penaliza fortemente o critério de cumprimento da tarefa, mesmo que o conteúdo em português esteja certo.
+- Avalia gramática e ortografia segundo as normas do ${lang}, nunca do português.
+- Pequenos erros gramaticais que não comprometem a compreensão → cotação parcial generosa (regra 8, in dubio pro disculpo).
+- O "feedback" que escreves continua em Português de Portugal — só a resposta do aluno é avaliada em ${lang}.`
+  }
+  if (s.includes('educação física') || s.includes('educacao fisica')) {
+    return `\nNOTA ESPECÍFICA — EDUCAÇÃO FÍSICA (componente teórica):
+- Avalia apenas conhecimento teórico (regras, conceitos, fisiologia do exercício) — esta é a componente escrita, sem execução motora.
+- Aceita terminologia desportiva equivalente (ex: "remate" e "finalização" no futebol são intermutáveis).`
+  }
+  if (s.includes('educação visual') || s.includes('educacao visual')) {
+    return `\nNOTA ESPECÍFICA — EDUCAÇÃO VISUAL (componente teórica):
+- Avalia conhecimento teórico, análise e justificação estética — esta é a componente escrita, sem produção plástica.
+- Aceita terminologia visual equivalente desde que usada correctamente no contexto.`
+  }
+  if (s.includes('educação tecnológica') || s.includes('educacao tecnologica')) {
+    return `\nNOTA ESPECÍFICA — EDUCAÇÃO TECNOLÓGICA (componente teórica):
+- Avalia conhecimento teórico de materiais, processos e soluções técnicas — esta é a componente escrita, sem execução prática.
+- Aceita soluções técnicas alternativas tecnicamente válidas, mesmo que diferentes da resposta modelo.`
+  }
+  return ''
+}
+
 // ── Correcção por IA (resposta aberta) ────────────────────────────────────────
 async function gradeOpenWithAI(
   q: Question,
@@ -85,6 +115,7 @@ CRITÉRIOS DE CORRECÇÃO: ${q.markScheme ?? q.correctAnswer}
 
 RESPOSTA DO ALUNO: ${trimmed || '(sem texto)'}
 ${calcSection}
+${gradingSubjectNote(subject)}
 REGRAS DE CORRECÇÃO — aplica todas sem excepção:
 1. Avalia o TRABALHO RELEVANTE, não a apresentação: o que conta é a estratégia correcta e o resultado, não a formatação ou a existência de todos os passos escritos.
 2. Passos intermédios omitidos (ex: escrever "16" sem mostrar "4×4") são cálculo mental legítimo — não penalizes.

@@ -19,6 +19,12 @@ const SUBJECT_NOTES: Record<string, string> = {
   'Geografia':        'Dados geográficos reais actuais (IPMA, INE). Relações espaciais explícitas.',
   'História e Geografia de Portugal': 'Linguagem simples (10–12 anos). Identificar/localizar/descrever. Documentos acessíveis.',
   'Filosofia':        'Conceito filosófico exacto com autor do programa DGE. PROIBIDO inventar autores ou teses.',
+  'Inglês':           'Nível QECR adequado ao ano. Enunciado, excerto e resposta esperada EM Inglês (instruções de gestão podem ser em português).',
+  'Espanhol':         'Nível MCER adequado ao ano. Enunciado, excerto e resposta esperada EM Espanhol.',
+  'Francês':          'Nível CECR adequado ao ano. Enunciado, excerto e resposta esperada EM Francês.',
+  'Educação Física':  'Componente teórica escrita — regras, modalidades, aptidão física e saúde. PROIBIDO exigir execução motora.',
+  'Educação Visual':  'Componente teórica escrita — elementos visuais, composição, análise de imagem descrita em texto. PROIBIDO pedir desenho/execução prática.',
+  'Educação Tecnológica': 'Componente teórica escrita — materiais, processos, análise de objectos técnicos. PROIBIDO pedir execução prática/manual.',
 }
 
 function buildPrompt(

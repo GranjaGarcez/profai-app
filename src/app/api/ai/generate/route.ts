@@ -198,6 +198,84 @@ ${ctx}`,
     }
   }
 
+  // ── Línguas estrangeiras: Inglês, Espanhol, Francês ─────────────────────────
+  const languageMap: Record<string, string> = {
+    'inglês': 'Inglês', 'ingles': 'Inglês', 'english': 'Inglês',
+    'espanhol': 'Espanhol', 'castelhano': 'Espanhol', 'spanish': 'Espanhol',
+    'francês': 'Francês', 'frances': 'Francês', 'french': 'Francês',
+  }
+  const languageMatch = Object.keys(languageMap).find(k => s.includes(k))
+  if (languageMatch) {
+    const lang = languageMap[languageMatch]
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — ${lang} (${yearLevel}.º ano) — língua estrangeira:
+• Grupo I — Compreensão escrita / Reading comprehension (35 pts): CADA questão de compreensão incorpora um excerto em ${lang} (60–150 palavras, nível adequado ao ano) no seu próprio campo "text", seguido da pergunta. Formato:
+  "text": "[Título ou contexto do texto]\\n[excerto em ${lang}]\\n\\n[pergunta de compreensão]"
+  Tipos: multiple_choice (5pt), true_false (5pt), short_answer (5pt) — perguntas e respostas esperadas EM ${lang}. NÃO crias questões type='text' separadas — o excerto é parte do enunciado.
+• Grupo II — Gramática e vocabulário / Grammar & vocabulary (30 pts): fill_blank e short_answer sobre estruturas gramaticais e vocabulário do nível — enunciado e resposta esperada em ${lang}. Questões independentes, sem excerto obrigatório.
+• Grupo III — Produção escrita / Writing (35 pts, 1 questão): long_answer — produção de texto curto em ${lang} (carta, e-mail ou parágrafo de opinião, conforme o ano e o tema). markScheme com 3 parcelas: Cumprimento da tarefa e conteúdo (14pt) + Vocabulário e estruturas gramaticais (12pt) + Correcção ortográfica e coesão (9pt).
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou respostas esperadas em português quando a tarefa pede produção em ${lang}.
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Compreensão escrita (EM/VF/curta): 5 pts/questão (valor fixo); 7 questões = 35 pts
+   • Gramática e vocabulário (curta/completar): 5 pts/questão (valor fixo); 6 questões = 30 pts
+   • Produção escrita (long_answer, 1 questão): 35 pts fixos — markScheme: Cumprimento da tarefa (14pt) + Vocabulário/gramática (12pt) + Ortografia e coesão (9pt) = 35pt
+   • Distribuição: 35 + 30 + 35 = 100 pts exactamente
+   • REGRA: enunciados de compreensão e produção sempre em ${lang}; instruções de gestão do teste podem ser em português`,
+    }
+  }
+
+  // ── Educação Física (componente teórica escrita) ────────────────────────────
+  if (s.includes('educação física') || s.includes('educacao fisica') || s.includes('ed. física') || s.includes('ed física')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Educação Física (${yearLevel}.º ano) — componente teórica escrita:
+• Grupo I — Regras e modalidades desportivas (30 pts): EM/VF sobre regras de jogo, terminologia desportiva, modalidades do programa (jogos colectivos, ginástica, atletismo, dança, raquetas). 5 pts/questão (valor fixo). 6 questões.
+• Grupo II — Aptidão física e saúde (35 pts): short_answer sobre capacidades motoras (força, resistência, velocidade, flexibilidade), sistema cardiorrespiratório e exercício, aquecimento/retorno à calma, hábitos de vida saudável. 7 pts/questão (valor fixo). 5 questões.
+• Grupo III — Situação de jogo ou treino aplicada (35 pts, 1–2 questões): descrição de uma situação de jogo ou plano de treino INCORPORADA no campo "text" da questão que a analisa — pergunta de aplicação (decisão táctica, correcção de erro, adaptação de treino). short_answer ou long_answer.
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou pedidos de execução motora (este é um teste escrito, não uma avaliação prática).
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Regras e modalidades (EM/VF): 5 pts/questão (valor fixo); 6 questões = 30 pts
+   • Aptidão física e saúde (resposta curta): 7 pts/questão (valor fixo); 5 questões = 35 pts
+   • Situação aplicada: 35 pts total (1 × 35pt ou 2 × 17–18pt); markScheme: Identificação correcta da questão táctica/fisiológica (15pt) + Justificação fundamentada (12pt) + Vocabulário técnico-desportivo adequado (8pt)
+   • Distribuição: 30 + 35 + 35 = 100 pts exactamente`,
+    }
+  }
+
+  // ── Educação Visual (componente teórica escrita) ────────────────────────────
+  if (s.includes('educação visual') || s.includes('educacao visual') || s.includes('ed. visual') || s.includes('ed visual')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Educação Visual (${yearLevel}.º ano) — componente teórica escrita:
+• Grupo I — Elementos e linguagem visual (25 pts): EM/VF sobre elementos visuais (ponto, linha, forma, cor, textura, valor, espaço) e princípios de composição. 5 pts/questão (valor fixo). 5 questões.
+• Grupo II — Análise de imagem ou objecto visual (35 pts): CADA questão incorpora a descrição textual detalhada de uma imagem, obra ou objecto visual no seu próprio campo "text" (já que não há imagem real disponível), seguida da pergunta de análise. short_answer, 7 pts/questão. 5 questões.
+• Grupo III — Justificação de processo ou escolha estética (40 pts, 1 questão): long_answer — descreve e justifica um processo de concepção ou escolha técnica/estética (ex: porquê determinada técnica ou material para um efeito pretendido). markScheme: Conhecimento técnico e conceptual (16pt) + Justificação estética fundamentada (16pt) + Vocabulário visual específico (8pt).
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou pedidos de desenho/execução prática (este é um teste escrito teórico).
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Elementos e linguagem visual (EM/VF): 5 pts/questão (valor fixo); 5 questões = 25 pts
+   • Análise de imagem/objecto (resposta curta): 7 pts/questão (valor fixo); 5 questões = 35 pts
+   • Justificação de processo (long_answer, 1 questão): 40 pts fixos — markScheme: Conhecimento técnico (16pt) + Justificação estética (16pt) + Vocabulário visual (8pt) = 40pt
+   • Distribuição: 25 + 35 + 40 = 100 pts exactamente`,
+    }
+  }
+
+  // ── Educação Tecnológica (componente teórica escrita) ───────────────────────
+  if (s.includes('educação tecnológica') || s.includes('educacao tecnologica') || s.includes('ed. tecnológica') || s.includes('ed tecnologica')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Educação Tecnológica (${yearLevel}.º ano) — componente teórica escrita:
+• Grupo I — Materiais, ferramentas e processos (25 pts): EM/VF sobre propriedades de materiais, ferramentas, processos de fabrico e regras de segurança. 5 pts/questão (valor fixo). 5 questões.
+• Grupo II — Análise de objectos e sistemas técnicos (35 pts): CADA questão incorpora a descrição de um objecto ou sistema técnico no seu próprio campo "text", seguida da pergunta de análise (função, estrutura, mecanismo, materiais usados). short_answer, 7 pts/questão. 5 questões.
+• Grupo III — Resolução de problema técnico (40 pts, 1 questão): long_answer — situação-problema de concepção (propõe uma solução técnica viável, com materiais e processo adequados). markScheme: Identificação correcta do problema e requisitos (12pt) + Proposta de solução tecnicamente viável (16pt) + Justificação com vocabulário técnico adequado (12pt).
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou pedidos de execução prática/manual (este é um teste escrito teórico).
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Materiais, ferramentas e processos (EM/VF): 5 pts/questão (valor fixo); 5 questões = 25 pts
+   • Análise de objectos técnicos (resposta curta): 7 pts/questão (valor fixo); 5 questões = 35 pts
+   • Resolução de problema técnico (long_answer, 1 questão): 40 pts fixos — markScheme: Identificação do problema (12pt) + Proposta de solução (16pt) + Justificação técnica (12pt) = 40pt
+   • Distribuição: 25 + 35 + 40 = 100 pts exactamente`,
+    }
+  }
+
   // ── Matemática / STEM (default) ──────────────────────────────────────────────
   if (hasMultipleTypes) {
     return {
@@ -263,6 +341,30 @@ function autoMarkScheme(type: string, pts: number, subject: string): string {
       return `Tese/Problematização — identificação clara da questão filosófica e posição pessoal fundamentada (${p(0.2)}pt) + Argumentação — pelo menos dois argumentos filosóficos pertinentes com recurso a conceitos e autores do programa DGE (${p(0.45)}pt) + Adequação conceptual e teórica — uso correcto da terminologia filosófica e referências aos autores estudados (${p(0.25)}pt) + Comunicação — organização, coesão e clareza do discurso filosófico (${p(0.1)}pt).`
     }
     return `Identificação correcta do conceito, tese ou autor filosófico (${p(0.5)}pt) + explicação adequada com referência ao pensamento do autor no contexto do programa DGE (${p(0.5)}pt).`
+  }
+  if (s.includes('inglês') || s.includes('ingles') || s.includes('espanhol') || s.includes('francês') || s.includes('frances')) {
+    if (isLong) {
+      return `Cumprimento da tarefa e conteúdo pertinente (${p(0.4)}pt) + vocabulário e estruturas gramaticais adequadas ao nível (${p(0.35)}pt) + correcção ortográfica e coesão textual (${p(0.25)}pt).`
+    }
+    return `Resposta correcta na língua-alvo (${p(0.6)}pt) + correcção gramatical e ortográfica (${p(0.4)}pt).`
+  }
+  if (s.includes('educação física') || s.includes('educacao fisica')) {
+    if (isLong) {
+      return `Identificação correcta da questão táctica ou fisiológica (${p(0.4)}pt) + justificação fundamentada (${p(0.35)}pt) + vocabulário técnico-desportivo adequado (${p(0.25)}pt).`
+    }
+    return `Resposta correcta sobre regra/conceito/aptidão física (${p(0.6)}pt) + justificação adequada (${p(0.4)}pt).`
+  }
+  if (s.includes('educação visual') || s.includes('educacao visual')) {
+    if (isLong) {
+      return `Conhecimento técnico e conceptual correcto (${p(0.35)}pt) + justificação estética fundamentada (${p(0.4)}pt) + vocabulário visual específico (${p(0.25)}pt).`
+    }
+    return `Identificação ou análise visual correcta (${p(0.6)}pt) + justificação com vocabulário visual específico (${p(0.4)}pt).`
+  }
+  if (s.includes('educação tecnológica') || s.includes('educacao tecnologica')) {
+    if (isLong) {
+      return `Identificação correcta do problema e requisitos técnicos (${p(0.3)}pt) + proposta de solução tecnicamente viável (${p(0.4)}pt) + justificação com vocabulário técnico adequado (${p(0.3)}pt).`
+    }
+    return `Identificação ou análise técnica correcta (${p(0.6)}pt) + justificação com vocabulário técnico específico (${p(0.4)}pt).`
   }
   // Genérico
   return isLong
@@ -602,6 +704,40 @@ export async function POST(request: NextRequest) {
 • 11.º ano: Teoria do Conhecimento (Platão, Descartes, Hume), Filosofia da Ciência (Popper, Kuhn), Estética (conceito de arte, critérios estéticos), Filosofia da Religião
 • Questão de desenvolvimento: exige tese pessoal, argumentação filosófica com conceitos e autores do programa, contra-argumento e conclusão — nunca simples resumo
 • Proibido: Nietzsche, Heidegger, Sartre, Nozick, fenomenologia (não estão nas AE); inventar teses ou obras de autores reais; usar PT-BR na terminologia filosófica`,
+
+      'Inglês': `CONTEÚDO E CONTEXTO — Inglês (QECR):
+• Nível por ano: 5.º–6.º (A1–A2: vocabulário do quotidiano, presente simples/contínuo, rotinas), 7.º–9.º (A2–B1: passado, futuro, comparativos, texto narrativo/descritivo curto), 10.º–12.º (B1–B2: condicional, voz passiva, texto argumentativo)
+• Excertos de leitura adequados ao nível: diálogos, anúncios, e-mails, notícias curtas, blogs — nunca literatura adulta complexa fora do nível
+• Produção escrita realista para a idade: e-mail informal, descrição pessoal, parágrafo de opinião simples
+• Proibido: gíria não-padrão, expressões idiomáticas avançadas fora do nível, mistura de variantes (britânico/americano inconsistente)`,
+
+      'Espanhol': `CONTEÚDO E CONTEXTO — Espanhol (MCER):
+• Nível por ano: 7.º–9.º (A1–A2: presente, vocabulário básico, rotinas), 10.º–12.º (A2–B1: passado, futuro, texto descritivo/narrativo)
+• Excertos de leitura curtos e adequados ao nível: diálogos, anúncios, textos informativos simples
+• Produção escrita realista: e-mail informal, descrição, parágrafo curto de opinião
+• Proibido: gíria regional não-padrão, mistura de variantes (peninsular/latino-americano inconsistente), vocabulário fora do nível declarado`,
+
+      'Francês': `CONTEÚDO E CONTEXTO — Francês (CECR):
+• Nível por ano: 7.º–9.º (A1–A2: presente, vocabulário básico, rotinas), 10.º–12.º (A2–B1: passado composto, futuro, texto descritivo/narrativo)
+• Excertos de leitura curtos e adequados ao nível: diálogos, anúncios, textos informativos simples
+• Produção escrita realista: e-mail informal, descrição, parágrafo curto de opinião
+• Proibido: gíria não-padrão, vocabulário fora do nível declarado, estruturas gramaticais não introduzidas no ano`,
+
+      'Educação Física': `CONTEÚDO E CONTEXTO — Educação Física (componente teórica):
+• Tópicos DGE: regras e terminologia de jogos colectivos (futebol, basquetebol, voleibol, andebol), ginástica, atletismo, dança, raquetas, capacidades motoras (força, resistência, velocidade, flexibilidade, coordenação)
+• Conteúdo de saúde: sistema cardiorrespiratório e exercício, aquecimento e retorno à calma, hábitos de vida saudável, prevenção de lesões
+• Situações de jogo/treino devem ser plausíveis e tecnicamente correctas — nunca regras inventadas ou inconsistentes com a modalidade real
+• Proibido: perguntas que exigam execução motora (este é um teste escrito teórico, não uma avaliação prática)`,
+
+      'Educação Visual': `CONTEÚDO E CONTEXTO — Educação Visual (componente teórica):
+• Tópicos DGE: elementos visuais (ponto, linha, forma, cor, textura, valor, espaço), princípios de composição, técnicas (desenho, pintura, escultura, fotografia), história da arte adequada ao ciclo
+• Como não há imagem real disponível, descreve a obra/objecto em texto com detalhe suficiente para a questão fazer sentido sem ver a imagem
+• Proibido: pedidos de desenho ou execução prática (este é um teste escrito teórico), inventar obras ou artistas`,
+
+      'Educação Tecnológica': `CONTEÚDO E CONTEXTO — Educação Tecnológica (componente teórica):
+• Tópicos DGE: materiais (madeira, metal, plástico, têxteis), ferramentas e processos de fabrico, mecanismos simples, segurança no trabalho, desenho técnico básico
+• Situações-problema de concepção devem ser tecnicamente plausíveis — materiais e processos coerentes com o objecto descrito
+• Proibido: pedidos de execução prática/manual (este é um teste escrito teórico), processos de fabrico tecnicamente incorrectos`,
     }
     const subjectNote = subjectGuidelines[subject] ?? 'Cria questões rigorosas, contextualizadas e curricularmente alinhadas com as Aprendizagens Essenciais DGE.'
 
