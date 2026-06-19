@@ -13,6 +13,13 @@ interface ContentItem {
   year_level: number | null
   topic: string | null
   created_at: string
+  content?: { _differentiationLevel?: 'A' | 'B' | 'C' } | null
+}
+
+const DIFF_BADGE: Record<'A' | 'B' | 'C', { label: string; color: string }> = {
+  A: { label: 'A · Apoio', color: '#0EA5E9' },
+  B: { label: 'B · Consolidação', color: '#0D1B2A' },
+  C: { label: 'C · Aprofundamento', color: '#7C3AED' },
 }
 
 const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
@@ -90,6 +97,7 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {localItems.map(item => {
             const meta = TYPE_LABELS[item.type] ?? { label: item.type, icon: '📄', color: '#6B7280' }
+            const diffLevel = item.content?._differentiationLevel
             return (
               <div
                 key={item.id}
@@ -109,6 +117,15 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
                       {item.year_level && (
                         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#0D1B2A10', color: '#6B7280' }}>
                           {item.year_level}.º ano
+                        </span>
+                      )}
+                      {diffLevel && (
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: `${DIFF_BADGE[diffLevel].color}15`, color: DIFF_BADGE[diffLevel].color }}
+                          title="Visível só para ti — nunca aparece no documento impresso"
+                        >
+                          🎯 {DIFF_BADGE[diffLevel].label}
                         </span>
                       )}
                     </div>

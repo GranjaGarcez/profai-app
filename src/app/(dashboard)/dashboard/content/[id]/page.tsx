@@ -52,9 +52,11 @@ export default async function ContentDetailPage({ params }: Props) {
       </div>
 
       {/* Conteúdo por tipo */}
-      {item.type === 'test' && <TestPreview content={item.content} contentItemId={item.id} />}
+      {(item.type === 'test' || item.type === 'differentiated') && (
+        <TestPreview content={item.content} contentItemId={item.id} />
+      )}
 
-      {item.type !== 'test' && (
+      {item.type !== 'test' && item.type !== 'differentiated' && (
         <div className="p-6 rounded-xl border bg-white" style={{ borderColor: '#0D1B2A10' }}>
           <pre className="text-xs overflow-auto" style={{ color: '#374151' }}>
             {JSON.stringify(item.content, null, 2)}

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
 import ExamLauncher from '@/components/exam/ExamLauncher'
+import DifferentiationPanel from '@/components/content/DifferentiationPanel'
 import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
 import { generateTestDocx } from '@/lib/export/testDocx'
 
@@ -42,6 +43,20 @@ interface TestContent {
   questions?: Question[]
   _qualityWarning?: boolean
   _modelUsed?: string
+  _differentiationLevel?: 'A' | 'B' | 'C'
+  _differentiationGroupId?: string
+  _measureType?: 'MU' | 'MS'   // DL 54/2018 — Medida Universal / Medida Selectiva (impresso, discreto)
+}
+
+const DIFF_LEVEL_LABEL: Record<'A' | 'B' | 'C', { label: string; color: string }> = {
+  A: { label: 'Ficha A — Apoio', color: '#0EA5E9' },
+  B: { label: 'Ficha B — Consolidação', color: '#0D1B2A' },
+  C: { label: 'Ficha C — Aprofundamento', color: '#7C3AED' },
+}
+
+const MEASURE_LABEL: Record<'MU' | 'MS', string> = {
+  MU: 'Medida Universal (DL 54/2018)',
+  MS: 'Medida Selectiva (DL 54/2018)',
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
@@ -513,6 +528,7 @@ export default function TestPreview({
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
+  const [showDifferentiation, setShowDifferentiation] = useState(false)
   const [printMode, setPrintMode] = useState<'student' | 'teacher'>('student')
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
 
@@ -666,6 +682,28 @@ export default function TestPreview({
       {showLauncher && contentItemId && (
         <ExamLauncher contentItemId={contentItemId} contentTitle={editableTest.title} onClose={() => setShowLauncher(false)} />
       )}
+      {showDifferentiation && contentItemId && (
+        <DifferentiationPanel
+          contentItemId={contentItemId}
+          test={editableTest}
+          onClose={() => setShowDifferentiation(false)}
+        />
+      )}
+
+      {/* ── Badge discreto de nível (só no ecrã do professor — nunca impresso) ── */}
+      {editableTest._differentiationLevel && (
+        <div className="no-print mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+          style={{
+            background: `${DIFF_LEVEL_LABEL[editableTest._differentiationLevel].color}15`,
+            color: DIFF_LEVEL_LABEL[editableTest._differentiationLevel].color,
+            border: `1px solid ${DIFF_LEVEL_LABEL[editableTest._differentiationLevel].color}40`,
+          }}>
+          🎯 {DIFF_LEVEL_LABEL[editableTest._differentiationLevel].label}
+          <span style={{ opacity: 0.7 }}>
+            — nível invisível no papel{editableTest._measureType ? `; código "${editableTest._measureType}" impresso no cabeçalho` : ''}
+          </span>
+        </div>
+      )}
 
       {/* ── Aviso de qualidade (modelo fallback) ──────────────────────────── */}
       {editableTest._qualityWarning && (
@@ -697,6 +735,24 @@ export default function TestPreview({
             <span style={{ fontSize: 15 }}>🏫</span>
             {hasProfile ? 'Escola configurada' : 'Configurar escola'}
           </button>
+
+          {/* Medida DL 54/2018 — marca discreta impressa no cabeçalho */}
+          <div className="flex items-center gap-1 px-1 py-1 rounded-lg border" style={{ borderColor: '#e2e8f0' }}>
+            <span className="text-xs px-1.5" style={{ color: '#9CA3AF' }}>Medida:</span>
+            {(['none', 'MU', 'MS'] as const).map(opt => (
+              <button
+                key={opt}
+                onClick={() => updateRoot('_measureType', opt === 'none' ? undefined : opt)}
+                title={opt === 'none' ? 'Sem marca no cabeçalho' : MEASURE_LABEL[opt]}
+                className="px-2 py-1 rounded-md text-xs font-semibold transition-all"
+                style={{
+                  background: (editableTest._measureType ?? 'none') === opt ? '#0D1B2A' : 'transparent',
+                  color: (editableTest._measureType ?? 'none') === opt ? '#F7F3EE' : '#6B7280',
+                }}>
+                {opt === 'none' ? '—' : opt}
+              </button>
+            ))}
+          </div>
 
           {/* Editar */}
           <button onClick={() => setIsEditing(e => !e)}
@@ -755,6 +811,14 @@ export default function TestPreview({
               style={{ background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0' }}>
               <span style={{ fontSize: 14 }}>📄</span> Word
             </button>
+            {contentItemId && editableTest._differentiationLevel !== 'A' && editableTest._differentiationLevel !== 'C' && (
+              <button onClick={() => setShowDifferentiation(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #6ee7b7' }}
+                title="Gerar versões adaptadas A (Apoio) e C (Aprofundamento) com o mesmo cabeçalho">
+                <span style={{ fontSize: 14 }}>🎯</span> Diferenciação
+              </button>
+            )}
             {contentItemId && (
               <button onClick={handleLaunch}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all"
@@ -794,6 +858,18 @@ export default function TestPreview({
 
         {/* CABEÇALHO ─────────────────────────────────────────────────────── */}
         <div className="px-10 pt-7 pb-5" style={{ borderBottom: '2px solid #0D1B2A' }}>
+
+          {/* Marca discreta DL 54/2018 — fica no documento impresso (aluno e professor),
+              mas só o código (MU/MS) sem palavras, para não chamar a atenção da turma */}
+          {editableTest._measureType && (
+            <p
+              className="text-right mb-1"
+              style={{ fontSize: '7.5pt', color: '#9CA3AF', letterSpacing: '0.1em', lineHeight: 1 }}
+              title={MEASURE_LABEL[editableTest._measureType]}
+            >
+              {editableTest._measureType}
+            </p>
+          )}
 
           {/* Linha topo: escola + classificação */}
           <div className="flex justify-between items-start mb-5">

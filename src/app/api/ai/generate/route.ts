@@ -660,14 +660,17 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const { tool, inputs } = body
+  // 'differentiate' reaproveita 100% do pipeline de 'test' (estrutura, banco, crítico,
+  // validação) — só acrescenta a directriz de nível A/C e força o título original no fim.
+  const isTestLike = tool === 'test' || tool === 'differentiate'
 
   let prompt = ''
 
-  if (tool === 'test') {
-    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts } =
+  if (isTestLike) {
+    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle } =
       inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
         questionTypes: string[]; numQuestions: number; duration?: number; country: string
-        avoidTexts?: string[] }
+        avoidTexts?: string[]; level?: 'A' | 'C'; title?: string }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
     const diffLabel = difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Média' : 'Difícil'
@@ -838,6 +841,24 @@ Para questões onde uma figura não acrescenta nada → "figure": null (não inv
     const hasMultipleTypes = questionTypes.length > 1
     const { structureNote, scoringRule } = getSubjectProfile(subject, hasMultipleTypes, yearLevel)
 
+    // ── Diferenciação invisível A/B/C (modelo: artigo "Diferenciação Invisível") ──
+    // Mantém a MESMA estrutura de grupos e cotação da disciplina (acima) — só ajusta
+    // a exigência cognitiva, o tipo de números e o scaffolding. O título é forçado
+    // a ser idêntico ao original depois da geração (ver validação estrutural).
+    const differentiationNote = tool !== 'differentiate' ? '' : level === 'A' ? `
+NÍVEL DE DIFERENCIAÇÃO — A (APOIO), invisível para o aluno:
+• Reduz a exigência cognitiva: prioriza Bloom Recordar/Compreender/Aplicar — evita Analisar/Avaliar/Criar.
+• Números e contextos mais simples: inteiros (nunca decimais/fracções salvo se o tema o exigir), dados explícitos e directos, sem passos escondidos.
+• Scaffolding visível no próprio enunciado: passos sugeridos, dados parcialmente organizados (ex: parte de uma tabela já preenchida), instruções mais explícitas sobre o que fazer primeiro.
+• Distratores de escolha múltipla menos subtis — erro claramente identificável, não erro conceptual sutil.
+• PROIBIDO ABSOLUTO: qualquer menção a "nível", "apoio", "fácil" ou marcador de dificuldade no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : level === 'C' ? `
+NÍVEL DE DIFERENCIAÇÃO — C (APROFUNDAMENTO), invisível para o aluno:
+• Eleva a exigência cognitiva: prioriza Bloom Analisar/Avaliar/Criar.
+• Números e contextos mais exigentes: decimais, fracções ou dados que exigem interpretação antes de aplicar — nunca dados triviais.
+• Inclui pelo menos UMA questão de raciocínio que testa uma concepção errada comum do tema (formato: "[Nome] afirma que [...]. Concordas? Justifica com um exemplo concreto.") — distinta de um simples problema inverso.
+• Scaffolding mínimo: o aluno decide a estratégia, sem passos sugeridos nem dados pré-organizados.
+• PROIBIDO ABSOLUTO: qualquer menção a "nível", "aprofundamento", "difícil" ou marcador de dificuldade no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : ''
+
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
@@ -877,6 +898,7 @@ VARIEDADE E RIQUEZA — REGRAS ABSOLUTAS:
 • Proibido: duas questões com o mesmo tipo de cálculo/raciocínio aplicado a números diferentes (isso não é avaliação — é repetição).
 • A variedade de contextos (situações do mundo real) é tão importante quanto a variedade de conceitos.
 ${avoidTexts?.length ? `\nESTE TESTE JÁ TEM AS SEGUINTES QUESTÕES (geradas numa fase anterior) — NÃO repitas o conceito, contexto, cálculo ou formulação de nenhuma delas:\n${avoidTexts.slice(0, 20).map((t, i) => `${i + 1}. ${t.slice(0, 140)}`).join('\n')}` : ''}
+${differentiationNote}
 
 Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
 {
@@ -999,9 +1021,9 @@ Responde APENAS com este JSON:
 
     // ── Question Bank: verificar se há questões reutilizáveis ──────────────
     let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
-    let numFromAI = tool === 'test' ? (inputs as Record<string, unknown>).numQuestions as number : 0
+    let numFromAI = isTestLike ? (inputs as Record<string, unknown>).numQuestions as number : 0
 
-    if (tool === 'test') {
+    if (isTestLike) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
@@ -1062,7 +1084,7 @@ Responde APENAS com este JSON:
 
     // Em modo fallback: usar o máximo possível do banco para cobrir as questões
     // Isso reduz a quantidade de questões geradas pelo modelo inferior
-    if (isFallback && tool === 'test') {
+    if (isFallback && isTestLike) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
@@ -1104,7 +1126,7 @@ Responde APENAS com este JSON:
     }
 
     // ── Validação e reparação estrutural (zero chamadas IA extra) ────────────
-    if (tool === 'test') {
+    if (isTestLike) {
       type QRaw = {
         index: number; figure: unknown; points?: number; type?: string
         text?: string; correctAnswer?: unknown; markScheme?: string; options?: unknown[]
@@ -1299,6 +1321,14 @@ Responde APENAS com este JSON:
       if (isFallback && groups.flatMap(g => g.questions).length > 0) {
         content._qualityWarning = true
         content._modelUsed = modelUsed
+      }
+
+      // ── Diferenciação A/B/C: força o título IDÊNTICO ao teste original ──────
+      // Diferenciação invisível — o aluno nunca pode distinguir as versões pelo
+      // cabeçalho. O nível é decidido pelo professor, nunca exposto no documento.
+      if (tool === 'differentiate') {
+        const { title: forcedTitle } = inputs as { title?: string }
+        if (forcedTitle) content.title = forcedTitle
       }
     }
 
