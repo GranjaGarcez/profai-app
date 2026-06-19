@@ -969,27 +969,79 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
   ]
 }`
   } else if (tool === 'lesson_plan') {
-    const { subject, yearLevel, topic, duration, country } = inputs
+    const { subject, yearLevel, topic, duration, country, methodologies, preferences } = inputs as {
+      subject: string; yearLevel: number; topic: string; duration: number; country: string
+      methodologies?: string[]; preferences?: string
+    }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
-    prompt = `Cria uma planificação de aula de ${subject} para o ${yearLevel}.º ano sobre "${topic}" com duração de ${duration} minutos em ${countryLabel}.
+    const curriculumConstraint = getCurriculumConstraint(subject, yearLevel)
 
-Responde APENAS com este JSON:
+    const methodologyNote = methodologies?.length
+      ? `\nMETODOLOGIAS ESCOLHIDAS PELO PROFESSOR: ${methodologies.join(', ')}. Estrutura as fases da aula de forma coerente com estas metodologias — não as menciones apenas de nome, aplica-as de facto na sequência de actividades.`
+      : '\nNenhuma metodologia específica foi pedida — escolhe a mais adequada ao tema e justifica implicitamente através da estrutura das fases.'
+
+    const preferencesNote = preferences?.trim()
+      ? `\nPREFERÊNCIAS DO PROFESSOR (usa APENAS o que for genuinamente relevante para este tema e ano — nunca forces uma ferramenta ou formato que não encaixe pedagogicamente): "${preferences.trim()}"`
+      : ''
+
+    prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em planificação didáctica. Conheces em profundidade as Aprendizagens Essenciais da DGE e os modelos pedagógicos consagrados (Madeline Hunter, Backward Design, Inquiry-Based Learning, Project-Based Learning, Flipped Classroom, Cooperative Learning, Método Socrático, Aprendizagem Experiencial, Differentiated Instruction, Cognitive Apprenticeship, Modelo 5E).
+
+TAREFA: Cria uma planificação de aula EXCELENTE, cativante e pedagogicamente brilhante sobre "${topic}", com duração de ${duration} minutos.
+${curriculumConstraint}${methodologyNote}${preferencesNote}
+
+ESTRUTURA OBRIGATÓRIA DO GUIÃO:
+• Cada fase tem duração própria que soma exactamente ${duration} minutos no total.
+• "teacherScript": falas concretas do professor, como se fossem ditas em voz alta — não um resumo abstracto da actividade.
+• "guidingQuestions": 1–3 perguntas orientadoras reais que o professor faz aos alunos nesta fase.
+• "expectedAnswers": respostas plausíveis que os alunos dariam — ajuda o professor a antecipar a aula.
+• "studentActivity": o que os alunos fazem concretamente (não "participam", mas o quê e como).
+• "transition": frase de transição para a fase seguinte.
+
+FERRAMENTAS E RECURSOS EXTERNOS — REGRA DE HONESTIDADE ABSOLUTA:
+Se o professor pediu ou se for genuinamente útil incluir uma ferramenta externa (Kahoot, Wordwall, Khan Academy, Suno, Bing Image Creator, Google Forms, Base44, etc.), aplica SEMPRE uma destas três formas, nunca inventes um link, vídeo ou recurso que possa não existir:
+1. CONTEÚDO PRONTO A COLAR — quando a ferramenta aceita texto simples (ex: Kahoot/Wordwall: gera as perguntas+opções ou os pares de associação completos, prontos a copiar).
+2. PROMPT OU TERMO DE PESQUISA — quando a ferramenta gera conteúdo a partir de um pedido (ex: Suno: a letra da canção; Bing Image Creator: o prompt de imagem; Khan Academy: o termo exacto a pesquisar).
+3. CONCEITO/ESTRUTURA — quando é uma ideia mais ampla (ex: Base44: descreve o conceito e os ecrãs principais de uma app simples, nunca finjas que a criaste).
+PROIBIDO ABSOLUTO: qualquer URL, link, ou nome de vídeo/jogo específico que não tenhas a certeza de que existe.
+
+MAPA MENTAL — apenas se fizer sentido pedagógico (pedido explícito do professor, ou o tema tem estrutura hierárquica clara e beneficia de síntese visual no fecho da aula). Caso contrário, usa "mindMap": null. Quando incluído: 3–6 ramos principais, cada um com até 4 sub-ramos curtos (3–5 palavras cada).
+
+LINGUAGEM: Português de Portugal estrito — nunca formas brasileiras.
+
+Responde APENAS com este JSON válido (sem texto, sem markdown):
 {
   "title": "Planificação — ${topic}",
   "subject": "${subject}",
   "yearLevel": ${yearLevel},
   "duration": ${duration},
-  "objectives": ["objetivo 1", "objetivo 2"],
+  "methodology": "Nome da(s) metodologia(s) aplicada(s)",
+  "objectives": ["objectivo curricular 1", "objectivo curricular 2"],
   "materials": ["material 1", "material 2"],
   "phases": [
-    {"name": "Introdução", "duration": 10, "teacherActivity": "...", "studentActivity": "...", "notes": "..."},
-    {"name": "Desenvolvimento", "duration": 30, "teacherActivity": "...", "studentActivity": "...", "notes": "..."},
-    {"name": "Consolidação", "duration": 10, "teacherActivity": "...", "studentActivity": "...", "notes": "..."}
+    {
+      "name": "Introdução",
+      "duration": 10,
+      "objective": "O que esta fase visa atingir",
+      "teacherScript": "Bom dia, turma. Hoje vamos explorar...",
+      "guidingQuestions": ["Pergunta orientadora 1"],
+      "expectedAnswers": ["Resposta plausível do aluno"],
+      "studentActivity": "O que os alunos fazem concretamente",
+      "transition": "Frase de transição para a fase seguinte",
+      "externalTool": null
+    }
   ],
-  "assessment": "Descrição do momento de avaliação",
-  "differentiation": "Notas de diferenciação pedagógica",
-  "homework": "Trabalho de casa"
-}`
+  "differentiation": "Notas concretas de diferenciação pedagógica para alunos com ritmos distintos",
+  "formativeAssessment": "Como a aprendizagem é verificada ao longo da aula (não só no fim)",
+  "homework": "Trabalho de casa, se aplicável, ou null",
+  "mindMap": null
+}
+
+Se incluíres uma ferramenta externa numa fase, preenche "externalTool" dessa fase assim:
+{"tool": "Kahoot", "mode": "conteudo_pronto", "content": "Q1: ...\\nA) ...\\nB) ...\\nResposta: A"}
+("mode" é "conteudo_pronto", "prompt_pesquisa" ou "conceito" — conforme a regra de honestidade acima.)
+
+Se incluíres mapa mental, preenche assim:
+{"type": "mindmap", "topic": "${topic}", "branches": [{"label": "Ramo 1", "children": ["sub-ramo 1", "sub-ramo 2"]}]}`
   } else if (tool === 'rubric') {
     const { subject, yearLevel, taskType, numCriteria, numLevels } = inputs
     prompt = `Cria uma rubrica de avaliação para ${taskType} de ${subject} do ${yearLevel}.º ano com ${numCriteria} critérios e ${numLevels} níveis de desempenho.

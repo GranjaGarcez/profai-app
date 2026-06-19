@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TestGenerator from '@/components/teacher/TestGenerator'
+import LessonPlanGenerator from '@/components/teacher/LessonPlanGenerator'
 import BankStats from '@/components/teacher/BankStats'
 
 const quickCreate = [
@@ -99,7 +100,11 @@ export default function DashboardPage() {
         <TestGenerator onClose={() => setActiveTool(null)} onSave={handleSave} />
       )}
 
-      {activeTool && activeTool !== 'test' && (
+      {activeTool === 'lesson_plan' && (
+        <LessonPlanGenerator onClose={() => setActiveTool(null)} onSave={handleSave} />
+      )}
+
+      {activeTool && activeTool !== 'test' && activeTool !== 'lesson_plan' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: '#0D1B2A90' }}>
           <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full">
             <p className="text-4xl mb-4">🚧</p>
