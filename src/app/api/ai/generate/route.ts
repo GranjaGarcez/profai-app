@@ -670,7 +670,7 @@ export async function POST(request: NextRequest) {
     const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle } =
       inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
         questionTypes: string[]; numQuestions: number; duration?: number; country: string
-        avoidTexts?: string[]; level?: 'A' | 'C'; title?: string }
+        avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
     const diffLabel = difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Média' : 'Difícil'
@@ -857,7 +857,19 @@ NÍVEL DE DIFERENCIAÇÃO — C (APROFUNDAMENTO), invisível para o aluno:
 • Números e contextos mais exigentes: decimais, fracções ou dados que exigem interpretação antes de aplicar — nunca dados triviais.
 • Inclui pelo menos UMA questão de raciocínio que testa uma concepção errada comum do tema (formato: "[Nome] afirma que [...]. Concordas? Justifica com um exemplo concreto.") — distinta de um simples problema inverso.
 • Scaffolding mínimo: o aluno decide a estratégia, sem passos sugeridos nem dados pré-organizados.
-• PROIBIDO ABSOLUTO: qualquer menção a "nível", "aprofundamento", "difícil" ou marcador de dificuldade no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : ''
+• PROIBIDO ABSOLUTO: qualquer menção a "nível", "aprofundamento", "difícil" ou marcador de dificuldade no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : level === 'MU' ? `
+MEDIDA UNIVERSAL (MU) — DL 54/2018, Art.º 28.º — adaptação de FORMA, não de conteúdo:
+• ÂNCORA OBRIGATÓRIA: cada questão deve continuar a avaliar EXACTAMENTE o(s) mesmo(s) descritor(es) de Aprendizagem Essencial listado(s) em CURRÍCULO OBRIGATÓRIO abaixo. Nunca substituas o descritor por outro mais simples.
+• Linguagem do ENUNCIADO mais clara e directa (frases mais curtas, vocabulário mais simples) — o CONTEÚDO avaliado e a exigência cognitiva (nível de Bloom) mantêm-se inalterados.
+• Estrutura visualmente mais segmentada: instruções passo-a-passo explícitas sobre o que fazer, sem reduzir o que é pedido.
+• Cotação e número de questões IDÊNTICOS aos de uma ficha padrão da disciplina — a MU não justifica facilitar a avaliação, só a tornar mais acessível.
+• PROIBIDO ABSOLUTO: baixar o nível de Bloom exigido pela AE, reduzir a cotação, ou qualquer menção a "medida", "MU", "adaptado" no título, enunciado, instruções ou rodapé.` : level === 'MS' ? `
+MEDIDA SELECTIVA (MS) — DL 54/2018, Adaptação Curricular Não Significativa — adapta-se a APRESENTAÇÃO e o CAMINHO, nunca o DESTINO de aprendizagem:
+• ÂNCORA OBRIGATÓRIA E INVIOLÁVEL: cada questão deve continuar a avaliar pelo menos um descritor de Aprendizagem Essencial listado em CURRÍCULO OBRIGATÓRIO abaixo, no nível de Bloom mínimo exigido por esse descritor. PROIBIDO testar apenas memorização/recordação quando a AE exige aplicação ou análise — isso anularia a validade da avaliação.
+• Podes reestruturar UMA questão complexa em 2–3 sub-passos escalonados (mesma competência, andaimes intermédios visíveis) em vez de uma única pergunta aberta — cada sub-passo com a sua cotação parcial explícita.
+• Podes simplificar MODERADAMENTE a complexidade numérica (ex: menos casas decimais, números mais redondos) SEM trivializar o procedimento ou raciocínio que está a ser avaliado — o aluno continua a ter de aplicar o mesmo processo cognitivo.
+• markScheme com cotação mais granular: mais oportunidades de cotação parcial em cada passo intermédio, em vez de "tudo ou nada" na resposta final.
+• PROIBIDO ABSOLUTO: descer abaixo do nível de Bloom mínimo da AE, eliminar o descritor central, ou qualquer menção a "medida", "MS", "adaptado", "selectiva" no título, enunciado, instruções ou rodapé.` : ''
 
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
 
@@ -1323,12 +1335,24 @@ Responde APENAS com este JSON:
         content._modelUsed = modelUsed
       }
 
-      // ── Diferenciação A/B/C: força o título IDÊNTICO ao teste original ──────
+      // ── Diferenciação A/B/C/MU/MS: força o título IDÊNTICO ao teste original ──
       // Diferenciação invisível — o aluno nunca pode distinguir as versões pelo
       // cabeçalho. O nível é decidido pelo professor, nunca exposto no documento.
       if (tool === 'differentiate') {
-        const { title: forcedTitle } = inputs as { title?: string }
+        const { title: forcedTitle, level: diffLevel } = inputs as { title?: string; level?: 'A' | 'C' | 'MU' | 'MS' }
         if (forcedTitle) content.title = forcedTitle
+
+        // MU/MS marca-se automaticamente — é a medida de suporte, não o nível A/B/C
+        if (diffLevel === 'MU' || diffLevel === 'MS') content._measureType = diffLevel
+
+        // Reforço do aviso de qualidade: nestas gerações (NEE/medidas de suporte) o
+        // modelo usado importa mais — se foi preciso recorrer ao fallback, o professor
+        // tem de saber antes de usar isto num plano educativo real.
+        if (content._qualityWarning) {
+          content._qualityWarningContext = (diffLevel === 'MU' || diffLevel === 'MS')
+            ? 'medida_suporte'
+            : (diffLevel === 'A' || diffLevel === 'C') ? 'diferenciacao' : undefined
+        }
       }
     }
 
