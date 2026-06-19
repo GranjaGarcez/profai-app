@@ -20,18 +20,14 @@ interface DifferentiationPanelProps {
 }
 
 type Phase = 'intro' | 'generating' | 'done' | 'error'
+type Level = 'A' | 'C' | 'MU' | 'MS'
 
-const LEVEL_INFO = {
-  A: { label: 'Ficha A — Apoio', desc: 'Scaffolding visível, números inteiros, menor exigência cognitiva', color: '#0EA5E9' },
-  C: { label: 'Ficha C — Aprofundamento', desc: 'Sem scaffolding, números mais exigentes, questão de raciocínio', color: '#7C3AED' },
-} as const
-
-type Measure = 'none' | 'MU' | 'MS'
-const MEASURE_OPTIONS: { id: Measure; label: string }[] = [
-  { id: 'none', label: 'Sem marca' },
-  { id: 'MU', label: 'MU' },
-  { id: 'MS', label: 'MS' },
-]
+const LEVEL_INFO: Record<Level, { label: string; desc: string; color: string; group: 'diferenciacao' | 'medida' }> = {
+  A:  { label: 'Ficha A — Apoio',           desc: 'Scaffolding visível, números inteiros, menor exigência cognitiva. Invisível para o aluno.', color: '#0EA5E9', group: 'diferenciacao' },
+  C:  { label: 'Ficha C — Aprofundamento',  desc: 'Sem scaffolding, números mais exigentes, questão de raciocínio. Invisível para o aluno.',    color: '#7C3AED', group: 'diferenciacao' },
+  MU: { label: 'Medida Universal (MU)',     desc: 'Adapta a forma (linguagem, segmentação) — conteúdo e cotação inalterados. Código "MU" impresso no cabeçalho.', color: '#0D9488', group: 'medida' },
+  MS: { label: 'Medida Selectiva (MS)',     desc: 'Reestrutura em sub-passos escalonados, simplifica moderadamente — ancorado à AE. Código "MS" impresso no cabeçalho.', color: '#B45309', group: 'medida' },
+}
 
 function getAllQuestions(test: SourceTest) {
   if (test.groups?.length) return test.groups.flatMap(g => g.questions)
@@ -41,11 +37,17 @@ function getAllQuestions(test: SourceTest) {
 export default function DifferentiationPanel({ contentItemId, test, onClose }: DifferentiationPanelProps) {
   const [phase, setPhase] = useState<Phase>('intro')
   const [error, setError] = useState<string | null>(null)
-  const [results, setResults] = useState<{ a?: string; c?: string }>({})
+  const [results, setResults] = useState<Partial<Record<Level, string>>>({})
   const [progress, setProgress] = useState<string | null>(null)
-  const [measures, setMeasures] = useState<{ A: Measure; C: Measure }>({ A: 'none', C: 'none' })
+  const [selected, setSelected] = useState<Record<Level, boolean>>({ A: false, C: false, MU: false, MS: false })
 
-  async function generateLevel(level: 'A' | 'C'): Promise<unknown> {
+  const anySelected = Object.values(selected).some(Boolean)
+
+  function toggle(level: Level) {
+    setSelected(s => ({ ...s, [level]: !s[level] }))
+  }
+
+  async function generateLevel(level: Level): Promise<unknown> {
     const allQs = getAllQuestions(test)
     const questionTypes = [...new Set(allQs.map(q => q.type))]
     const res = await fetch('/api/ai/generate', {
@@ -68,31 +70,28 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
       }),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.error ?? `Erro ao gerar Ficha ${level}`)
+    if (!res.ok) throw new Error(data.error ?? `Erro ao gerar ${LEVEL_INFO[level].label}`)
     return data.content
   }
 
-  async function saveLevel(level: 'A' | 'C', content: Record<string, unknown>): Promise<string> {
-    const measure = measures[level]
-    const tagged = {
-      ...content,
-      _differentiationLevel: level,
-      _differentiationGroupId: contentItemId,
-      ...(measure !== 'none' ? { _measureType: measure } : {}),
-    }
+  async function saveLevel(level: Level, content: Record<string, unknown>): Promise<string> {
+    // _measureType de MU/MS já vem marcado pelo servidor; aqui só o nível A/C/MU/MS
+    // pedagógico é registado para a Biblioteca de Conteúdos saber agrupar a família.
+    const tagged = { ...content, _differentiationLevel: level === 'MU' || level === 'MS' ? undefined : level, _differentiationGroupId: contentItemId }
     const res = await fetch('/api/content/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'differentiated', content: tagged }),
     })
     const data = await res.json()
-    if (!res.ok || !data.id) throw new Error(data.error ?? `Erro ao guardar Ficha ${level}`)
+    if (!res.ok || !data.id) throw new Error(data.error ?? `Erro ao guardar ${LEVEL_INFO[level].label}`)
     return data.id as string
   }
 
   async function tagOriginalAsB() {
-    // Marca o teste original como "B — Consolidação" da mesma família, em segundo
-    // plano — falha silenciosa não bloqueia o resultado (A e C já estão guardadas).
+    // Só marca o original como "B" se a diferenciação pedagógica A/C foi pedida —
+    // gerar só MU/MS não transforma o original numa "Ficha B" de família A/B/C.
+    if (!selected.A && !selected.C) return
     try {
       await fetch(`/api/content/${contentItemId}`, {
         method: 'PATCH',
@@ -105,22 +104,19 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
   }
 
   async function handleGenerate() {
+    const levels = (Object.keys(selected) as Level[]).filter(l => selected[l])
+    if (levels.length === 0) return
     setPhase('generating')
     setError(null)
     try {
-      setProgress('A gerar Ficha A (Apoio)...')
-      const contentA = await generateLevel('A')
-      setProgress('A gerar Ficha C (Aprofundamento)...')
-      const contentC = await generateLevel('C')
-
-      setProgress('A guardar...')
-      const [idA, idC] = await Promise.all([
-        saveLevel('A', contentA as Record<string, unknown>),
-        saveLevel('C', contentC as Record<string, unknown>),
-      ])
+      const newResults: Partial<Record<Level, string>> = {}
+      for (const level of levels) {
+        setProgress(`A gerar ${LEVEL_INFO[level].label}...`)
+        const content = await generateLevel(level)
+        newResults[level] = await saveLevel(level, content as Record<string, unknown>)
+      }
       await tagOriginalAsB()
-
-      setResults({ a: idA, c: idC })
+      setResults(newResults)
       setPhase('done')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro desconhecido')
@@ -130,16 +126,39 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
     }
   }
 
+  function LevelCard({ level }: { level: Level }) {
+    const info = LEVEL_INFO[level]
+    const isOn = selected[level]
+    return (
+      <button
+        onClick={() => toggle(level)}
+        className="w-full text-left p-3 rounded-xl border-2 transition-all"
+        style={{ background: isOn ? `${info.color}10` : '#f8fafc', borderColor: isOn ? info.color : '#e2e8f0' }}
+      >
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 mt-0.5 w-5 h-5 rounded-md flex items-center justify-center border-2"
+            style={{ borderColor: isOn ? info.color : '#cbd5e1', background: isOn ? info.color : 'white' }}>
+            {isOn && <span style={{ color: 'white', fontSize: 12, fontWeight: 900 }}>✓</span>}
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{info.label}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{info.desc}</p>
+          </div>
+        </div>
+      </button>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: '#0D1B2A90' }}>
-      <div className="w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4" style={{ background: 'white' }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto" style={{ background: 'white' }}>
 
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-bold flex items-center gap-2" style={{ fontFamily: 'Playfair Display, serif', color: '#0D1B2A' }}>
-              🎯 Versões adaptadas (A/B/C)
+              🎯 Versões adaptadas
             </h3>
-            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Diferenciação invisível — mesmo cabeçalho, dificuldade diferente</p>
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Escolhe o que queres gerar — nada é criado por defeito</p>
           </div>
           {phase !== 'generating' && (
             <button onClick={onClose} className="text-xl" style={{ color: '#6B7280' }}>✕</button>
@@ -148,47 +167,34 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
 
         {phase === 'intro' && (
           <>
-            <p className="text-sm" style={{ color: '#374151' }}>
-              Este teste passa a ser a <strong>Ficha B — Consolidação</strong>. Vou gerar mais duas versões com o
-              <strong> mesmo título e estrutura de cotação</strong>, mas dificuldade diferente:
-            </p>
-            <div className="space-y-2">
-              {(['A', 'C'] as const).map(level => (
-                <div key={level} className="p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <div className="flex items-start gap-3">
-                    <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white"
-                      style={{ background: LEVEL_INFO[level].color }}>{level}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{LEVEL_INFO[level].label}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{LEVEL_INFO[level].desc}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-2 pl-10">
-                    <span className="text-xs" style={{ color: '#9CA3AF' }}>Medida no cabeçalho:</span>
-                    {MEASURE_OPTIONS.map(opt => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setMeasures(m => ({ ...m, [level]: opt.id }))}
-                        className="px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
-                        style={{
-                          background: measures[level] === opt.id ? '#0D1B2A' : 'white',
-                          color: measures[level] === opt.id ? '#F7F3EE' : '#6B7280',
-                          border: '1px solid #e2e8f0',
-                        }}>
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#9CA3AF' }}>
+                Diferenciação pedagógica — invisível ao aluno
+              </p>
+              <div className="space-y-2">
+                <LevelCard level="A" />
+                <LevelCard level="C" />
+              </div>
             </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2 mt-3" style={{ color: '#9CA3AF' }}>
+                Medida de suporte — DL 54/2018, código impresso no cabeçalho
+              </p>
+              <div className="space-y-2">
+                <LevelCard level="MU" />
+                <LevelCard level="MS" />
+              </div>
+            </div>
+
             <p className="text-xs px-3 py-2 rounded-lg" style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}>
-              ⚠️ O nível (A/B/C) nunca aparece no documento. Se escolheres uma medida (MU/MS), aparece um código discreto de duas letras no canto do cabeçalho — visível, mas sem indicar o nível de dificuldade.
+              ⚠️ MU/MS continuam ancoradas à Aprendizagem Essencial da disciplina — a IA é instruída a nunca descer abaixo do que o currículo exige, mesmo ao simplificar. Revê sempre antes de usar num PEI ou relatório técnico-pedagógico.
             </p>
-            <button onClick={handleGenerate}
-              className="w-full py-2.5 rounded-xl font-semibold text-white"
+
+            <button onClick={handleGenerate} disabled={!anySelected}
+              className="w-full py-2.5 rounded-xl font-semibold text-white disabled:opacity-40 transition-opacity"
               style={{ background: '#10B981' }}>
-              Gerar Ficha A e Ficha C
+              {anySelected ? `Gerar ${Object.values(selected).filter(Boolean).length} versão(ões)` : 'Selecciona pelo menos uma versão'}
             </button>
           </>
         )}
@@ -204,18 +210,12 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
           <>
             <p className="text-sm font-medium" style={{ color: '#166534' }}>✓ Versões criadas com sucesso.</p>
             <div className="space-y-2">
-              {results.a && (
-                <a href={`/dashboard/content/${results.a}`} className="block text-sm px-3 py-2 rounded-lg border hover:bg-gray-50"
+              {(Object.keys(results) as Level[]).map(level => (
+                <a key={level} href={`/dashboard/content/${results[level]}`} className="block text-sm px-3 py-2 rounded-lg border hover:bg-gray-50"
                   style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>
-                  {LEVEL_INFO.A.label} →
+                  {LEVEL_INFO[level].label} →
                 </a>
-              )}
-              {results.c && (
-                <a href={`/dashboard/content/${results.c}`} className="block text-sm px-3 py-2 rounded-lg border hover:bg-gray-50"
-                  style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>
-                  {LEVEL_INFO.C.label} →
-                </a>
-              )}
+              ))}
             </div>
             <button onClick={onClose} className="w-full py-2.5 rounded-xl border text-sm font-medium" style={{ borderColor: '#0D1B2A30', color: '#0D1B2A' }}>
               Fechar

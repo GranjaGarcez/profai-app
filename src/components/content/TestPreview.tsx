@@ -42,6 +42,7 @@ interface TestContent {
   groups?: TestGroup[]
   questions?: Question[]
   _qualityWarning?: boolean
+  _qualityWarningContext?: 'medida_suporte' | 'diferenciacao'
   _modelUsed?: string
   _differentiationLevel?: 'A' | 'B' | 'C'
   _differentiationGroupId?: string
@@ -706,7 +707,33 @@ export default function TestPreview({
       )}
 
       {/* ── Aviso de qualidade (modelo fallback) ──────────────────────────── */}
-      {editableTest._qualityWarning && (
+      {editableTest._qualityWarning && editableTest._qualityWarningContext === 'medida_suporte' ? (
+        <div className="no-print mb-4 flex items-start gap-3 rounded-xl border-2 px-4 py-3"
+          style={{ background: '#fef2f2', borderColor: '#ef4444' }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>🛑</span>
+          <div>
+            <p className="text-sm font-bold" style={{ color: '#991b1b' }}>
+              Atenção: esta ficha de medida de suporte foi gerada por um modelo de IA alternativo
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#b91c1c' }}>
+              Os modelos principais estavam temporariamente sobrecarregados. Numa adaptação MU/MS, o rigor da ancoragem à Aprendizagem Essencial é crítico — <strong>revê questão a questão antes de usar isto num PEI ou relatório técnico-pedagógico</strong>. Se tiveres dúvidas, gera novamente mais tarde.
+            </p>
+          </div>
+        </div>
+      ) : editableTest._qualityWarning && editableTest._qualityWarningContext === 'diferenciacao' ? (
+        <div className="no-print mb-4 flex items-start gap-3 rounded-xl border px-4 py-3"
+          style={{ background: '#fffbeb', borderColor: '#f59e0b50' }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
+              Esta versão diferenciada foi gerada por um modelo de IA alternativo
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+              Os modelos principais estavam temporariamente sobrecarregados. Revê se o cabeçalho ficou mesmo idêntico ao original antes de distribuir.
+            </p>
+          </div>
+        </div>
+      ) : editableTest._qualityWarning ? (
         <div className="no-print mb-4 flex items-start gap-3 rounded-xl border px-4 py-3"
           style={{ background: '#fffbeb', borderColor: '#f59e0b50' }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
@@ -719,7 +746,7 @@ export default function TestPreview({
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* ── Barra de acções ────────────────────────────────────────────────── */}
       <div className="no-print mb-5 space-y-3">
@@ -815,7 +842,7 @@ export default function TestPreview({
               <button onClick={() => setShowDifferentiation(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all"
                 style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #6ee7b7' }}
-                title="Gerar versões adaptadas A (Apoio) e C (Aprofundamento) com o mesmo cabeçalho">
+                title="Gerar versões adaptadas (A/C pedagógico, ou MU/MS — medida de suporte DL 54/2018)">
                 <span style={{ fontSize: 14 }}>🎯</span> Diferenciação
               </button>
             )}
