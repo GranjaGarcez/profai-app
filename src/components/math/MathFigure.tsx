@@ -37,6 +37,8 @@ export default function MathFigure({ figure }: { figure: unknown }) {
     case 'cylinder':           return <CylinderFig         f={fig} />
     case 'cone':               return <ConeFig             f={fig} />
     case 'sphere':             return <SphereFig           f={fig} />
+    // ── Mapa mental (planificação de aula) ─────────────────────────────────
+    case 'mindmap':            return <MindMapFig          f={fig} />
     default:                  return null
   }
 }
@@ -602,6 +604,64 @@ function SphereFig({ f }: { f: Fig }) {
       {/* Etiquetas */}
       {!!f.radiusLabel   && <text x={cx + r/2} y={cy - 10} textAnchor="middle" style={T}>{String(f.radiusLabel)}</text>}
       {!!f.diameterLabel && <text x={cx}        y={cy - r - 12} textAnchor="middle" style={T}>{String(f.diameterLabel)}</text>}
+    </Svg>
+  )
+}
+
+// ── Mapa mental ───────────────────────────────────────────────────────────────
+// Estrutura: { type:'mindmap', topic:string, branches:[{label, children?:string[]}] }
+// Gerado pela IA como conteúdo estruturado, desenhado de verdade por nós — nunca
+// depende de ferramenta externa nem de imagem gerada por outro serviço.
+const MINDMAP_COLORS = ['#00B4D8', '#7C3AED', '#10B981', '#C8A84B', '#EF4444', '#0EA5E9']
+
+function truncate(s: string, n: number) { return s.length > n ? s.slice(0, n - 1) + '…' : s }
+
+function MindMapFig({ f }: { f: Fig }) {
+  const topic = truncate(String(f.topic ?? 'Tema'), 26)
+  const branches = ((f.branches as Array<{ label: string; children?: string[] }> | undefined) ?? []).slice(0, 6)
+  const n = Math.max(1, branches.length)
+  const maxChildren = Math.max(0, ...branches.map(b => (b.children ?? []).length))
+  const W = 640, H = Math.max(420, 360 + maxChildren * 14)
+  const cx = W / 2, cy = H / 2
+  const R = 175
+
+  return (
+    <Svg w={W} h={H}>
+      {branches.map((b, i) => {
+        const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+        const bx = cx + R * Math.cos(angle)
+        const by = cy + R * Math.sin(angle)
+        return <line key={i} x1={cx} y1={cy} x2={bx} y2={by}
+          stroke={MINDMAP_COLORS[i % MINDMAP_COLORS.length]} strokeWidth="2" opacity={0.45} />
+      })}
+
+      <ellipse cx={cx} cy={cy} rx={78} ry={38} fill={NAVY} />
+      <text x={cx} y={cy + 5} textAnchor="middle" style={{ ...T, fill: 'white', fontWeight: 700, fontSize: 13 }}>
+        {topic}
+      </text>
+
+      {branches.map((b, i) => {
+        const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+        const bx = cx + R * Math.cos(angle)
+        const by = cy + R * Math.sin(angle)
+        const color = MINDMAP_COLORS[i % MINDMAP_COLORS.length]
+        const children = (b.children ?? []).slice(0, 4)
+        const anchor = Math.cos(angle) > 0.25 ? 'start' : Math.cos(angle) < -0.25 ? 'end' : 'middle'
+        const lx = bx + (anchor === 'start' ? 10 : anchor === 'end' ? -10 : 0)
+        return (
+          <g key={i}>
+            <circle cx={bx} cy={by} r={6} fill={color} />
+            <text x={lx} y={by - 4} textAnchor={anchor} style={{ ...T, fontWeight: 700, fontSize: 12, fill: color }}>
+              {truncate(b.label, 28)}
+            </text>
+            {children.map((c, j) => (
+              <text key={j} x={lx} y={by + 14 + j * 14} textAnchor={anchor} style={{ ...T, fontSize: 10, fill: '#6B7280' }}>
+                • {truncate(c, 30)}
+              </text>
+            ))}
+          </g>
+        )
+      })}
     </Svg>
   )
 }

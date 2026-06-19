@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import TestPreview from '@/components/content/TestPreview'
+import LessonPlanPreview from '@/components/content/LessonPlanPreview'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -56,7 +57,9 @@ export default async function ContentDetailPage({ params }: Props) {
         <TestPreview content={item.content} contentItemId={item.id} />
       )}
 
-      {item.type !== 'test' && item.type !== 'differentiated' && (
+      {item.type === 'lesson_plan' && <LessonPlanPreview content={item.content} />}
+
+      {item.type !== 'test' && item.type !== 'differentiated' && item.type !== 'lesson_plan' && (
         <div className="p-6 rounded-xl border bg-white" style={{ borderColor: '#0D1B2A10' }}>
           <pre className="text-xs overflow-auto" style={{ color: '#374151' }}>
             {JSON.stringify(item.content, null, 2)}
