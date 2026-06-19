@@ -260,6 +260,26 @@ function getDisciplineProfile(subject: string): CategoryDef[] {
       },
     ]
   }
+  // ATENÇÃO: 'tic' é substring de "matemática"/"artística" — usa SEMPRE fronteira de palavra.
+  if (/\btic\b/.test(s)) {
+    return [
+      {
+        label: 'Segurança digital',
+        types: ['multiple_choice', 'true_false'],
+        targetLabel: '≤ 25%', okFn: p => p <= 30,
+      },
+      {
+        label: 'Investigar / Comunicar',
+        types: ['short_answer', 'fill_blank'],
+        targetLabel: '30–40%', okFn: p => p >= 25,
+      },
+      {
+        label: 'Criar e inovar',
+        types: ['long_answer'],
+        targetLabel: '≥ 35%', okFn: p => p >= 35,
+      },
+    ]
+  }
   return [
     {
       label: 'Seleção',

@@ -7,7 +7,7 @@ const SUBJECTS_PT = [
   'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
   'História', 'Geografia', 'Inglês', 'Espanhol', 'Francês',
   'História e Geografia de Portugal', 'Filosofia', 'Educação Visual', 'Educação Tecnológica',
-  'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A',
+  'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A', 'TIC',
 ]
 
 const QUESTION_TYPES = [
@@ -23,10 +23,71 @@ interface TestGeneratorProps {
   onSave: (content: unknown) => void
 }
 
+// Acima deste limiar, a geração é dividida em 2 chamadas sequenciais e fundida
+// num só teste — uma única chamada arrisca exceder o orçamento de 60s da função
+// (tempo de geração + crítico adversarial) e/ou o limite de tokens de saída.
+const BATCH_THRESHOLD = 12
+
+type RawQuestion = Record<string, unknown>
+type RawGroup = { label: string; description?: string; totalPoints?: number; questions: RawQuestion[] }
+type RawTest = Record<string, unknown> & { groups?: RawGroup[]; questions?: RawQuestion[]; totalPoints?: number }
+
+function getGroups(content: RawTest): RawGroup[] {
+  if (content.groups?.length) return content.groups
+  if (content.questions?.length) return [{ label: 'Questões', questions: content.questions }]
+  return []
+}
+
+// Funde N lotes gerados separadamente num só teste: combina grupos pelo label,
+// reindexação sequencial, e reescala os pontos proporcionalmente para o total
+// global continuar a somar exactamente 100 (cada lote já soma 100 internamente).
+function mergeBatches(batches: RawTest[]): RawTest {
+  if (batches.length === 1) return batches[0]
+
+  const first = batches[0]
+  const labelOrder: string[] = []
+  const byLabel = new Map<string, RawQuestion[]>()
+
+  for (const batch of batches) {
+    for (const g of getGroups(batch)) {
+      if (!byLabel.has(g.label)) { byLabel.set(g.label, []); labelOrder.push(g.label) }
+      byLabel.get(g.label)!.push(...g.questions)
+    }
+  }
+
+  const n = batches.length
+  let idx = 1
+  const mergedGroups: RawGroup[] = labelOrder.map(label => {
+    const questions = byLabel.get(label)!.map(q => {
+      const pts = Number(q.points) || 0
+      return { ...q, index: idx++, points: Math.max(1, Math.round(pts / n)) }
+    })
+    return {
+      label,
+      description: '',
+      totalPoints: questions.reduce((s, q) => s + (Number(q.points) || 0), 0),
+      questions,
+    }
+  })
+
+  // Ajuste de arredondamento: garante soma global = 100 exactamente
+  const allQs = mergedGroups.flatMap(g => g.questions)
+  const currentTotal = allQs.reduce((s, q) => s + (Number(q.points) || 0), 0)
+  if (currentTotal !== 100 && allQs.length > 0) {
+    const diff = 100 - currentTotal
+    const heaviest = allQs.reduce((max, q) => (Number(q.points) || 0) > (Number(max.points) || 0) ? q : max, allQs[0])
+    heaviest.points = (Number(heaviest.points) || 0) + diff
+    for (const g of mergedGroups) g.totalPoints = g.questions.reduce((s, q) => s + (Number(q.points) || 0), 0)
+  }
+
+  return { ...first, groups: mergedGroups, questions: undefined, totalPoints: 100 }
+}
+
 export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
   const [step, setStep] = useState<'form' | 'generating' | 'preview'>('form')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<unknown>(null)
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
 
   const [form, setForm] = useState({
     subject: 'Matemática',
@@ -48,6 +109,17 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     }))
   }
 
+  async function generateOne(numQuestions: number, avoidTexts: string[]): Promise<RawTest> {
+    const res = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: 'test', inputs: { ...form, numQuestions, avoidTexts } }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+    return data.content as RawTest
+  }
+
   async function handleGenerate() {
     if (!form.topic.trim()) { setError('Indica o tema do teste.'); return }
     if (form.questionTypes.length === 0) { setError('Selecciona pelo menos um tipo de pergunta.'); return }
@@ -55,18 +127,31 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     setStep('generating')
 
     try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool: 'test', inputs: form }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setResult(data.content)
+      if (form.numQuestions <= BATCH_THRESHOLD) {
+        setBatchProgress(null)
+        const content = await generateOne(form.numQuestions, [])
+        setResult(content)
+      } else {
+        // Divide em 2 lotes sequenciais — cada chamada fica dentro do orçamento
+        // seguro da função; o 2.º lote evita repetir o que o 1.º já gerou.
+        const half1 = Math.ceil(form.numQuestions / 2)
+        const half2 = form.numQuestions - half1
+
+        setBatchProgress({ current: 1, total: 2 })
+        const batch1 = await generateOne(half1, [])
+        const texts1 = getGroups(batch1).flatMap(g => g.questions.map(q => String(q.text ?? '')))
+
+        setBatchProgress({ current: 2, total: 2 })
+        const batch2 = await generateOne(half2, texts1)
+
+        setResult(mergeBatches([batch1, batch2]))
+      }
       setStep('preview')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro desconhecido')
       setStep('form')
+    } finally {
+      setBatchProgress(null)
     }
   }
 
@@ -169,13 +254,18 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   N.º de perguntas: {form.numQuestions}
                 </label>
                 <input
-                  type="range" min={3} max={20} value={form.numQuestions}
+                  type="range" min={3} max={24} value={form.numQuestions}
                   onChange={e => setForm(f => ({ ...f, numQuestions: Number(e.target.value) }))}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs" style={{ color: '#6B7280' }}>
-                  <span>3</span><span>20</span>
+                  <span>3</span><span>24</span>
                 </div>
+                {form.numQuestions > BATCH_THRESHOLD && (
+                  <p className="text-xs mt-1" style={{ color: '#00B4D8' }}>
+                    ⓘ Acima de {BATCH_THRESHOLD}, a geração é feita em 2 etapas para manter a qualidade.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -237,9 +327,12 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
         {step === 'generating' && (
           <div className="p-12 text-center space-y-4">
             <div className="text-5xl animate-bounce">🤖</div>
-            <p className="font-semibold" style={{ color: '#0D1B2A' }}>A gerar o teu teste...</p>
+            <p className="font-semibold" style={{ color: '#0D1B2A' }}>
+              {batchProgress ? `A gerar parte ${batchProgress.current} de ${batchProgress.total}...` : 'A gerar o teu teste...'}
+            </p>
             <p className="text-sm" style={{ color: '#6B7280' }}>
               O Gemini está a criar {form.numQuestions} perguntas sobre <strong>{form.topic}</strong>
+              {batchProgress && ' — dividido em 2 etapas para manter a qualidade'}
             </p>
             <div className="flex justify-center gap-1 mt-4">
               {[0,1,2].map(i => (

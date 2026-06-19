@@ -276,6 +276,24 @@ ${ctx}`,
     }
   }
 
+  // ── TIC — Tecnologias de Informação e Comunicação (3.º ciclo, AE DGE) ────────
+  // ATENÇÃO: 'tic' é substring de "matemática"/"artística" — usa SEMPRE fronteira de palavra.
+  if (/\btic\b/.test(s)) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — TIC (${yearLevel}.º ano) — alinhada com os 4 domínios AE DGE:
+• Grupo I — Segurança digital e hardware/software (25 pts): EM/VF sobre cibersegurança, identificação de hardware/software, netiqueta, licenciamento e direitos de autor de conteúdo digital. 5 pts/questão (valor fixo). 5 questões.
+• Grupo II — Investigar, comunicar e colaborar (35 pts): short_answer sobre pesquisa e avaliação crítica de fontes online, ferramentas de comunicação digital (e-mail, videoconferência, mensageiros), colaboração em documentos partilhados. 7 pts/questão (valor fixo). 5 questões.
+• Grupo III — Criar e inovar / pensamento computacional (40 pts, 1–2 questões): situação-problema com um algoritmo simples DESCRITO em texto no próprio campo "text" da questão (sequência de passos, pseudocódigo ou bloco de programação por blocos tipo Scratch descrito verbalmente) — pergunta de tracing, depuração ou completar o algoritmo. short_answer ou long_answer.
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou pedidos de execução prática num computador real (este é um teste escrito).
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Segurança digital e hardware/software (EM/VF): 5 pts/questão (valor fixo); 5 questões = 25 pts
+   • Investigar/comunicar/colaborar (resposta curta): 7 pts/questão (valor fixo); 5 questões = 35 pts
+   • Criar e inovar / pensamento computacional: 40 pts total (1 × 40pt ou 2 × 20pt); markScheme: Identificação correcta da lógica/erro do algoritmo (16pt) + Proposta ou correcção válida (16pt) + Vocabulário técnico adequado (8pt)
+   • Distribuição: 25 + 35 + 40 = 100 pts exactamente`,
+    }
+  }
+
   // ── Matemática / STEM (default) ──────────────────────────────────────────────
   if (hasMultipleTypes) {
     return {
@@ -365,6 +383,12 @@ function autoMarkScheme(type: string, pts: number, subject: string): string {
       return `Identificação correcta do problema e requisitos técnicos (${p(0.3)}pt) + proposta de solução tecnicamente viável (${p(0.4)}pt) + justificação com vocabulário técnico adequado (${p(0.3)}pt).`
     }
     return `Identificação ou análise técnica correcta (${p(0.6)}pt) + justificação com vocabulário técnico específico (${p(0.4)}pt).`
+  }
+  if (/\btic\b/.test(s)) {
+    if (isLong) {
+      return `Identificação correcta da lógica ou erro do algoritmo (${p(0.4)}pt) + proposta ou correcção válida (${p(0.4)}pt) + vocabulário técnico adequado (${p(0.2)}pt).`
+    }
+    return `Resposta correcta sobre o conceito/ferramenta digital (${p(0.6)}pt) + justificação ou exemplo concreto (${p(0.4)}pt).`
   }
   // Genérico
   return isLong
@@ -640,7 +664,10 @@ export async function POST(request: NextRequest) {
   let prompt = ''
 
   if (tool === 'test') {
-    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country } = inputs
+    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts } =
+      inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
+        questionTypes: string[]; numQuestions: number; duration?: number; country: string
+        avoidTexts?: string[] }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
     const diffLabel = difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Média' : 'Difícil'
@@ -738,6 +765,14 @@ export async function POST(request: NextRequest) {
 • Tópicos DGE: materiais (madeira, metal, plástico, têxteis), ferramentas e processos de fabrico, mecanismos simples, segurança no trabalho, desenho técnico básico
 • Situações-problema de concepção devem ser tecnicamente plausíveis — materiais e processos coerentes com o objecto descrito
 • Proibido: pedidos de execução prática/manual (este é um teste escrito teórico), processos de fabrico tecnicamente incorrectos`,
+
+      'TIC': `CONTEÚDO E CONTEXTO — TIC (4 domínios AE DGE, 3.º ciclo):
+• Domínio 1 — Segurança, responsabilidade e respeito em ambientes digitais: cibersegurança, palavras-passe seguras, phishing/malware, protecção de dados pessoais, pegada digital, netiqueta
+• Domínio 2 — Investigar e pesquisar: pesquisa eficaz, avaliação crítica de fontes online, distinção entre informação fiável e desinformação, licenciamento Creative Commons e direitos de autor
+• Domínio 3 — Colaborar e comunicar: e-mail, videoconferência, mensageiros instantâneos, documentos colaborativos partilhados — sempre em uso seguro e responsável
+• Domínio 4 — Criar e inovar: pensamento computacional, algoritmos, sequências lógicas, programação por blocos (Scratch ou equivalente), produção de conteúdo digital (texto, imagem, apresentação)
+• Hardware/software: identificação de componentes elementares (CPU, RAM, armazenamento), sistemas operativos, tipos de software
+• Proibido: pedidos de execução prática num computador real (este é um teste escrito), confundir conceitos de hardware/software, algoritmos com erros lógicos não identificados como tal`,
     }
     const subjectNote = subjectGuidelines[subject] ?? 'Cria questões rigorosas, contextualizadas e curricularmente alinhadas com as Aprendizagens Essenciais DGE.'
 
@@ -841,6 +876,7 @@ VARIEDADE E RIQUEZA — REGRAS ABSOLUTAS:
 • Cada questão avalia algo diferente: um conceito, uma aplicação, um erro conceptual frequente, uma conexão com outro tópico, uma situação do mundo real distinta.
 • Proibido: duas questões com o mesmo tipo de cálculo/raciocínio aplicado a números diferentes (isso não é avaliação — é repetição).
 • A variedade de contextos (situações do mundo real) é tão importante quanto a variedade de conceitos.
+${avoidTexts?.length ? `\nESTE TESTE JÁ TEM AS SEGUINTES QUESTÕES (geradas numa fase anterior) — NÃO repitas o conceito, contexto, cálculo ou formulação de nenhuma delas:\n${avoidTexts.slice(0, 20).map((t, i) => `${i + 1}. ${t.slice(0, 140)}`).join('\n')}` : ''}
 
 Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
 {

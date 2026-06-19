@@ -69,6 +69,13 @@ function gradingSubjectNote(subject: string): string {
 - Avalia conhecimento teórico de materiais, processos e soluções técnicas — esta é a componente escrita, sem execução prática.
 - Aceita soluções técnicas alternativas tecnicamente válidas, mesmo que diferentes da resposta modelo.`
   }
+  // ATENÇÃO: 'tic' é substring de "matemática"/"artística" — usa SEMPRE fronteira de palavra.
+  if (/\btic\b/.test(s)) {
+    return `\nNOTA ESPECÍFICA — TIC (componente teórica):
+- Avalia conhecimento teórico de segurança digital, pesquisa, comunicação e pensamento computacional — esta é a componente escrita, sem execução num computador real.
+- Em questões de algoritmo/pseudocódigo, aceita qualquer solução logicamente correcta, mesmo que a sintaxe ou notação seja diferente da resposta modelo.
+- Aceita terminologia técnica equivalente (ex: "memória RAM" e "memória principal" são intermutáveis).`
+  }
   return ''
 }
 
