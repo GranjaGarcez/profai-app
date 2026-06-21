@@ -14,7 +14,7 @@ export default function Header({ user }: { user: User }) {
   }
 
   return (
-    <header className="h-14 flex items-center justify-between px-6 border-b bg-white" style={{ borderColor: '#0D1B2A15' }}>
+    <header className="no-print h-14 flex items-center justify-between px-6 border-b bg-white" style={{ borderColor: '#0D1B2A15' }}>
       <div />
       <div className="flex items-center gap-3">
         <span className="text-sm" style={{ color: '#6B7280' }}>{user.email}</span>

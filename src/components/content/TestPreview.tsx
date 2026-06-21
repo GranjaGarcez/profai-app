@@ -1263,8 +1263,13 @@ export default function TestPreview({
         .teacher-key { display: none; }
 
         @media print {
-          body > * { display: none !important; }
-          #test-document { display: block !important; }
+          /* "body > * { display:none }" não funciona aqui — o Sidebar/Header/main
+             estão todos dentro do MESMO <div> topo do layout, não são irmãos de
+             #test-document. Escondê-los esconderia o documento também, sem
+             nenhuma forma de o "mostrar de novo" via CSS (display:none num
+             ancestral não pode ser revertido num descendente). Em vez disso,
+             escondem-se especificamente Sidebar/Header (classe no-print neles
+             próprios) e o resto do chrome da página (.no-print aqui mesmo). */
           #test-document {
             border: none !important;
             border-radius: 0 !important;

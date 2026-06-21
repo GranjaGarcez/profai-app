@@ -24,14 +24,14 @@ export default async function ContentDetailPage({ params }: Props) {
     <div className="max-w-4xl mx-auto space-y-6">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
+      <div className="no-print flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
         <Link href="/dashboard/content" className="hover:underline">Conteúdos</Link>
         <span>›</span>
         <span style={{ color: '#0D1B2A' }}>{item.title}</span>
       </div>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="no-print flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#0D1B2A' }}>
             {item.title}

@@ -15,7 +15,7 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-56 flex flex-col shadow-sm" style={{ background: '#0D1B2A' }}>
+    <aside className="no-print w-56 flex flex-col shadow-sm" style={{ background: '#0D1B2A' }}>
       {/* Logo */}
       <div className="p-5 border-b" style={{ borderColor: '#ffffff15' }}>
         <h1 className="text-xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#F7F3EE' }}>
