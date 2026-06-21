@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import MathFigure from '@/components/math/MathFigure'
+import MathFigure, { isSupportedFigureType } from '@/components/math/MathFigure'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
 import ExamLauncher from '@/components/exam/ExamLauncher'
 import DifferentiationPanel from '@/components/content/DifferentiationPanel'
@@ -1349,7 +1349,18 @@ function QuestionBlock({
           </div>
 
           {/* Figura */}
-          {!!q.figure && <MathFigure figure={q.figure} />}
+          {!!q.figure && isSupportedFigureType(q.figure) && <MathFigure figure={q.figure} />}
+          {!!q.figure && !isSupportedFigureType(q.figure) && (
+            <div className="no-print mt-2 px-3 py-2 rounded-lg text-xs flex items-start gap-2"
+              style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b' }}>
+              <span>⚠️</span>
+              <span>
+                Esta questão refere uma figura/gráfico que a IA gerou num formato não suportado
+                (tipo &quot;{String((q.figure as { type?: unknown })?.type ?? '?')}&quot;) — não vai aparecer no documento.
+                Usa 🔄 Alternativa para gerar de novo, ou edita o enunciado para remover a referência à imagem.
+              </span>
+            </div>
+          )}
 
           {/* ── Escolha múltipla ── */}
           {q.type === 'multiple_choice' && q.options && q.options.length > 0 && (

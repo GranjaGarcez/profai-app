@@ -12,6 +12,20 @@ const T = { fontSize: 13, fontFamily: 'Georgia, serif', fill: NAVY } as CSSPrope
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type Fig = { type: string; [k: string]: unknown }
 
+const SUPPORTED_TYPES = new Set([
+  'right_triangle', 'triangle', 'rectangle', 'square', 'circle', 'angle',
+  'number_line', 'fraction_bar', 'bar_chart', 'pie_chart',
+  'cuboid', 'rectangular_prism', 'cube', 'triangular_prism', 'pyramid', 'cylinder', 'cone', 'sphere',
+  'mindmap',
+])
+
+// Usado pelo TestPreview para mostrar um aviso visível em vez de a figura
+// desaparecer silenciosamente quando a IA gera um tipo que não sabemos desenhar.
+export function isSupportedFigureType(figure: unknown): boolean {
+  if (!figure || typeof figure !== 'object') return true // null/undefined = sem figura, não é erro
+  return SUPPORTED_TYPES.has((figure as Fig).type)
+}
+
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function MathFigure({ figure }: { figure: unknown }) {
   if (!figure || typeof figure !== 'object') return null
