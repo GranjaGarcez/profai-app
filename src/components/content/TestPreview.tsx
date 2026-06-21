@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import MathFigure, { isSupportedFigureType } from '@/components/math/MathFigure'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
 import ExamLauncher from '@/components/exam/ExamLauncher'
 import DifferentiationPanel from '@/components/content/DifferentiationPanel'
+import ImageStudio from '@/components/content/ImageStudio'
 import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
 import { generateTestDocx } from '@/lib/export/testDocx'
 
@@ -21,6 +22,7 @@ interface Question {
   markScheme?: string
   allowCalculator?: boolean
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
+  illustration?: string   // data URL base64 — ilustração decorativa gerada no Estúdio de Imagens
 }
 
 interface TestGroup {
@@ -522,14 +524,60 @@ export default function TestPreview({
 }) {
   const rawTest = content as TestContent
   const [editableTest, setEditableTest] = useState<TestContent>(() => deepClone(rawTest))
+
+  // ── Histórico (desfazer/refazer) ──────────────────────────────────────────
+  // Observa editableTest em vez de tocar em cada função de mutação (updateRoot,
+  // updateQuestion, deleteQuestion, etc.) — zero risco para a lógica já validada.
+  // Debounce de 600ms: escrita contínua conta como UM passo, não um por tecla.
+  const historyRef = useRef<TestContent[]>([deepClone(rawTest)])
+  const historyIndexRef = useRef(0)
+  const isHistoryNavRef = useRef(false)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+
+  useEffect(() => {
+    if (isHistoryNavRef.current) { isHistoryNavRef.current = false; return }
+    const timer = setTimeout(() => {
+      const truncated = historyRef.current.slice(0, historyIndexRef.current + 1)
+      truncated.push(deepClone(editableTest))
+      historyRef.current = truncated
+      historyIndexRef.current = truncated.length - 1
+      setCanUndo(historyIndexRef.current > 0)
+      setCanRedo(false)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [editableTest])
+
+  const handleUndo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return
+    historyIndexRef.current -= 1
+    isHistoryNavRef.current = true
+    setEditableTest(deepClone(historyRef.current[historyIndexRef.current]))
+    setCanUndo(historyIndexRef.current > 0)
+    setCanRedo(true)
+    setIsDirty(true); setSaveMsg(null)
+  }, [])
+
+  const handleRedo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return
+    historyIndexRef.current += 1
+    isHistoryNavRef.current = true
+    setEditableTest(deepClone(historyRef.current[historyIndexRef.current]))
+    setCanUndo(true)
+    setCanRedo(historyIndexRef.current < historyRef.current.length - 1)
+    setIsDirty(true); setSaveMsg(null)
+  }, [])
+
   const [isEditing, setIsEditing] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<'ok' | 'error' | null>(null)
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
+  const [regeneratingFigureIdx, setRegeneratingFigureIdx] = useState<number | null>(null)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
   const [showDifferentiation, setShowDifferentiation] = useState(false)
+  const [imageStudioFor, setImageStudioFor] = useState<{ gi: number; qi: number } | null>(null)
   const [printMode, setPrintMode] = useState<'student' | 'teacher'>('student')
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
 
@@ -628,6 +676,16 @@ export default function TestPreview({
     }
   }, [contentItemId, editableTest, isSaving])
 
+  // ── Gravação automática ────────────────────────────────────────────────────
+  // Resolve o problema de o professor fechar o teste sem se lembrar de gravar —
+  // 3s depois da última alteração, grava sozinho. Reaproveita handleSaveEdits,
+  // zero lógica de gravação nova.
+  useEffect(() => {
+    if (!isDirty || !contentItemId) return
+    const timer = setTimeout(() => { handleSaveEdits() }, 3000)
+    return () => clearTimeout(timer)
+  }, [isDirty, editableTest, contentItemId, handleSaveEdits])
+
   const handleLaunch = useCallback(async () => {
     if (isDirty && contentItemId) await handleSaveEdits()
     setShowLauncher(true)
@@ -668,6 +726,29 @@ export default function TestPreview({
     }
   }, [editableTest, markDirty])
 
+  const handleRegenerateFigure = useCallback(async (gi: number, qi: number) => {
+    const globalIdx = (editableTest.groups ?? [])
+      .slice(0, gi).flatMap(g => g.questions).length + qi
+    setRegeneratingFigureIdx(globalIdx)
+    try {
+      const q = (editableTest.groups ?? [])[gi].questions[qi]
+      const res = await fetch('/api/ai/generate-figure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject:      editableTest.subject,
+          yearLevel:    editableTest.yearLevel,
+          questionText: q.text,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) return
+      updateQuestion(gi, qi, 'figure', data.figure ?? null)
+    } finally {
+      setRegeneratingFigureIdx(null)
+    }
+  }, [editableTest, updateQuestion])
+
   const groups = normaliseGroups(editableTest)
   const allQuestions = groups.flatMap(g => g.questions)
 
@@ -683,6 +764,24 @@ export default function TestPreview({
       {showLauncher && contentItemId && (
         <ExamLauncher contentItemId={contentItemId} contentTitle={editableTest.title} onClose={() => setShowLauncher(false)} />
       )}
+      {imageStudioFor && (() => {
+        const { gi, qi } = imageStudioFor
+        const q = groups[gi]?.questions[qi]
+        if (!q) return null
+        return (
+          <ImageStudio
+            subject={editableTest.subject}
+            yearLevel={editableTest.yearLevel}
+            initialDescription={q.text.slice(0, 200)}
+            correctAnswer={q.correctAnswer}
+            onUse={dataUrl => {
+              updateQuestion(gi, qi, 'illustration', dataUrl)
+              setImageStudioFor(null)
+            }}
+            onClose={() => setImageStudioFor(null)}
+          />
+        )
+      })()}
       {showDifferentiation && contentItemId && (
         <DifferentiationPanel
           contentItemId={contentItemId}
@@ -792,6 +891,24 @@ export default function TestPreview({
             <span style={{ fontSize: 14 }}>{isEditing ? '👁' : '✏️'}</span>
             {isEditing ? 'Pré-visualizar' : 'Editar teste'}
           </button>
+
+          {/* Desfazer / Refazer */}
+          {isEditing && (
+            <div className="flex items-center gap-1">
+              <button onClick={handleUndo} disabled={!canUndo}
+                title="Desfazer última alteração"
+                className="flex items-center justify-center w-9 h-9 rounded-lg border text-sm disabled:opacity-30 transition-opacity"
+                style={{ borderColor: '#e2e8f0', color: '#374151', cursor: canUndo ? 'pointer' : 'default' }}>
+                ↩️
+              </button>
+              <button onClick={handleRedo} disabled={!canRedo}
+                title="Refazer alteração"
+                className="flex items-center justify-center w-9 h-9 rounded-lg border text-sm disabled:opacity-30 transition-opacity"
+                style={{ borderColor: '#e2e8f0', color: '#374151', cursor: canRedo ? 'pointer' : 'default' }}>
+                ↪️
+              </button>
+            </div>
+          )}
 
           {/* Acções principais — à direita */}
           <div className="flex items-center gap-2 ml-auto">
@@ -1081,6 +1198,10 @@ export default function TestPreview({
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
                       onRegenerate={() => handleRegenerate(gi, qi)}
                       isRegenerating={regeneratingIdx === gIdx}
+                      onIllustrate={() => setImageStudioFor({ gi, qi })}
+                      onRemoveIllustration={() => updateQuestion(gi, qi, 'illustration', undefined)}
+                      onRegenerateFigure={() => handleRegenerateFigure(gi, qi)}
+                      isRegeneratingFigure={regeneratingFigureIdx === gIdx}
                     />
                   )
                 })}
@@ -1113,6 +1234,28 @@ export default function TestPreview({
           </span>
         </div>
       </div>
+
+      {/* ── Indicador flutuante de gravação — sempre visível durante a edição ── */}
+      {isEditing && contentItemId && (isDirty || isSaving || saveMsg) && (
+        <div className="no-print fixed bottom-5 right-5 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-sm font-semibold"
+          style={{
+            background: saveMsg === 'error' ? '#dc2626' : saveMsg === 'ok' ? '#166534' : isSaving ? '#0D1B2A' : '#92400e',
+            color: 'white',
+          }}>
+          {saveMsg === 'error' ? (
+            <>
+              <span>✗</span> Erro ao guardar
+              <button onClick={handleSaveEdits} className="underline font-bold">tentar de novo</button>
+            </>
+          ) : saveMsg === 'ok' ? (
+            <><span>✓</span> Guardado automaticamente</>
+          ) : isSaving ? (
+            <><span>⏳</span> A guardar…</>
+          ) : (
+            <><span>●</span> Alterações por guardar — a gravar em breve…</>
+          )}
+        </div>
+      )}
 
       {/* Estilos de impressão */}
       <style jsx global>{`
@@ -1233,12 +1376,17 @@ interface QuestionBlockProps {
   onDelete?: () => void
   onRegenerate?: () => void
   isRegenerating?: boolean
+  onIllustrate?: () => void
+  onRemoveIllustration?: () => void
+  onRegenerateFigure?: () => void
+  isRegeneratingFigure?: boolean
 }
 
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
-  onDelete, onRegenerate, isRegenerating,
+  onDelete, onRegenerate, isRegenerating, onIllustrate, onRemoveIllustration,
+  onRegenerateFigure, isRegeneratingFigure,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
   const isMulti = q.type === 'multiple_choice' || q.type === 'true_false'
@@ -1321,6 +1469,19 @@ function QuestionBlock({
                 >
                   {isRegenerating ? '⏳' : '🔄'} {isRegenerating ? 'A gerar…' : 'Alternativa'}
                 </button>
+                {/* Ilustrar */}
+                {onIllustrate && (
+                  <button
+                    onClick={onIllustrate}
+                    title="Gerar ilustração de contexto com IA"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
+                    style={{ color: '#7C3AED', background: 'transparent', border: '1px solid #e9d5ff' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f5f3ff' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    🎨 Ilustrar
+                  </button>
+                )}
                 {/* Eliminar */}
                 {onDelete && (
                   <button
@@ -1348,6 +1509,25 @@ function QuestionBlock({
             />
           </div>
 
+          {/* Ilustração gerada no Estúdio de Imagens (decorativa, separada do sistema de figuras) */}
+          {!!q.illustration && (
+            <div className="relative flex justify-center my-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={q.illustration} alt="Ilustração" className="rounded-xl max-h-56 object-contain"
+                style={{ border: '1px solid #e2e8f0' }} />
+              {editing && onRemoveIllustration && (
+                <button
+                  onClick={onRemoveIllustration}
+                  title="Remover ilustração"
+                  className="no-print absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{ background: '#0D1B2Ad0', color: 'white' }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Figura */}
           {!!q.figure && isSupportedFigureType(q.figure) && <MathFigure figure={q.figure} />}
           {!!q.figure && !isSupportedFigureType(q.figure) && (
@@ -1357,8 +1537,26 @@ function QuestionBlock({
               <span>
                 Esta questão refere uma figura/gráfico que a IA gerou num formato não suportado
                 (tipo &quot;{String((q.figure as { type?: unknown })?.type ?? '?')}&quot;) — não vai aparecer no documento.
-                Usa 🔄 Alternativa para gerar de novo, ou edita o enunciado para remover a referência à imagem.
+                Usa 🔄 Regenerar gráfico abaixo, ou edita o enunciado para remover a referência à imagem.
               </span>
+            </div>
+          )}
+          {!!q.figure && editing && onRegenerateFigure && (
+            <div className="no-print mt-1.5">
+              <button
+                onClick={onRegenerateFigure}
+                disabled={isRegeneratingFigure}
+                title="Gerar uma nova versão deste gráfico/figura com IA"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
+                style={{
+                  color: isRegeneratingFigure ? '#9CA3AF' : '#0369a1',
+                  background: 'transparent',
+                  border: `1px solid ${isRegeneratingFigure ? '#e2e8f0' : '#bae6fd'}`,
+                  cursor: isRegeneratingFigure ? 'wait' : 'pointer',
+                }}
+              >
+                {isRegeneratingFigure ? '⏳ A regenerar…' : '🔄 Regenerar gráfico'}
+              </button>
             </div>
           )}
 

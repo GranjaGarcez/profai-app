@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import MathFigure from '@/components/math/MathFigure'
+import BrewingLoader from '@/components/shared/BrewingLoader'
 
 const SUBJECTS_PT = [
   'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
@@ -214,12 +215,8 @@ export default function LessonPlanGenerator({ onClose, onSave }: LessonPlanGener
 
         {/* GENERATING */}
         {step === 'generating' && (
-          <div className="p-12 text-center space-y-4">
-            <div className="text-5xl animate-bounce">📋</div>
-            <p className="font-semibold" style={{ color: '#0D1B2A' }}>A planificar a tua aula...</p>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
-              Sobre <strong>{form.topic}</strong> · {form.subject} · {form.yearLevel}.º ano
-            </p>
+          <div className="p-12">
+            <BrewingLoader subject="plano de aula" topic={form.topic} />
           </div>
         )}
 

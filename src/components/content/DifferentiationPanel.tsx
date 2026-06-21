@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import BrewingLoader from '@/components/shared/BrewingLoader'
 
 interface SourceTest {
   title: string
@@ -38,7 +39,6 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
   const [phase, setPhase] = useState<Phase>('intro')
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<Partial<Record<Level, string>>>({})
-  const [progress, setProgress] = useState<string | null>(null)
   const [selected, setSelected] = useState<Record<Level, boolean>>({ A: false, C: false, MU: false, MS: false })
 
   const anySelected = Object.values(selected).some(Boolean)
@@ -111,7 +111,6 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
     try {
       const newResults: Partial<Record<Level, string>> = {}
       for (const level of levels) {
-        setProgress(`A gerar ${LEVEL_INFO[level].label}...`)
         const content = await generateLevel(level)
         newResults[level] = await saveLevel(level, content as Record<string, unknown>)
       }
@@ -121,8 +120,6 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro desconhecido')
       setPhase('error')
-    } finally {
-      setProgress(null)
     }
   }
 
@@ -200,9 +197,8 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
         )}
 
         {phase === 'generating' && (
-          <div className="py-8 text-center space-y-3">
-            <div className="text-4xl animate-bounce">🎯</div>
-            <p className="text-sm font-medium" style={{ color: '#0D1B2A' }}>{progress}</p>
+          <div className="py-8">
+            <BrewingLoader subject="versão adaptada" topic={test.topic} />
           </div>
         )}
 
