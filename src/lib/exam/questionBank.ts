@@ -186,6 +186,20 @@ export async function saveQuestions(
   return ids
 }
 
+// ── Actualizar quality_score após o crítico adversarial ────────────────────────
+// saveQuestions() grava com um valor por defeito (0.75) porque corre antes do
+// crítico estar disponível; isto substitui esse valor pela avaliação real,
+// por questão, quando o crítico conseguiu avaliar a ficha.
+export async function updateQualityScores(updates: Array<{ id: string; qualityScore: number }>): Promise<void> {
+  if (updates.length === 0) return
+  const supabase = createAdminClient()
+  const results = await Promise.allSettled(
+    updates.map(u => supabase.from('question_bank').update({ quality_score: u.qualityScore }).eq('id', u.id))
+  )
+  const failed = results.filter(r => r.status === 'rejected').length
+  if (failed > 0) console.warn(`[BANK] ${failed} actualização(ões) de quality_score falharam`)
+}
+
 // ── Marcar como usadas ────────────────────────────────────────────────────────
 
 export async function markUsed(questionIds: string[], userId: string): Promise<void> {
