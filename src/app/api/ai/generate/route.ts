@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
-import { findQuestions, saveQuestions, markUsed, bankToExamQuestion } from '@/lib/exam/questionBank'
+import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores } from '@/lib/exam/questionBank'
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
@@ -1375,6 +1375,22 @@ Responde APENAS com este JSON:
                   content._criticApproved = true
                   console.log(`[CRÍTICO] ✓ Aprovado (score ${critica.score}/10)`)
                 }
+
+                // ── Substitui o quality_score por defeito (0.75) pela avaliação real ──
+                // Baseline global do crítico, penalizado por questão com problemas
+                // identificados especificamente nela (gravidade alta/média/baixa).
+                const baseline = Math.max(0.3, Math.min(0.95, critica.score / 10))
+                const scoreUpdates = allQsForCritic
+                  .filter(q => q._bankId)
+                  .map(q => {
+                    const probs = (critica.problemas ?? []).filter(p => p.questao === q.index)
+                    const penalty = probs.reduce((s, p) =>
+                      s + (p.gravidade === 'alta' ? 0.15 : p.gravidade === 'media' ? 0.05 : 0), 0)
+                    return { id: q._bankId!, qualityScore: Math.max(0.2, Math.min(0.95, baseline - penalty)) }
+                  })
+                updateQualityScores(scoreUpdates).catch(
+                  err => console.warn('[BANK] updateQualityScores falhou:', err)
+                )
               }
             } catch { /* parse falhou — ignora silenciosamente */ }
           }
