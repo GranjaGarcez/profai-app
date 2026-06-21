@@ -673,6 +673,13 @@ export async function POST(request: NextRequest) {
         avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
+    // Disciplinas cuja estrutura pede explicitamente gráficos no campo "figure"
+    // (Geografia, CN, FQ) mas que não recebiam a sintaxe exacta — a IA inventava
+    // tipos não suportados (ex: "circuito", "gráfico de linha") que o MathFigure
+    // não sabe desenhar: a questão ficava com figure≠null mas nada renderizava.
+    const subjectLower = subject.toLowerCase()
+    const hasChartFigures = !isMath && ['geograf', 'ciência', 'ciencia', 'natural', 'biolog', 'físic', 'fisic', 'quím', 'quim']
+      .some(k => subjectLower.includes(k))
     const diffLabel = difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Média' : 'Difícil'
     const testDuration = duration ?? 50
 
@@ -835,7 +842,20 @@ REGRA PEDAGÓGICA CRÍTICA — gráficos que não podem dar a resposta:
   {"type":"cone","radiusLabel":"4 cm","heightLabel":"9 cm"}
   {"type":"sphere","radiusLabel":"5 cm"}
 
-Para questões onde uma figura não acrescenta nada → "figure": null (não inventes contexto visual forçado).` : ''
+Para questões onde uma figura não acrescenta nada → "figure": null (não inventes contexto visual forçado).` : hasChartFigures ? `
+FIGURAS — APENAS GRÁFICOS DE DADOS, USAR SÓ QUANDO GENUINAMENTE ÚTIL:
+O sistema só sabe desenhar DOIS tipos de figura: "bar_chart" e "pie_chart". NENHUM outro tipo é suportado — nunca inventes "gráfico de linha", "circuito", "diagrama de forças", "esquema" ou qualquer outro: se a figura não for um destes dois tipos exactos, usa SEMPRE "figure": null e descreve os dados em texto no enunciado.
+
+SINTAXE EXACTA (copia e adapta com valores reais):
+  {"type":"bar_chart","title":"Título","yLabel":"Unidade","bars":[{"label":"A","value":5},{"label":"B","value":8},{"label":"C","value":3}]}
+  {"type":"pie_chart","title":"Título","slices":[{"label":"Categoria A","value":60},{"label":"Categoria B","value":40}]}
+
+REGRA PEDAGÓGICA CRÍTICA — gráficos que não podem dar a resposta directamente:
+• Se a questão pede UM valor específico: usa "hideValueFor": "NomeExacto" — mostra todos os outros valores, substitui só esse por "?", o aluno calcula o que falta.
+• Se a questão pede TODOS os valores (ex: "constrói a tabela"): usa "showValues": false.
+• Se os valores não são a resposta (ex: "que tendência observas?"): omite ambas as opções.
+
+Para questões sem componente gráfico, ou que precisem de circuito/diagrama/esquema que não sabemos desenhar → "figure": null sempre (descreve no campo "text" em vez disso).` : ''
 
     // ── Perfil disciplinar (estrutura + cotação) ────────────────────────────
     const hasMultipleTypes = questionTypes.length > 1
