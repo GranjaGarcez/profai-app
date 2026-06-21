@@ -23,3 +23,14 @@ body {
   color: var(--foreground);
   font-family: 'Inter', sans-serif;
 }
+
+/* Sem isto, h-screen/overflow-hidden no layout do dashboard cortam testes com
+   mais de uma página ao imprimir — o browser só consegue paginar conteúdo com
+   altura livre. Sidebar/Header escondem-se com a classe .no-print neles próprios. */
+@media print {
+  .dashboard-shell, .dashboard-inner, .dashboard-main {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+}

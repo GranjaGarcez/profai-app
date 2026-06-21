@@ -198,8 +198,9 @@ export default function LessonPlanPreview({ content }: { content: unknown }) {
 
       <style jsx global>{`
         @media print {
-          body > * { display: none !important; }
-          #lesson-plan-document { display: block !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; }
+          /* Ver nota equivalente em TestPreview.tsx — Sidebar/Header escondidos
+             directamente (classe no-print neles), não via body > * + override. */
+          #lesson-plan-document { border: none !important; border-radius: 0 !important; box-shadow: none !important; }
           .no-print { display: none !important; }
           .question-block { page-break-inside: avoid; }
           @page { margin: 2cm 2.5cm; size: A4 portrait; }
