@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import BrewingLoader from '@/components/shared/BrewingLoader'
 
 interface ImageStudioProps {
   subject: string
@@ -84,9 +85,8 @@ export default function ImageStudio({ subject, yearLevel, initialDescription, co
         )}
 
         {phase === 'generating' && (
-          <div className="py-10 text-center space-y-3">
-            <div className="text-4xl animate-bounce">🎨</div>
-            <p className="text-sm font-medium" style={{ color: '#0D1B2A' }}>A criar a ilustração...</p>
+          <div className="py-10">
+            <BrewingLoader subject="ilustração" />
           </div>
         )}
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import MathFigure from '@/components/math/MathFigure'
+import BrewingLoader from '@/components/shared/BrewingLoader'
 
 const SUBJECTS_PT = [
   'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
@@ -87,7 +88,6 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
   const [step, setStep] = useState<'form' | 'generating' | 'preview'>('form')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<unknown>(null)
-  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
 
   const [form, setForm] = useState({
     subject: 'Matemática',
@@ -128,7 +128,6 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
 
     try {
       if (form.numQuestions <= BATCH_THRESHOLD) {
-        setBatchProgress(null)
         const content = await generateOne(form.numQuestions, [])
         setResult(content)
       } else {
@@ -137,11 +136,9 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
         const half1 = Math.ceil(form.numQuestions / 2)
         const half2 = form.numQuestions - half1
 
-        setBatchProgress({ current: 1, total: 2 })
         const batch1 = await generateOne(half1, [])
         const texts1 = getGroups(batch1).flatMap(g => g.questions.map(q => String(q.text ?? '')))
 
-        setBatchProgress({ current: 2, total: 2 })
         const batch2 = await generateOne(half2, texts1)
 
         setResult(mergeBatches([batch1, batch2]))
@@ -150,8 +147,6 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro desconhecido')
       setStep('form')
-    } finally {
-      setBatchProgress(null)
     }
   }
 
@@ -325,20 +320,8 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
 
         {/* GENERATING */}
         {step === 'generating' && (
-          <div className="p-12 text-center space-y-4">
-            <div className="text-5xl animate-bounce">🤖</div>
-            <p className="font-semibold" style={{ color: '#0D1B2A' }}>
-              {batchProgress ? `A gerar parte ${batchProgress.current} de ${batchProgress.total}...` : 'A gerar o teu teste...'}
-            </p>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
-              O Gemini está a criar {form.numQuestions} perguntas sobre <strong>{form.topic}</strong>
-              {batchProgress && ' — dividido em 2 etapas para manter a qualidade'}
-            </p>
-            <div className="flex justify-center gap-1 mt-4">
-              {[0,1,2].map(i => (
-                <div key={i} className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#00B4D8', animationDelay: `${i * 200}ms` }} />
-              ))}
-            </div>
+          <div className="p-12">
+            <BrewingLoader subject="teste" topic={form.topic} />
           </div>
         )}
 
