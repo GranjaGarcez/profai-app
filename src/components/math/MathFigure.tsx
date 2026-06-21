@@ -274,7 +274,11 @@ function FractionBarFig({ f }: { f: Fig }) {
 
 // ── Gráfico de barras ─────────────────────────────────────────────────────────
 function BarChartFig({ f }: { f: Fig }) {
-  const bars = (f.bars as Array<{ label: string; value: number }>) || []
+  // Coerção defensiva: se a IA gerar "value" como string, em falta, ou nome de
+  // campo errado, o cálculo de altura tornava-se NaN e a barra desaparecia
+  // silenciosamente (sem erro) — agora cada barra inválida vira 0 em vez de NaN.
+  const rawBars = (f.bars as Array<{ label?: unknown; value?: unknown }>) || []
+  const bars = rawBars.map(b => ({ label: String(b.label ?? '?'), value: Number(b.value) || 0 }))
   if (bars.length === 0) return null
   // hideValueFor: nome da barra cuja resposta é pedida → mostra "?" em vez do valor
   // showValues: false → ocultar todos (aluno lê pela escala Y)
@@ -336,7 +340,9 @@ function BarChartFig({ f }: { f: Fig }) {
 const PIE_COLORS = [BLUE, GOLD, '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899']
 
 function PieChartFig({ f }: { f: Fig }) {
-  const slices = (f.slices as Array<{ label: string; value: number }>) || []
+  // Mesma coerção defensiva do BarChartFig — evita fatias invisíveis por NaN.
+  const rawSlices = (f.slices as Array<{ label?: unknown; value?: unknown }>) || []
+  const slices = rawSlices.map(s => ({ label: String(s.label ?? '?'), value: Number(s.value) || 0 }))
   if (slices.length === 0) return null
   // hideValueFor: nome da categoria cuja resposta é pedida → mostra "?" em vez do valor
   // showValues: false → ocultar TODOS os valores (só usar se todos forem pedidos)
