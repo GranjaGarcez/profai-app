@@ -16,7 +16,7 @@ const SUPPORTED_TYPES = new Set([
   'right_triangle', 'triangle', 'rectangle', 'square', 'circle', 'angle',
   'number_line', 'fraction_bar', 'bar_chart', 'pie_chart',
   'cuboid', 'rectangular_prism', 'cube', 'triangular_prism', 'pyramid', 'cylinder', 'cone', 'sphere',
-  'mindmap',
+  'mindmap', 'table',
 ])
 
 // Usado pelo TestPreview para mostrar um aviso visível em vez de a figura
@@ -53,6 +53,8 @@ export default function MathFigure({ figure }: { figure: unknown }) {
     case 'sphere':             return <SphereFig           f={fig} />
     // ── Mapa mental (planificação de aula) ─────────────────────────────────
     case 'mindmap':            return <MindMapFig          f={fig} />
+    // ── Tabela de dados (classificação, comparação) ────────────────────────
+    case 'table':              return <TableFig            f={fig} />
     default:                  return null
   }
 }
@@ -683,5 +685,40 @@ function MindMapFig({ f }: { f: Fig }) {
         )
       })}
     </Svg>
+  )
+}
+
+// ── Tabela de dados ───────────────────────────────────────────────────────────
+// HTML normal em vez de SVG — é texto tabular, não desenho geométrico. Os dados
+// vêm exactamente como a IA os gerou: nós só desenhamos, nunca inventamos nada.
+function TableFig({ f }: { f: Fig }) {
+  const headers = (f.headers as unknown[] | undefined)?.map(h => String(h)) ?? []
+  const rows = (f.rows as unknown[][] | undefined)?.map(row => row.map(c => String(c))) ?? []
+  if (headers.length === 0 || rows.length === 0) return null
+
+  return (
+    <div className="flex justify-center my-3 no-print-break">
+      <table style={{ borderCollapse: 'collapse', fontFamily: 'Georgia, serif', fontSize: 13 }}>
+        <thead>
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} style={{
+                border: `1.5px solid ${NAVY}`, padding: '6px 14px', background: NAVY,
+                color: 'white', fontWeight: 700, textAlign: 'left',
+              }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri} style={{ background: ri % 2 === 0 ? FILL : 'white' }}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={{ border: `1px solid ${NAVY}50`, padding: '6px 14px', color: NAVY }}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
