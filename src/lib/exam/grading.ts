@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import type { Question, GradingDetail, RubricCriterion, TestSnapshot } from './types'
 import { getAllQuestions } from './types'
+import { fixMarkSchemeSum } from './markScheme'
 
 // Inicialização lazy — evita falha de build quando as env vars não estão disponíveis em build time
 function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
@@ -104,6 +105,12 @@ COMO INTERPRETAR ESTE REGISTO:
 
   const isLong = q.type === 'long_answer'
 
+  // Defesa final antes da IA corrigir: garante que os critérios somam sempre
+  // q.points, mesmo que a questão venha de geração antiga, edição manual do
+  // professor, ou importação — um markScheme inconsistente confunde o modelo
+  // e pode impedir a correcção automática de devolver uma rubrica coerente.
+  const markScheme = fixMarkSchemeSum(q.markScheme, q.points)
+
   const rubricInstruction = isLong ? `
 RUBRICA OBRIGATÓRIA: O markScheme contém critérios com pontuação máxima (ex: "Tese (7pt) + Argumentação (16pt)...").
 Identifica cada critério e avalia-o individualmente. Devolve o array "rubric" com todos os critérios encontrados.
@@ -118,7 +125,7 @@ A soma dos "score" da rubrica DEVE ser igual ao "score" total.` : ''
 QUESTÃO: ${q.text}
 TIPO: ${q.type}
 COTAÇÃO MÁXIMA: ${q.points} pontos
-CRITÉRIOS DE CORRECÇÃO: ${q.markScheme ?? q.correctAnswer}
+CRITÉRIOS DE CORRECÇÃO: ${markScheme ?? q.correctAnswer}
 
 RESPOSTA DO ALUNO: ${trimmed || '(sem texto)'}
 ${calcSection}

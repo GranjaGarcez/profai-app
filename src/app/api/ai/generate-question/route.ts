@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 const TYPE_PT: Record<string, string> = {
   multiple_choice: 'escolha múltipla (4 opções A/B/C/D, apenas uma correcta)',
@@ -62,6 +63,7 @@ REGRAS OBRIGATÓRIAS:
 5. correctAnswer: obrigatório e completo
 ${qtype === 'multiple_choice' ? '6. options: array de exactamente 4 strings ["A) ...", "B) ...", "C) ...", "D) ..."]\n7. correctAnswer: só a letra (A, B, C ou D)' : ''}
 ${qtype === 'true_false' ? '6. options: null\n7. correctAnswer: "Verdadeiro" ou "Falso"' : ''}
+8. Se a questão envolver números/cálculos: refaz o cálculo do zero antes de finalizar — nunca assumas um valor sem o calcular explicitamente. Se pedires um valor "óptimo"/"máximo"/"mínimo" sob uma restrição, confirma que o enunciado inclui TODAS as restrições necessárias para uma resposta única (senão a resposta trivial seria tecnicamente válida e a questão estaria mal proposta).
 
 Responde APENAS com este JSON válido (sem texto extra, sem markdown):
 {
@@ -129,6 +131,7 @@ export async function POST(request: NextRequest) {
     if (!q.text || !q.correctAnswer) throw new Error('campos em falta')
     q.type   = questionType
     q.points = Number(points)
+    q.markScheme = fixMarkSchemeSum(q.markScheme, q.points)
     return NextResponse.json({ question: q })
   } catch {
     return NextResponse.json({ error: 'JSON inválido da IA. Tenta novamente.' }, { status: 502 })

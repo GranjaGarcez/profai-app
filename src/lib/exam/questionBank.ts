@@ -84,7 +84,9 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
       .limit(fetchLimit)
 
     if (usedIds.length > 0) {
-      query = query.not('id', 'in', `(${usedIds.map(id => `'${id}'`).join(',')})`)
+      // PostgREST in.() para uma coluna uuid não aceita valores entre aspas —
+      // aspas à mão aqui faziam o Postgres receber "'<uuid>'" literal e falhar.
+      query = query.not('id', 'in', `(${usedIds.join(',')})`)
     }
 
     const { data, error } = await query
@@ -130,7 +132,7 @@ async function findQuestionsIlike(
     .limit(params.numWanted * 4)
 
   if (usedIds.length > 0) {
-    query = query.not('id', 'in', `(${usedIds.map(id => `'${id}'`).join(',')})`)
+    query = query.not('id', 'in', `(${usedIds.join(',')})`)
   }
 
   const { data } = await query
