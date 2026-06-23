@@ -4,6 +4,7 @@ import {
   convertInchesToTwip, PageBreak,
 } from 'docx'
 import { saveAs } from 'file-saver'
+import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 interface Question {
   index: number
@@ -237,7 +238,7 @@ export async function generateTestDocx(test: TestContent) {
         new Paragraph({
           children: [
             new TextRun({ text: 'Critérios: ', bold: true, size: 18, color: '374151' }),
-            new TextRun({ text: q.markScheme, size: 18, color: '374151' }),
+            new TextRun({ text: fixMarkSchemeSum(q.markScheme, q.points) ?? '', size: 18, color: '374151' }),
           ],
           indent: { left: convertInchesToTwip(0.3) },
           spacing: { after: 80 },

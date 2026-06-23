@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
 import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores } from '@/lib/exam/questionBank'
+import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
@@ -34,12 +35,15 @@ function normalizeBloom(raw: string | undefined): BloomLevel | undefined {
 function buildCriticPrompt(subject: string, yearLevel: number, topic: string,
                             questions: Array<Record<string, unknown>>): string {
   const sample = questions.slice(0, 10).map((q, i) =>
-    `Q${i + 1} [${q.type}|${q.bloomLevel}|${q.points}pt]: ${String(q.text ?? '').slice(0, 90)}`
-  ).join('\n')
+    `Q${i + 1} [${q.type}|${q.bloomLevel}|${q.points}pt]
+Enunciado: ${String(q.text ?? '')}
+Resposta: ${String(q.correctAnswer ?? '')}
+Critérios: ${String(q.markScheme ?? '')}`
+  ).join('\n\n')
   return `És revisor crítico independente de fichas de avaliação. A tua função é DESCOBRIR falhas — não elogiar. Parte do princípio de que a ficha tem defeitos e procura-os.
 
 FICHA: ${subject} · ${yearLevel}.º ano · Tópico: "${topic}"
-AMOSTRA DE QUESTÕES (máx. 10):
+AMOSTRA DE QUESTÕES (máx. 10, com enunciado, resposta e critérios completos):
 ${sample}
 
 AUDITA sem complacência — verifica CADA questão da amostra:
@@ -48,6 +52,7 @@ AUDITA sem complacência — verifica CADA questão da amostra:
 3. ambiguidade: há enunciados com mais de uma leitura razoável? Dupla negação? Distratores absurdos?
 4. adequacao_ano: linguagem e exigência são próprias do ${yearLevel}.º ano (${yearLevel <= 6 ? '10-12 anos' : yearLevel <= 9 ? '12-15 anos' : '15-18 anos'})?
 5. markScheme: os critérios são específicos (com pontos parcelares) ou vagos ("resposta correcta")?
+6. correcção_aritmética: em questões com números/cálculos, REFAZ o cálculo do zero de forma independente — não confies na "Resposta" dada, verifica-a. Se a questão pedir um valor "óptimo"/"máximo"/"mínimo" sob uma restrição, confirma que o enunciado tem restrições suficientes para uma resposta única E que essa resposta está matematicamente correcta (ex: confirma sempre uma lista de divisores antes de aceitar "o maior divisor"). Reporta QUALQUER divergência aritmética como gravidade "alta" — é o tipo de erro mais grave possível numa ficha de avaliação.
 
 Devolve EXCLUSIVAMENTE este JSON (sem texto antes ou depois):
 {"aprovado": bool, "score": 0-10, "problemas": [{"tipo": str, "gravidade": "alta|media|baixa", "descricao": str, "questao": int}]}`
@@ -438,7 +443,9 @@ Antes de gerar o JSON, verifica mentalmente:
 ✓ Todos os "markScheme" têm critérios específicos com pontos que somam "points"?
 ✓ A soma de todos os "points" é exactamente 100?
 ✓ Usei Português de Portugal em todo o texto?
-✓ Cada questão é específica ao tópico (não genérica)?`
+✓ Cada questão é específica ao tópico (não genérica)?
+✓ Em questões com números/cálculos: refiz o cálculo do zero e "correctAnswer" está aritmeticamente correcto?
+✓ Em questões de optimização/divisibilidade ("o máximo/mínimo possível"): o enunciado tem todas as restrições necessárias para uma resposta única, sem soluções triviais alternativas?`
 
 // Tenta fechar um JSON truncado adicionando os caracteres em falta
 function repairTruncatedJson(raw: string): string {
@@ -921,6 +928,7 @@ ${scoringRule}
    • Filosofia (desenvolvimento / ensaio filosófico): "Tese/Problematização — posição clara sobre a questão filosófica (Xpt) + Argumentação — mínimo 2 argumentos com conceitos e autores do programa DGE (Xpt) + Adequação conceptual e teórica — terminologia e autores correctamente mobilizados (Xpt) + Comunicação — organização, coesão e clareza do discurso filosófico (Xpt). ⚑ Rubrica orientadora — cotação a ajustar pelo professor; questão de desenvolvimento com avaliação necessariamente holística."
    REGRA ABSOLUTA: A soma dos pontos parciais no markScheme = "points" da questão. Cada Xpt é um número inteiro concreto, nunca um intervalo.
 8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
+9. VERIFICAÇÃO ARITMÉTICA E LÓGICA (questões com números/cálculos/optimização): antes de finalizares, refaz o cálculo do zero e confirma que "correctAnswer" e markScheme estão aritmeticamente correctos — nunca assumas um valor sem o calcular explicitamente (ex: se pedes "o maior divisor de 96 menor que 96", calcula realmente os divisores antes de escrever a resposta). Se o enunciado pede um valor "óptimo"/"máximo"/"mínimo" sob uma restrição (ex: "dividir em grupos iguais com o máximo de alunos por grupo"), confirma que o enunciado inclui TODAS as restrições necessárias para uma resposta única e não-trivial — sem isso, a resposta trivial (ex: 1 único grupo) seria tecnicamente válida e a questão estaria mal proposta. Acrescenta a restrição em falta ao enunciado (ex: "...divididos em mais de 2 grupos...", "...sabendo que cada grupo deve ter entre 10 e 30 alunos..."). PROIBIDO ABSOLUTO: gerar uma questão de optimização/divisibilidade/contagem sem este cálculo de verificação prévio.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
 
@@ -1299,6 +1307,15 @@ Responde APENAS com este JSON:
       }
       content.totalPoints = 100
 
+      // 5b. Corrigir markScheme cuja soma de critérios não bate com "points" —
+      // a IA por vezes erra a soma, e o passo 5 acima pode ter alterado "points"
+      // depois do markScheme já estar escrito. Sem isto a correcção automática falha.
+      for (const g of groups) {
+        for (const q of g.questions) {
+          q.markScheme = fixMarkSchemeSum(q.markScheme, Number(q.points) || 0)
+        }
+      }
+
       // ── Guardar questões IA no banco + combinar com banco existente ────────
       const allQsFinal = groups.flatMap(g => g.questions)
       const withFig = allQsFinal.filter(q => q.figure !== null && q.figure !== undefined)
@@ -1328,6 +1345,10 @@ Responde APENAS com este JSON:
       // Injectar questões do banco no início (já validadas, alta qualidade)
       if (bankHits.length > 0) {
         const bankQs = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1))
+        // Defesa para questões gravadas no banco antes desta correcção existir.
+        for (const q of bankQs) {
+          q.markScheme = fixMarkSchemeSum(q.markScheme as string | undefined, Number(q.points) || 0)
+        }
         let nextIdx = bankQs.length + 1
         for (const g of groups) for (const q of g.questions) q.index = nextIdx++
         content.groups = [
