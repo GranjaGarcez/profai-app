@@ -63,6 +63,24 @@ function toPtPt(text: string): string {
 }
 const PTPT_CORRECTOR_ON = process.env.PROFAI_PTPT_CORRECTOR !== 'off'
 
+// Textos-exemplo do few-shot JSON que o modelo por vezes copia literalmente.
+const PLACEHOLDER_PREFIXES = [
+  '<<gera_aqui',
+  'enunciado da pergunta com contexto real',
+  'enunciado com contexto real exigindo',
+]
+
+// Substitui notação LaTeX residual por Unicode equivalente, de forma segura.
+// Usado como rede editorial de último recurso: o prompt já proíbe LaTeX.
+function sanitizeLatex(text: string): string {
+  return text
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2')
+    .replace(/\\times/g, '×').replace(/\\cdot/g, '·').replace(/\\div/g, '÷')
+    .replace(/\\leq/g, '≤').replace(/\\geq/g, '≥').replace(/\\neq/g, '≠')
+    .replace(/\\pi\b/g, 'π').replace(/\\sqrt\{([^}]*)\}/g, '√($1)')
+    .replace(/\\\(|\\\)/g, '').replace(/\\\[|\\\]/g, '')
+}
+
 function normalizeBloom(raw: string | undefined): BloomLevel | undefined {
   if (!raw) return undefined
   const s = raw.trim()
@@ -477,6 +495,7 @@ NOTA: palavras como "equação", "solução", "análise", "síntese", "utilizaç
   - long_answer: critérios progressivos — conteúdo/argumentação + organização + vocabulário específico
   - A SOMA dos pontos no markScheme deve ser IGUAL a "points" da questão
 • "options": array de 4 strings para multiple_choice (["A) ...", "B) ...", "C) ...", "D) ..."]), null para outros tipos
+• "text": texto em Português de Portugal SIMPLES — PROIBIDO qualquer notação LaTeX (\frac, \times, \cdot, \(, \), \[, \] e afins); usa sempre símbolos Unicode directamente: × ÷ ² ³ ⁴ √ π ≠ ≤ ≥ ∈; para fracções usa o campo "figure" com type "fraction_bar"
 • Não omitas NENHUM campo do schema pedido
 
 ═══ VERIFICAÇÃO FINAL ANTES DE RESPONDER ═══
@@ -1003,7 +1022,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "index": 1,
           "type": "multiple_choice",
           "bloomLevel": "Compreender",
-          "text": "Enunciado da pergunta com contexto real",
+          "text": "<<GERA_AQUI: enunciado de escolha múltipla sobre [tópico] com contexto real e dados concretos>>",
           "figure": null,
           "options": ["A) opção correcta", "B) distrator plausível 1", "C) distrator plausível 2", "D) distrator plausível 3"],
           "correctAnswer": "A",
@@ -1022,7 +1041,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "index": 6,
           "type": "short_answer",
           "bloomLevel": "Aplicar",
-          "text": "Enunciado com contexto real exigindo aplicação de conhecimentos",
+          "text": "<<GERA_AQUI: questão de resposta curta sobre [tópico] com contexto real e dados concretos>>",
           "figure": null,
           "correctAnswer": "Resposta completa",
           "points": 10,
@@ -1040,7 +1059,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           "index": 9,
           "type": "long_answer",
           "bloomLevel": "Analisar",
-          "text": "Enunciado com contexto real exigindo análise e resolução multi-passo",
+          "text": "<<GERA_AQUI: problema multi-passo com contexto real português, dados numéricos concretos e unidades>>",
           "figure": null,
           "correctAnswer": "Resposta completa com unidades e conclusão",
           "points": 20,
@@ -1311,6 +1330,19 @@ Responde APENAS com este JSON:
       }
       if (removed > 0) console.warn(`[PROFAI] ${removed} questão(ões) duplicada(s) removida(s)`)
 
+      // 1b. Detectar texto-placeholder (modelo copiou o exemplo JSON em vez de gerar)
+      const hasPlaceholder = groups.some(g => g.questions.some(q => {
+        const t = String(q.text ?? '').trim().toLowerCase()
+        return PLACEHOLDER_PREFIXES.some(p => t.startsWith(p))
+      }))
+      if (hasPlaceholder) {
+        console.warn('[PROFAI] ⚠ Texto placeholder detectado — modelo copiou o exemplo JSON')
+        return NextResponse.json(
+          { error: 'O modelo gerou questões com texto genérico. Tenta de novo — normalmente resolve-se numa segunda tentativa.' },
+          { status: 422 }
+        )
+      }
+
       // 2. Normalizar correctAnswer de MCQ → apenas a letra (A/B/C/D)
       for (const g of groups) {
         for (const q of g.questions) {
@@ -1336,6 +1368,10 @@ Responde APENAS com este JSON:
             if (typeof q.markScheme === 'string') q.markScheme = toPtPt(q.markScheme)
             if (Array.isArray(q.options)) q.options = q.options.map(o => typeof o === 'string' ? toPtPt(o) : o)
           }
+          // 3d. Sanitizar LaTeX residual (o prompt proíbe, mas modelos Tier 2 escapam-se).
+          if (typeof q.text === 'string') q.text = sanitizeLatex(q.text)
+          if (typeof q.correctAnswer === 'string') q.correctAnswer = sanitizeLatex(q.correctAnswer)
+          if (Array.isArray(q.options)) q.options = q.options.map(o => typeof o === 'string' ? sanitizeLatex(o) : o)
         }
       }
 
