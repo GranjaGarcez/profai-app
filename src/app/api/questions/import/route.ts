@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 export const dynamic = 'force-dynamic'
+
+// A IA de estruturação (e a UI de revisão em QuestionImporter.tsx) usa tipos
+// com hífen — o resto da app (grading.ts, TestPreview.tsx) usa underscore.
+// Só se converte aqui, na fronteira de gravação em question_bank.
+const TYPE_MAP: Record<string, string> = {
+  'multiple-choice': 'multiple_choice',
+  'true-false': 'true_false',
+  'short-answer': 'short_answer',
+  'essay': 'long_answer',
+}
+function normalizeQuestionType(t: string | undefined): string {
+  return TYPE_MAP[t ?? ''] ?? t ?? 'short_answer'
+}
 
 interface StructuredQuestion {
   text: string
@@ -156,23 +170,34 @@ export async function POST(req: NextRequest) {
   if (!save) return NextResponse.json({ questions })
 
   const admin = createAdminClient()
-  const rows = questions.map(q => ({
-    subject,
-    year_level: yearLevel,
-    text: q.text,
-    type: q.type ?? 'short-answer',
-    difficulty: q.difficulty ?? 'medium',
-    topic: q.subtopic ?? '',
-    bloom_level: q.bloomLevel ?? 'Aplicar',
-    options: q.options ?? null,
-    correct_answer: q.correctAnswer ?? null,
-    mark_scheme: q.markScheme ?? null,
-    points: q.points ?? 10,
-    quality_score: 0.95,
-    citation: citation ?? null,
-    source_url: sourceUrl ?? null,
-    is_active: true,
-  }))
+  // O resto da app (questionBank.ts, grading.ts, TestPreview.tsx) espera "type"
+  // com underscore e "markScheme" como texto livre — esta importação produz o
+  // formato estruturado próprio da UI de revisão (QuestionImporter.tsx), por
+  // isso converte-se aqui, na fronteira de gravação, sem tocar em nenhum dos dois lados.
+  const rows = questions.map(q => {
+    const points = Number(q.points) || 10
+    const criteriaText = (q.markScheme?.criteria ?? [])
+      .map(c => `${c.description} (${c.points}pt)`)
+      .join(' + ')
+    const markScheme = fixMarkSchemeSum(criteriaText || undefined, points) ?? null
+    return {
+      subject,
+      year_level: yearLevel,
+      text: q.text,
+      type: normalizeQuestionType(q.type),
+      difficulty: q.difficulty ?? 'medium',
+      topic: q.subtopic ?? '',
+      bloom_level: q.bloomLevel ?? 'Aplicar',
+      options: q.options ?? null,
+      correct_answer: q.correctAnswer ?? q.markScheme?.modelAnswer ?? null,
+      mark_scheme: markScheme,
+      points,
+      quality_score: 0.95,
+      citation: citation ?? null,
+      source_url: sourceUrl ?? null,
+      is_active: true,
+    }
+  })
 
   const { data: inserted, error } = await admin
     .from('question_bank')

@@ -8,6 +8,7 @@ import DifferentiationPanel from '@/components/content/DifferentiationPanel'
 import ImageStudio from '@/components/content/ImageStudio'
 import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
 import { generateTestDocx } from '@/lib/export/testDocx'
+import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface Question {
@@ -22,7 +23,8 @@ interface Question {
   markScheme?: string
   allowCalculator?: boolean
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
-  illustration?: string   // data URL base64 — ilustração decorativa gerada no Estúdio de Imagens
+  illustration?: string   // data URL base64 (IA) ou URL real — ilustração gerada/pesquisada no Estúdio de Imagens
+  illustrationCredit?: string   // atribuição obrigatória quando a imagem vem de pesquisa (Wikimedia Commons)
 }
 
 interface TestGroup {
@@ -772,10 +774,16 @@ export default function TestPreview({
           <ImageStudio
             subject={editableTest.subject}
             yearLevel={editableTest.yearLevel}
+            topic={editableTest.topic}
             initialDescription={q.text.slice(0, 200)}
             correctAnswer={q.correctAnswer}
-            onUse={dataUrl => {
+            onUse={(dataUrl, credit) => {
               updateQuestion(gi, qi, 'illustration', dataUrl)
+              updateQuestion(gi, qi, 'illustrationCredit', credit)
+              setImageStudioFor(null)
+            }}
+            onUseTable={(table) => {
+              updateQuestion(gi, qi, 'figure', table)
               setImageStudioFor(null)
             }}
             onClose={() => setImageStudioFor(null)}
@@ -1199,7 +1207,10 @@ export default function TestPreview({
                       onRegenerate={() => handleRegenerate(gi, qi)}
                       isRegenerating={regeneratingIdx === gIdx}
                       onIllustrate={() => setImageStudioFor({ gi, qi })}
-                      onRemoveIllustration={() => updateQuestion(gi, qi, 'illustration', undefined)}
+                      onRemoveIllustration={() => {
+                        updateQuestion(gi, qi, 'illustration', undefined)
+                        updateQuestion(gi, qi, 'illustrationCredit', undefined)
+                      }}
                       onRegenerateFigure={() => handleRegenerateFigure(gi, qi)}
                       isRegeneratingFigure={regeneratingFigureIdx === gIdx}
                     />
@@ -1514,21 +1525,27 @@ function QuestionBlock({
             />
           </div>
 
-          {/* Ilustração gerada no Estúdio de Imagens (decorativa, separada do sistema de figuras) */}
+          {/* Ilustração gerada/pesquisada no Estúdio de Imagens (decorativa, separada do sistema de figuras) */}
           {!!q.illustration && (
-            <div className="relative flex justify-center my-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={q.illustration} alt="Ilustração" className="rounded-xl max-h-56 object-contain"
-                style={{ border: '1px solid #e2e8f0' }} />
-              {editing && onRemoveIllustration && (
-                <button
-                  onClick={onRemoveIllustration}
-                  title="Remover ilustração"
-                  className="no-print absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: '#0D1B2Ad0', color: 'white' }}
-                >
-                  ✕
-                </button>
+            <div className="flex flex-col items-center my-3">
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={q.illustration} alt="Ilustração" className="rounded-xl max-h-56 object-contain"
+                  style={{ border: '1px solid #e2e8f0' }} />
+                {editing && onRemoveIllustration && (
+                  <button
+                    onClick={onRemoveIllustration}
+                    title="Remover ilustração"
+                    className="no-print absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ background: '#0D1B2Ad0', color: 'white' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {/* Atribuição obrigatória (Wikimedia Commons) — fica visível na impressão por exigência legal */}
+              {q.illustrationCredit && (
+                <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>{q.illustrationCredit}</p>
               )}
             </div>
           )}
@@ -1664,10 +1681,10 @@ function QuestionBlock({
                   <p>
                     <span className="font-bold" style={{ color: '#166534' }}>Critérios: </span>
                     {editing ? (
-                      <textarea value={q.markScheme ?? ''} onChange={e => onChangeMarkScheme(e.target.value)} rows={3}
+                      <textarea value={fixMarkSchemeSum(q.markScheme, q.points) ?? ''} onChange={e => onChangeMarkScheme(e.target.value)} rows={3}
                         style={{ width: '100%', resize: 'vertical', border: '1.5px dashed #00B4D8', borderRadius: 4, background: 'transparent', outline: 'none', fontSize: '0.75rem', color: '#374151', padding: '2px 4px' }}
                       />
-                    ) : <span style={{ color: '#374151' }}>{q.markScheme}</span>}
+                    ) : <span style={{ color: '#374151' }}>{fixMarkSchemeSum(q.markScheme, q.points)}</span>}
                   </p>
                 )}
               </div>
@@ -1687,7 +1704,7 @@ function QuestionBlock({
             )}
             {q.markScheme && (
               <p style={{ fontSize: '9pt', color: '#374151', lineHeight: 1.5 }}>
-                <strong>Critérios de cotação: </strong>{q.markScheme}
+                <strong>Critérios de cotação: </strong>{fixMarkSchemeSum(q.markScheme, q.points)}
               </p>
             )}
           </div>
