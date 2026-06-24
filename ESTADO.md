@@ -6,6 +6,35 @@
 ---
 
 ## Último update
+2026-06-24 (sessão 7) — consolidação, recuperação de merges e limpeza Netlify
+
+### O que se fez nesta sessão (7)
+- **markScheme coerente + qualidade aritmética** (`src/lib/exam/markScheme.ts` novo):
+  `fixMarkSchemeSum()` reescala critérios para somarem = `points` (método do maior resto).
+  Aplicado em 5 pontos: geração, regeneração, correcção, display e export DOCX.
+  Crítico adversarial reforçado: refaz cálculos do zero, reporta divergências como gravidade "alta".
+- **Estúdio de Imagens com fontes reais**: pesquisa Wikimedia Commons + Unsplash + banco
+  (`search-images/route.ts`, `imageBank.ts`, `save-image-use/route.ts`), variedade estética
+  e controlo de formato (1:1/16:9/9:16) na geração, figura de **tabela** (`generate-table`, `MathFigure` TableFig).
+- **Importador alinhado** (`questions/import/route.ts`): tipo com underscore + markScheme como texto.
+- **Deploy migrou de Netlify → Render** (já era; nesta sessão removeu-se a config morta:
+  `netlify.toml`, `.netlifyignore`, devDep `@netlify/plugin-nextjs`). Site Netlify **pausado** no dashboard.
+
+### ⚠️ Lição aprendida (PRs empilhados)
+Os PRs #9/#10 foram criados *stacked* (base = branch anterior, não `main`). Merge sequencial com
+`gh pr merge --merge` **NÃO** re-aponta os bases para `main` (isso só acontece com `--delete-branch`).
+Resultado: #9/#10 foram parar a branches mortos, **fora de produção**. Recuperado via PR #11.
+**Regra:** para PRs stacked, mergear de baixo para cima e re-apontar a base de cada um para `main`
+*antes* de mergear (ou usar `--delete-branch` + confirmar retarget), e **verificar sempre** que o
+conteúdo aterrou em `main` (`git diff origin/main origin/<branch> --stat`).
+
+### Estado git no fim da sessão 7
+- Tudo em `main` (SHA `5246791`), **0 PRs abertos**, só o branch `main` no remoto.
+- PRs #8, #11, #12 merged; #9/#10 também mas conteúdo recuperado pelo #11; #1 fechado (direcção invertida).
+
+---
+
+## Último update anterior
 2026-06-02 (sessão 5)
 
 ## Stack
