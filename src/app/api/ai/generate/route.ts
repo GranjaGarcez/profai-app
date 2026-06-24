@@ -21,6 +21,48 @@ const BLOOM_ALIASES: Record<string, BloomLevel> = {
   'Criar': 'Criar',       'Create': 'Criar',        'Synthesis': 'Criar',    'Sintetizar': 'Criar',
 }
 
+// ── Corrector determinístico PT-BR → PT-PT (pré-acordo, norma editorial do projecto).
+// Rede de segurança: mesmo com o prompt a exigir PT-PT, modelos Tier 2 (Mistral, etc.)
+// deslizam em texto longo ("aspetos", "correto"). Só pares INEQUÍVOCOS — a forma da
+// esquerda nunca é válida em PT-PT — com fronteiras Unicode para não tocar em palavras
+// que os contenham (ex.: "informação" nunca se torna "informacção"). "fato" fica de
+// fora de propósito (é válido em PT-PT = "vestuário"). Desligável: PROFAI_PTPT_CORRECTOR=off.
+const PT_BR_TO_PT: ReadonlyArray<readonly [string, string]> = [
+  ['atividade', 'actividade'], ['atividades', 'actividades'],
+  ['ótimo', 'óptimo'], ['ótima', 'óptima'], ['ótimos', 'óptimos'], ['ótimas', 'óptimas'],
+  ['aspeto', 'aspecto'], ['aspetos', 'aspectos'],
+  ['correto', 'correcto'], ['correta', 'correcta'], ['corretos', 'correctos'], ['corretas', 'correctas'], ['corretamente', 'correctamente'],
+  ['incorreto', 'incorrecto'], ['incorreta', 'incorrecta'], ['incorretos', 'incorrectos'],
+  ['direto', 'directo'], ['direta', 'directa'], ['diretamente', 'directamente'],
+  ['objeto', 'objecto'], ['objetos', 'objectos'],
+  ['ação', 'acção'], ['ações', 'acções'],
+  ['fração', 'fracção'], ['frações', 'fracções'],
+  ['retângulo', 'rectângulo'], ['retângulos', 'rectângulos'],
+  ['exato', 'exacto'], ['exata', 'exacta'], ['exatamente', 'exactamente'],
+  ['efetivo', 'efectivo'], ['efetiva', 'efectiva'],
+  ['seleção', 'selecção'], ['coleção', 'colecção'],
+  ['adjetivo', 'adjectivo'], ['adjetivos', 'adjectivos'],
+  ['contato', 'contacto'], ['contatos', 'contactos'],
+  ['porcentagem', 'percentagem'], ['caráter', 'carácter'],
+]
+// Tokeniza por PALAVRA INTEIRA (regex literal /\p{L}+/gu — só literais preservam a
+// propriedade Unicode; new Regexp("\\p{L}") perde a barra e corromperia substrings) e
+// substitui apenas a palavra exacta via Map. Assim "informação"/"educação" nunca são
+// tocadas, mesmo contendo "ação" — só "ação" isolada é corrigida para "acção".
+const PT_BR_MAP = new Map<string, string>(PT_BR_TO_PT.map(([br, pt]) => [br, pt]))
+function toPtPt(text: string): string {
+  return text.replace(/\p{L}+/gu, (word) => {
+    const repl = PT_BR_MAP.get(word.toLowerCase())
+    if (!repl) return word
+    if (word === word.toUpperCase() && word !== word.toLowerCase()) return repl.toUpperCase()
+    const first = word.charAt(0)
+    return first === first.toUpperCase() && first !== first.toLowerCase()
+      ? repl.charAt(0).toUpperCase() + repl.slice(1)
+      : repl
+  })
+}
+const PTPT_CORRECTOR_ON = process.env.PROFAI_PTPT_CORRECTOR !== 'off'
+
 function normalizeBloom(raw: string | undefined): BloomLevel | undefined {
   if (!raw) return undefined
   const s = raw.trim()
@@ -410,8 +452,9 @@ const FALLBACK_SYSTEM_ENHANCED = `És um professor especialista em avaliação e
 • JSON deve ser completo e bem formado — nunca truncar no meio de uma chave ou valor
 
 ═══ LÍNGUA — PORTUGUÊS DE PORTUGAL ESTRITO ═══
-CORRECTO (usa SEMPRE): actividade, óptimo, efeito, facto, fórmula, rectângulo, percentagem, fracção, equação, solução, utilização, análise, síntese, período, séc., efectuado, verificado, concluído
-PROIBIDO (nunca usar): atividade, ótimo, efeito✗, fato, fórmula✗, retângulo, porcentagem, fração, equação✗, solução✗, utilização✗, análise✗, síntese✗, período✗
+Escreve SEMPRE a forma da esquerda, NUNCA a da direita (só pares que realmente diferem):
+actividade≠atividade · óptimo≠ótimo · facto≠fato · objecto≠objeto · directo≠directo · correcto≠correto · incorrecto≠incorreto · aspecto≠aspeto · rectângulo≠retângulo · fracção≠fração · acção≠ação · percentagem≠porcentagem · exacto≠exato · contacto≠contato · efectivo≠efetivo · selecção≠seleção
+NOTA: palavras como "equação", "solução", "análise", "síntese", "utilização", "período", "fórmula", "efeito" são IGUAIS em PT-PT e PT-BR — usa-as livremente, são correctas. Não as evites.
 
 ═══ QUALIDADE PEDAGÓGICA OBRIGATÓRIA ═══
 • Cada questão DEVE ser específica ao tópico pedido — zero questões genéricas que poderiam servir qualquer disciplina
@@ -1285,6 +1328,14 @@ Responde APENAS com este JSON:
           const rawBloom = q.bloomLevel as string | undefined
           const normalised = normalizeBloom(rawBloom)
           if (normalised) q.bloomLevel = normalised
+          // 3c. Corrector determinístico PT-BR → PT-PT (rede editorial; desligável via env).
+          // Modelos Tier 2 deslizam para PT-BR em texto longo; o prompt sozinho não chega.
+          if (PTPT_CORRECTOR_ON) {
+            if (typeof q.text === 'string') q.text = toPtPt(q.text)
+            if (typeof q.correctAnswer === 'string') q.correctAnswer = toPtPt(q.correctAnswer)
+            if (typeof q.markScheme === 'string') q.markScheme = toPtPt(q.markScheme)
+            if (Array.isArray(q.options)) q.options = q.options.map(o => typeof o === 'string' ? toPtPt(o) : o)
+          }
         }
       }
 
