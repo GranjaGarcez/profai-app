@@ -600,14 +600,14 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const tasks: Array<Promise<{ text: string; model: string } | null>> = []
 
     if (process.env.GROQ_API_KEY) {
-      tried.push('groq-qwen3')
+      tried.push('groq-gpt-oss-20b')
       tasks.push(
         callOpenAICompat(
           'https://api.groq.com/openai/v1/chat/completions',
-          process.env.GROQ_API_KEY, 'qwen/qwen3.8-27b',
-          prompt, 20_000, 'Groq:qwen3.8-27b',
+          process.env.GROQ_API_KEY, 'openai/gpt-oss-20b',
+          prompt, 20_000, 'Groq:gpt-oss-20b',
           {}, FALLBACK_SYSTEM_ENHANCED, 16_000
-        ).then(text => text ? { text, model: 'groq-qwen3.8-27b' } : null)
+        ).then(text => text ? { text, model: 'groq-gpt-oss-20b' } : null)
       )
     }
 
