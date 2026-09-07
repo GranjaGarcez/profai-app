@@ -600,14 +600,14 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
     const tasks: Array<Promise<{ text: string; model: string } | null>> = []
 
     if (process.env.GROQ_API_KEY) {
-      tried.push('groq-llama')
+      tried.push('groq-qwen3')
       tasks.push(
         callOpenAICompat(
           'https://api.groq.com/openai/v1/chat/completions',
-          process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-          prompt, 20_000, 'Groq:llama-3.3-70b',
+          process.env.GROQ_API_KEY, 'qwen/qwen3.8-27b',
+          prompt, 20_000, 'Groq:qwen3.8-27b',
           {}, FALLBACK_SYSTEM_ENHANCED, 16_000
-        ).then(text => text ? { text, model: 'groq-llama-3.3-70b' } : null)
+        ).then(text => text ? { text, model: 'groq-qwen3.8-27b' } : null)
       )
     }
 
@@ -643,57 +643,6 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
 
   // ── TIER 2: fallback com prompt reforçado (banner amber no UI) ───────────────
   console.warn('[PROFAI] Tier 1 indisponível — a usar Tier 2 com aviso ao utilizador')
-
-  if (process.env.OPENROUTER_API_KEY && ok()) {
-    tried.push('kimi-k2.6')
-    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
-    const r = await callOpenAICompat(
-      'https://openrouter.ai/api/v1/chat/completions',
-      process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2.6:free',
-      prompt, t(22_000), 'OR:kimi-k2.6:free', orH,
-      FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'kimi-k2.6-free' }
-  }
-
-  if (process.env.GITHUB_API_KEY && ok()) {
-    tried.push('github-gpt4o')
-    const r = await callOpenAICompat(
-      'https://models.inference.ai.azure.com/chat/completions',
-      process.env.GITHUB_API_KEY, 'gpt-4o',
-      prompt, t(22_000), 'GitHub:gpt-4o',
-      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'github-gpt-4o' }
-  }
-
-  // NIM (NVIDIA) — round-robin entre 2 chaves, 40 RPM cada, OpenAI-compatible
-  // Validado: mistral-small-4-119b (2.7s, PT-PT correcto, markScheme correcto)
-  if (ok()) {
-    const nimKeys = [process.env.NIM_API_KEY, process.env.NIM_API_KEY_2].filter((k): k is string => !!k)
-    if (nimKeys.length > 0) {
-      const nimKey = nimKeys[Math.floor(Date.now() / 1000) % nimKeys.length]
-      tried.push('nim-mistral-small-4')
-      const r = await callOpenAICompat(
-        'https://integrate.api.nvidia.com/v1/chat/completions',
-        nimKey, 'mistralai/mistral-small-4-119b-2603',
-        prompt, t(18_000), 'NIM:mistral-small-4-119b',
-        {}, FALLBACK_SYSTEM_ENHANCED, 12_000
-      )
-      if (r) return { text: r, isFallback: true, modelUsed: 'nim-mistral-small-4-119b' }
-    }
-  }
-
-  if (process.env.SAMBANOVA_API_KEY && ok()) {
-    tried.push('sambanova')
-    const r = await callOpenAICompat(
-      'https://api.sambanova.ai/v1/chat/completions',
-      process.env.SAMBANOVA_API_KEY, 'DeepSeek-V3.1',
-      prompt, t(15_000), 'SambaNova:DeepSeek-V3.1',
-      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'sambanova-deepseek-v3.1' }
-  }
 
   if (process.env.MISTRAL_API_KEY && ok()) {
     tried.push('mistral')
