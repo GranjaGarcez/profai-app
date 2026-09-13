@@ -71,10 +71,12 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
 
     const tsQuery = keywords || params.topic.replace(/[^\p{L}\p{N} ]/gu, '').split(' ')[0]
 
-    // Overfetch para shuffle depois
-    const fetchLimit = params.numWanted * 4
+    // Overfetch para shuffle depois. As já usadas são excluídas em JS: com centenas de
+    // UUIDs, o not.in.(…) no URL ultrapassava o limite do PostgREST → 400 "Bad Request"
+    // e o banco nunca respondia (um professor tinha 842 usadas).
+    const fetchLimit = Math.min(500, params.numWanted * 4 + usedIds.length)
 
-    let query = supabase
+    const query = supabase
       .from('question_bank')
       .select('*')
       .eq('subject', params.subject)
@@ -86,12 +88,6 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
       .order('quality_score', { ascending: false })
       .limit(fetchLimit)
 
-    if (usedIds.length > 0) {
-      // PostgREST in.() para uma coluna uuid não aceita valores entre aspas —
-      // aspas à mão aqui faziam o Postgres receber "'<uuid>'" literal e falhar.
-      query = query.not('id', 'in', `(${usedIds.join(',')})`)
-    }
-
     const { data, error } = await query
 
     if (error) {
@@ -100,8 +96,15 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
       return findQuestionsIlike(params, usedIds)
     }
 
+    const usedSet = new Set(usedIds)
+    const fresh = (data ?? []).filter(r => !usedSet.has(r.id as string))
+    if (fresh.length === 0 && (data ?? []).length > 0) {
+      console.log(`[BANK] ${(data ?? []).length} candidatas FTS, todas já usadas — a tentar ILIKE`)
+      return findQuestionsIlike(params, usedIds)
+    }
+
     // Shuffle e limita ao necessário (variedade entre gerações)
-    const shuffled = (data ?? []).sort(() => Math.random() - 0.5)
+    const shuffled = fresh.sort(() => Math.random() - 0.5)
     console.log(`[BANK] ${shuffled.length} candidatas → a usar ${Math.min(shuffled.length, params.numWanted)}`)
     return shuffled.slice(0, params.numWanted) as BankQuestion[]
 
@@ -123,7 +126,7 @@ async function findQuestionsIlike(
     .map(w => w.replace(/[^\p{L}\p{N}]/gu, ''))
     .sort((a, b) => b.length - a.length)[0] || params.topic
 
-  let query = supabase
+  const query = supabase
     .from('question_bank')
     .select('*')
     .eq('subject', params.subject)
@@ -133,14 +136,12 @@ async function findQuestionsIlike(
     .in('type', params.types)
     .ilike('topic', `%${keyword}%`)
     .order('quality_score', { ascending: false })
-    .limit(params.numWanted * 4)
+    .limit(Math.min(500, params.numWanted * 4 + usedIds.length))
 
-  if (usedIds.length > 0) {
-    query = query.not('id', 'in', `(${usedIds.join(',')})`)
-  }
-
-  const { data } = await query
-  const shuffled = (data ?? []).sort(() => Math.random() - 0.5)
+  const { data, error } = await query
+  if (error) console.warn('[BANK] Erro na pesquisa ILIKE:', error.message)
+  const usedSet = new Set(usedIds)
+  const shuffled = (data ?? []).filter(r => !usedSet.has(r.id as string)).sort(() => Math.random() - 0.5)
   return shuffled.slice(0, params.numWanted) as BankQuestion[]
 }
 

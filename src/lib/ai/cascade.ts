@@ -81,7 +81,8 @@ export async function callOpenAICompat(
   extraHeaders: Record<string, string> = {},
   systemPrompt: string | null = FALLBACK_SYSTEM_ENHANCED,
   maxTokens = 8192,
-  extraBody: Record<string, unknown> = {}
+  extraBody: Record<string, unknown> = {},
+  onHttpError?: (status: number) => void
 ): Promise<string | null> {
   try {
     const messages = systemPrompt
@@ -104,6 +105,7 @@ export async function callOpenAICompat(
       let body = ''
       try { body = (await res.text()).slice(0, 200) } catch { /* ignore */ }
       console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status} | ${body}`)
+      onHttpError?.(res.status)
       return null
     }
     const data = await res.json() as { choices: Array<{ message: { content: string } }> }
@@ -217,8 +219,21 @@ export function criticProvider(env: NodeJS.ProcessEnv = process.env): Provider |
   return all.find(p => p.id === 'groq-gpt-oss-120b') ?? all.find(p => p.id === 'cf-llama-3.3-70b') ?? all.find(p => p.tier === 1) ?? null
 }
 
+// Chave esgotada (429 de quota diária no Gemini) ou serviço em sobrecarga (503): não gastar
+// timeouts com ela durante uns minutos. Vive enquanto o processo viver.
+const cooldownUntil = new Map<string, number>()
+export const onCooldown = (p: Provider) => (cooldownUntil.get(p.id) ?? 0) > Date.now()
+export const markCooldown = (id: string, ms: number) => { cooldownUntil.set(id, Date.now() + ms) }
+export const family = (p: Provider) => p.id.split('-')[0]
+/** Chaves Gemini utilizáveis neste momento (partilha o cooldown com a geração de testes). */
+export const geminiProviders = (env: NodeJS.ProcessEnv = process.env) =>
+  buildProviders(env).filter(p => family(p) === 'gemini' && !onCooldown(p))
+
 async function callProvider(p: Provider, prompt: string, timeoutMs: number, suffix = '', maxTokens = p.maxTokens): Promise<string | null> {
-  return callOpenAICompat(p.url, p.key, p.model, prompt, timeoutMs, `${p.label}${suffix}`, p.headers ?? {}, p.system, maxTokens, p.extraBody)
+  return callOpenAICompat(p.url, p.key, p.model, prompt, timeoutMs, `${p.label}${suffix}`, p.headers ?? {}, p.system, maxTokens, p.extraBody, status => {
+    if (status === 429) cooldownUntil.set(p.id, Date.now() + (family(p) === 'gemini' ? 10 * 60_000 : 60_000))
+    else if (status === 503) cooldownUntil.set(p.id, Date.now() + 60_000)
+  })
 }
 
 // ── JSON ─────────────────────────────────────────────────────────────────────
@@ -249,7 +264,7 @@ export async function generateWithFallback(prompt: string, budgetMs = 58_000): P
   const tried = providers.map(p => p.id)
 
   // Tier 1 em duas vagas: primeiro os principais (Gemini), depois as reservas (Groq 20b, CF)
-  for (const wave of [tier1.filter(p => !p.reserve), tier1.filter(p => p.reserve)]) {
+  for (const wave of [tier1.filter(p => !p.reserve && !onCooldown(p)), tier1.filter(p => p.reserve && !onCooldown(p))]) {
     if (wave.length === 0 || !ok()) continue
     try {
       const winner = await Promise.any(wave.map(p =>
@@ -330,19 +345,22 @@ ${curriculum ? `APRENDIZAGENS ESSENCIAIS A RESPEITAR:\n${curriculum}\n` : ''}
 Lista ${total} sub-aspectos DISTINTOS e avaliáveis deste tema para alunos do ${meta[2]}.º ano, do mais elementar ao mais exigente, cada um com um contexto real do quotidiano português DIFERENTE de todos os outros (casa, escola, natureza, cozinha, desporto, laboratório, história, saúde, praia, campo…).
 PROIBIDO: conceitos de anos ou ciclos seguintes (no 2.º ciclo, por exemplo, nada de proteínas, ADN, ATP, antibióticos, organelos além de membrana/citoplasma/núcleo/vacúolo/cloroplasto/parede). Nunca repitas um conceito nem um contexto. Português de Portugal.
 Responde APENAS com JSON: {"itens":["sub-aspecto — contexto: ...", ...]}`
-  // Gemini primeiro (qualidade pedagógica); Groq só se o Gemini falhar
-  const cands = ['gemini-1', 'gemini-2', 'groq-gpt-oss-20b'].map(id => providers.find(p => p.id === id)).filter((p): p is Provider => !!p)
-  const t0 = Date.now()
-  for (const p of cands) {
-    const left = timeoutMs - (Date.now() - t0)
-    if (left < 1_500) break
-    const text = await callOpenAICompat(p.url, p.key, p.model, ask, left, `${p.label} [plano]`, p.headers ?? {}, null, 1_200, p.extraBody)
-    if (!text) continue
-    const obj = parseJsonObject(text) as { itens?: unknown } | null
-    const itens = Array.isArray(obj?.itens) ? obj.itens.map(String).map(s => s.trim()).filter(s => s.length > 8) : []
-    if (itens.length >= Math.min(3, total)) return itens.slice(0, total)
+  // Corrida Gemini/Groq: o plano é curto e ancorado ao currículo; em produção o Gemini
+  // chega a demorar >8 s e não vale a pena esperar por ele só para isto.
+  const cands = ['gemini-1', 'groq-gpt-oss-20b', 'gemini-2']
+    .map(id => providers.find(p => p.id === id)).filter((p): p is Provider => !!p && !onCooldown(p))
+  if (cands.length === 0) return []
+  try {
+    return await Promise.any(cands.map(async p => {
+      const text = await callProvider(p, ask, timeoutMs, ' [plano]', 1_200)
+      const obj = text ? parseJsonObject(text) as { itens?: unknown } | null : null
+      const itens = Array.isArray(obj?.itens) ? obj.itens.map(String).map(s => s.trim()).filter(s => s.length > 8) : []
+      if (itens.length < Math.min(3, total)) throw new Error('plano insuficiente')
+      return itens.slice(0, total)
+    }))
+  } catch {
+    return []
   }
-  return []
 }
 
 function romanValue(label: string): number {
@@ -430,7 +448,9 @@ export async function generateChunked(
   const budgetMs = opts.budgetMs ?? 58_000
   const deadline = Date.now() + budgetMs
   const remaining = () => deadline - Date.now()
-  const size = opts.chunkSize ?? 4
+  // Em produção cada questão rende ~700 tokens de JSON (markScheme, figura, opções):
+  // blocos de 3 (+1 de folga) ficam em ~12-18 s no Gemini; de 4-5 passavam dos 25 s.
+  const size = opts.chunkSize ?? 3
   const K = numQuestions <= size + 1 ? 1 : Math.ceil(numQuestions / size)
   const counts = Array.from({ length: K }, (_, i) => Math.floor(numQuestions / K) + (i < numQuestions % K ? 1 : 0) + (K > 1 ? 1 : 0))
 
@@ -441,7 +461,7 @@ export async function generateChunked(
 
   // Fila de arranque: intercala fornecedores por ronda de "slots" (cf, gemini-1, groq, gemini-2, …)
   const queue: Provider[] = []
-  const starters = tier1.filter(p => !p.reserve)
+  const starters = tier1.filter(p => !p.reserve && !onCooldown(p))
   const maxSlots = Math.max(...starters.map(p => p.slots), 0)
   for (let r = 0; r < maxSlots; r++) for (const p of starters) if (r < p.slots) queue.push(p)
 
@@ -488,7 +508,12 @@ export async function generateChunked(
     console.warn(`[PROFAI] Ronda ${round}: ${failed.length} bloco(s) por gerar (${Math.round(remaining() / 1000)}s restantes)`)
     const batch: Array<Promise<void>> = []
     for (const [j, i] of failed.entries()) {
-      const pool = [...tier1.filter(p => free(p) && !triedBy[i].has(p.id)), ...tier2.filter(p => free(p) && !triedBy[i].has(p.id))]
+      // Se o Gemini falhou/expirou neste bloco, outra chave Gemini tende a falhar também:
+      // preferir outra FAMÍLIA (Groq responde em 2-3 s) antes de repetir a mesma.
+      const triedFamilies = new Set([...triedBy[i]].map(id => id.split('-')[0]))
+      const usable = (p: Provider) => free(p) && !triedBy[i].has(p.id) && !onCooldown(p)
+      const rank = (p: Provider) => (triedFamilies.has(family(p)) ? 1 : 0) + (p.tier === 2 ? 2 : 0)
+      const pool = [...tier1, ...tier2].filter(usable).sort((a, b) => rank(a) - rank(b))
       const p = pool[j % Math.max(pool.length, 1)]
       if (p) batch.push(run(i, p))
     }

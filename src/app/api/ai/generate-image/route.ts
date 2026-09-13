@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { callOpenAICompat, geminiProviders, markCooldown, type Provider } from '@/lib/ai/cascade'
 
 export const maxDuration = 60
 
@@ -89,52 +90,53 @@ function parseCraftedImage(raw: string): CraftedImage {
 // Tenta Gemini primeiro; se falhar (503 sobrecarregado, 429 quota esgotada, timeout),
 // recorre ao Groq — mesmo princípio de resiliência usado no resto da app. Sem isto,
 // uma única falha temporária do Gemini derrubava esta funcionalidade por completo.
-async function craftPrompt(description: string, subject: string, yearLevel: number, geminiKey: string, correctAnswer?: string): Promise<CraftedImage> {
+async function craftPrompt(description: string, subject: string, yearLevel: number, geminis: Provider[], correctAnswer?: string): Promise<CraftedImage> {
   const promptText = buildImagePrompt(description, subject, yearLevel, correctAnswer)
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
-        signal: AbortSignal.timeout(15_000),
-      }
-    )
-    if (!res.ok) throw new Error(`Gemini craft falhou: HTTP ${res.status}`)
-    const data = await res.json()
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined
-    if (!text) throw new Error('Gemini craft sem texto')
-    return parseCraftedImage(text)
-  } catch (geminiErr) {
-    const groqKey = process.env.GROQ_API_KEY
-    if (!groqKey) throw geminiErr
-    console.warn('[IMAGE] Gemini craft falhou, a tentar Groq:', geminiErr instanceof Error ? geminiErr.message : geminiErr)
-    const Groq = (await import('groq-sdk')).default
-    const groq = new Groq({ apiKey: groqKey })
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: promptText }],
-      temperature: 0.6,
-      max_tokens: 250,
-    })
-    const text = completion.choices[0]?.message?.content
-    if (!text) throw new Error('Groq craft sem texto')
-    return parseCraftedImage(text)
+  // Roda pelas chaves Gemini ainda com quota; 429/503 põem a chave em cooldown
+  for (const g of geminis) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${g.key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
+          signal: AbortSignal.timeout(15_000),
+        }
+      )
+      if (res.status === 429 || res.status === 503) markCooldown(g.id, res.status === 429 ? 10 * 60_000 : 60_000)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined
+      if (!text) throw new Error('sem texto')
+      return parseCraftedImage(text)
+    } catch (err) {
+      console.warn(`[IMAGE] Gemini craft (${g.id}) falhou:`, err instanceof Error ? err.message : err)
+    }
   }
+
+  const groqKey = process.env.GROQ_API_KEY
+  if (!groqKey) throw new Error('Sem fornecedor disponível para o prompt da imagem')
+  console.warn('[IMAGE] A criar o prompt com Groq gpt-oss-20b')
+  const text = await callOpenAICompat(
+    'https://api.groq.com/openai/v1/chat/completions', groqKey, 'openai/gpt-oss-20b',
+    promptText, 15_000, 'IMAGE:craft:groq', {}, null, 700, { reasoning_effort: 'low' }
+  )
+  if (!text) throw new Error('Groq craft sem texto')
+  return parseCraftedImage(text)
 }
 
 // ── Passo 2a: Gemini "Nano Banana" (gemini-2.5-flash-image) — 500 pedidos/dia grátis ──
 // Tenta primeiro com o formato (aspectRatio) pedido; se a API rejeitar esse campo
 // (parâmetro não suportado nesta versão/conta), tenta de novo sem ele em vez de
 // desistir logo para o Pollinations — só um pedido extra, e só no caminho de erro.
-async function tryGeminiImage(imagePrompt: string, aspectRatio: string, geminiKey: string): Promise<string | null> {
-  const call = async (withAspectRatio: boolean) => {
+async function tryGeminiImage(imagePrompt: string, aspectRatio: string, geminis: Provider[]): Promise<string | null> {
+  const call = async (key: string, withAspectRatio: boolean) => {
     const generationConfig: Record<string, unknown> = { responseModalities: ['IMAGE'] }
     if (withAspectRatio) generationConfig.imageConfig = { aspectRatio }
     return fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,25 +146,29 @@ async function tryGeminiImage(imagePrompt: string, aspectRatio: string, geminiKe
     )
   }
 
-  try {
-    let res = await call(true)
-    if (!res.ok && aspectRatio !== '1:1') {
-      console.warn('[IMAGE] Gemini com aspectRatio falhou, a tentar sem formato:', res.status)
-      res = await call(false)
+  // Roda pelas chaves com quota: um 429 numa chave não deve derrubar a funcionalidade
+  for (const g of geminis) {
+    try {
+      let res = await call(g.key, true)
+      if (!res.ok && aspectRatio !== '1:1' && res.status !== 429) {
+        console.warn('[IMAGE] Gemini com aspectRatio falhou, a tentar sem formato:', res.status)
+        res = await call(g.key, false)
+      }
+      if (!res.ok) {
+        if (res.status === 429 || res.status === 503) markCooldown(g.id, res.status === 429 ? 10 * 60_000 : 60_000)
+        console.warn(`[IMAGE] Gemini Nano Banana (${g.id}) falhou:`, res.status, (await res.text().catch(() => '')).slice(0, 160))
+        continue
+      }
+      const data = await res.json()
+      const parts = data?.candidates?.[0]?.content?.parts as Array<{ inlineData?: { mimeType: string; data: string } }> | undefined
+      const inline = parts?.find(p => p.inlineData)?.inlineData
+      if (!inline) continue
+      return `data:${inline.mimeType};base64,${inline.data}`
+    } catch (err) {
+      console.warn(`[IMAGE] Gemini Nano Banana (${g.id}) erro:`, err instanceof Error ? err.message : err)
     }
-    if (!res.ok) {
-      console.warn('[IMAGE] Gemini Nano Banana falhou:', res.status, await res.text().catch(() => ''))
-      return null
-    }
-    const data = await res.json()
-    const parts = data?.candidates?.[0]?.content?.parts as Array<{ inlineData?: { mimeType: string; data: string } }> | undefined
-    const inline = parts?.find(p => p.inlineData)?.inlineData
-    if (!inline) return null
-    return `data:${inline.mimeType};base64,${inline.data}`
-  } catch (err) {
-    console.warn('[IMAGE] Gemini Nano Banana erro:', err instanceof Error ? err.message : err)
-    return null
   }
+  return null
 }
 
 // ── Passo 2b: Pollinations.ai (Flux) — gratuito, sem autenticação, fallback ──────
@@ -198,8 +204,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Parâmetros incompletos' }, { status: 400 })
   }
 
-  const geminiKey = process.env.GEMINI_API_KEY
-  if (!geminiKey) {
+  const geminis = geminiProviders()
+  if (geminis.length === 0 && !process.env.GROQ_API_KEY) {
     return NextResponse.json({ error: 'Serviço de imagem indisponível.' }, { status: 503 })
   }
 
@@ -214,11 +220,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const { prompt: imagePrompt, aspectRatio } = await craftPrompt(
-      String(description), String(subject), Number(yearLevel), geminiKey,
+      String(description), String(subject), Number(yearLevel), geminis,
       correctAnswer ? String(correctAnswer) : undefined
     )
 
-    const image = await tryGeminiImage(imagePrompt, aspectRatio, geminiKey) ?? await tryPollinations(imagePrompt, aspectRatio)
+    const image = await tryGeminiImage(imagePrompt, aspectRatio, geminis) ?? await tryPollinations(imagePrompt, aspectRatio)
     if (!image) {
       return NextResponse.json({ error: 'Não foi possível gerar a imagem. Tenta novamente.' }, { status: 503 })
     }
