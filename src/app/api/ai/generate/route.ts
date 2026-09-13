@@ -611,6 +611,18 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       )
     }
 
+    if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN) {
+      tried.push('cf-llama-3.3-70b')
+      tasks.push(
+        callOpenAICompat(
+          `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`,
+          process.env.CLOUDFLARE_API_TOKEN, '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+          prompt, 30_000, 'CF:llama-3.3-70b',
+          {}, FALLBACK_SYSTEM_ENHANCED, 16_000
+        ).then(text => text ? { text, model: 'cf-llama-3.3-70b' } : null)
+      )
+    }
+
     const geminiKeys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_2,
@@ -643,6 +655,18 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
 
   // ── TIER 2: fallback com prompt reforçado (banner amber no UI) ───────────────
   console.warn('[PROFAI] Tier 1 indisponível — a usar Tier 2 com aviso ao utilizador')
+
+  if (process.env.OPENROUTER_API_KEY && ok()) {
+    tried.push('gemma-4-31b')
+    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
+    const r = await callOpenAICompat(
+      'https://openrouter.ai/api/v1/chat/completions',
+      process.env.OPENROUTER_API_KEY, 'google/gemma-4-31b-it:free',
+      prompt, t(18_000), 'OR:gemma-4-31b:free', orH,
+      FALLBACK_SYSTEM_ENHANCED, 12_000
+    )
+    if (r) return { text: r, isFallback: true, modelUsed: 'gemma-4-31b-free' }
+  }
 
   if (process.env.MISTRAL_API_KEY && ok()) {
     tried.push('mistral')
