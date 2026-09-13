@@ -511,9 +511,7 @@ Antes de gerar o JSON, verifica mentalmente:
 
 // Tenta fechar um JSON truncado adicionando os caracteres em falta
 function repairTruncatedJson(raw: string): string {
-  // Remover vírgula final antes de fechar (trailing comma)
-  let s = raw.trimEnd().replace(/,\s*$/, '')
-  // Contar chavetas e colchetes por fechar
+  let s = raw.trimEnd()
   const stack: string[] = []
   let inString = false
   let escape = false
@@ -525,6 +523,10 @@ function repairTruncatedJson(raw: string): string {
     if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']')
     else if (ch === '}' || ch === ']') stack.pop()
   }
+  // Se o JSON foi cortado no meio de uma string (ex: markScheme truncado), fechar a string primeiro
+  if (inString) s += '"'
+  // Remover vírgula final antes de fechar (trailing comma)
+  s = s.replace(/,\s*$/, '')
   // Fechar o que ficou aberto (em ordem inversa)
   return s + stack.reverse().join('')
 }
@@ -617,7 +619,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
         callOpenAICompat(
           `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`,
           process.env.CLOUDFLARE_API_TOKEN, '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-          prompt, 30_000, 'CF:llama-3.3-70b',
+          prompt, 40_000, 'CF:llama-3.3-70b',
           {}, FALLBACK_SYSTEM_ENHANCED, 16_000
         ).then(text => text ? { text, model: 'cf-llama-3.3-70b' } : null)
       )
@@ -634,7 +636,7 @@ async function generateWithFallback(prompt: string): Promise<GenerationResult> {
       tasks.push(
         callOpenAICompat(
           'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-          key, 'gemini-2.5-flash', prompt, 25_000, `Gemini:2.5-flash-${i + 1}`,
+          key, 'gemini-2.5-flash', prompt, 40_000, `Gemini:2.5-flash-${i + 1}`,
           {}, null, 16_000
         ).then(text => text ? { text, model: 'gemini-2.5-flash' } : null)
       )
