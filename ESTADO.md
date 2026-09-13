@@ -243,3 +243,10 @@ NIM_API_KEY_2                       ✅ definida (nvapi-...) — segunda chave N
 - ✅ HTML em vez de JSON (`Unexpected token '<'`) — deadline global 22s em `generateWithFallback`
   - Causa: Gemini timeout 22s + Groq lento > 26s Netlify → HTML 524
   - Fix: `const deadline = Date.now() + 22_000`; cada modelo usa `min(max, restante)`
+
+## 2026-09-13 — Motor de IA por blocos (`src/lib/ai/cascade.ts`)
+- Geração de testes partida em blocos de ~4 questões, **em paralelo** (3 chaves Gemini × 2 slots = 24 questões), com plano prévio de sub-aspectos ancorado às AE e fusão com re-escala de cotação + aparo por semelhança. 12 questões em ~10-13 s (antes: 53 s e falha).
+- Limites medidos: Groq gpt-oss 8 000 TPM/modelo (pré-check conta o `max_tokens`) e precisa de `reasoning_effort: low`; Gemini 2.5-flash com thinking truncava o JSON (25 s → 7 s por bloco com `thinking_budget: 0`, afinável via `GEMINI_THINKING_BUDGET`); Cloudflare llama-70b ≈ 25 tok/s (reserva).
+- Roster: Tier 1 = Gemini 2.5 Flash (todos os blocos) → reservas Groq gpt-oss-20b, CF llama-3.3-70b; Tier 2 (banner amber) = Groq gpt-oss-120b, gemma-4-31b:free, mistral-small, nemotron. Crítico = Groq gpt-oss-120b. Juiz independente reprovou blocos gpt-oss para o 5.º ano (premissas falsas, inglês, nível secundário).
+- Corrigido: FTS do banco devolvia 400 com pontuação no tema (banco nunca era usado); crítico chamava modelo Groq removido (404).
+- Teste local sem login: `npx tsx scripts/test-cascade.ts [probe|full N]`. Juiz de qualidade: `polvo.py judge`.

@@ -59,14 +59,17 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
 
     const usedIds = (used ?? []).map(r => r.question_id as string)
 
-    // Palavras-chave do tópico (palavras com 4+ chars, mais distintivas)
+    // Palavras-chave do tópico (palavras com 4+ chars, mais distintivas).
+    // Só letras/dígitos: qualquer pontuação ("vida.") tornava o tsquery inválido
+    // e o PostgREST devolvia 400 — o banco nunca era consultado.
     const keywords = params.topic
       .split(/[\s,;]+/)
+      .map(w => w.replace(/[^\p{L}\p{N}]/gu, ''))
       .filter(w => w.length >= 4)
       .slice(0, 4)
       .join(' | ')   // OR em full-text search
 
-    const tsQuery = keywords || params.topic.split(' ')[0]
+    const tsQuery = keywords || params.topic.replace(/[^\p{L}\p{N} ]/gu, '').split(' ')[0]
 
     // Overfetch para shuffle depois
     const fetchLimit = params.numWanted * 4
@@ -92,12 +95,9 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
     const { data, error } = await query
 
     if (error) {
-      // Full-text sem resultados → tenta ILIKE simples como fallback
-      if (error.code === 'PGRST116' || error.message.includes('text')) {
-        return findQuestionsIlike(params, usedIds)
-      }
-      console.warn('[BANK] Erro na pesquisa FTS:', error.message)
-      return []
+      // Qualquer erro no full-text → ILIKE simples como fallback
+      console.warn('[BANK] Erro na pesquisa FTS, a usar ILIKE:', error.message)
+      return findQuestionsIlike(params, usedIds)
     }
 
     // Shuffle e limita ao necessário (variedade entre gerações)
@@ -117,7 +117,11 @@ async function findQuestionsIlike(
   usedIds: string[]
 ): Promise<BankQuestion[]> {
   const supabase = createAdminClient()
-  const keyword = params.topic.split(' ')[0]
+  // Palavra mais longa do tópico (sem pontuação) — a primeira era muitas vezes "A"/"O"
+  const keyword = params.topic
+    .split(/[\s,;]+/)
+    .map(w => w.replace(/[^\p{L}\p{N}]/gu, ''))
+    .sort((a, b) => b.length - a.length)[0] || params.topic
 
   let query = supabase
     .from('question_bank')

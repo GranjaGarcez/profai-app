@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
 import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores } from '@/lib/exam/questionBank'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
+import { callOpenAICompat, repairTruncatedJson, generateWithFallback, generateChunked, criticProvider } from '@/lib/ai/cascade'
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
@@ -463,239 +464,6 @@ function autoMarkScheme(type: string, pts: number, subject: string): string {
 
 // System prompt reforçado para modelos de fallback
 // Explícito sobre falhas comuns: PT-BR, JSON incompleto, markScheme vago, questões genéricas
-const FALLBACK_SYSTEM_ENHANCED = `És um professor especialista em avaliação em Portugal com 20 anos de experiência. A tua missão é gerar questões de avaliação de QUALIDADE EXCELENTE. Segue CADA regra sem excepção.
-
-═══ FORMATO DE SAÍDA ═══
-• Responde EXCLUSIVAMENTE com JSON válido — ZERO texto antes ou depois, ZERO blocos \`\`\`json, ZERO comentários
-• JSON deve ser completo e bem formado — nunca truncar no meio de uma chave ou valor
-
-═══ LÍNGUA — PORTUGUÊS DE PORTUGAL ESTRITO ═══
-Escreve SEMPRE a forma da esquerda, NUNCA a da direita (só pares que realmente diferem):
-actividade≠atividade · óptimo≠ótimo · facto≠fato · objecto≠objeto · directo≠directo · correcto≠correto · incorrecto≠incorreto · aspecto≠aspeto · rectângulo≠retângulo · fracção≠fração · acção≠ação · percentagem≠porcentagem · exacto≠exato · contacto≠contato · efectivo≠efetivo · selecção≠seleção
-NOTA: palavras como "equação", "solução", "análise", "síntese", "utilização", "período", "fórmula", "efeito" são IGUAIS em PT-PT e PT-BR — usa-as livremente, são correctas. Não as evites.
-
-═══ QUALIDADE PEDAGÓGICA OBRIGATÓRIA ═══
-• Cada questão DEVE ser específica ao tópico pedido — zero questões genéricas que poderiam servir qualquer disciplina
-• Contexto real e significativo: usa situações concretas, dados numéricos reais, exemplos do quotidiano português
-• Distratores (escolha múltipla): cada opção errada deve corresponder a um erro conceptual REAL e plausível — nunca opções obviamente absurdas
-• Questões de desenvolvimento: exigem resposta estruturada com argumentação, não apenas listagens
-• Bloom: distribui pelos níveis pedidos — questões de análise/avaliação têm peso maior
-
-═══ ESTRUTURA JSON OBRIGATÓRIA ═══
-• "points": número inteiro positivo; a soma de TODAS as questões = exactamente 100
-• "correctAnswer": obrigatório em TODAS as questões sem excepção
-  - multiple_choice: APENAS "A", "B", "C" ou "D" (só a letra, sem ponto, sem texto adicional)
-  - true_false: APENAS "Verdadeiro" ou "Falso"
-  - short_answer / long_answer: resposta modelo completa (mínimo 15 palavras)
-• "markScheme": obrigatório e ESPECÍFICO — nunca genérico como "resposta correcta"
-  - multiple_choice: "Resposta: [letra] ([X]pt). Opção [Y]: induz o erro de [...]. Opção [Z]: confunde [...]. Errada = 0pt."
-  - true_false: "[Verdadeiro/Falso] — [razão científica/histórica/factual concreta]. ([X]pt). Errada = 0pt."
-  - short_answer (Matemática/FQ): "Dados ([X]pt) + fórmula/método ([X]pt) + cálculo sem erro ([X]pt) + resposta com unidade ([X]pt)"
-  - short_answer (outras): "Identificação correcta ([X]pt) + justificação com evidência/raciocínio ([X]pt) + correcção linguística ([X]pt)"
-  - long_answer: critérios progressivos — conteúdo/argumentação + organização + vocabulário específico
-  - A SOMA dos pontos no markScheme deve ser IGUAL a "points" da questão
-• "options": array de 4 strings para multiple_choice (["A) ...", "B) ...", "C) ...", "D) ..."]), null para outros tipos
-• "text": texto em Português de Portugal SIMPLES — PROIBIDO qualquer notação LaTeX (\frac, \times, \cdot, \(, \), \[, \] e afins); usa sempre símbolos Unicode directamente: × ÷ ² ³ ⁴ √ π ≠ ≤ ≥ ∈; para fracções usa o campo "figure" com type "fraction_bar"
-• Não omitas NENHUM campo do schema pedido
-
-═══ VERIFICAÇÃO FINAL ANTES DE RESPONDER ═══
-Antes de gerar o JSON, verifica mentalmente:
-✓ O JSON está completo e bem formado?
-✓ Todos os "correctAnswer" estão preenchidos?
-✓ Todos os "markScheme" têm critérios específicos com pontos que somam "points"?
-✓ A soma de todos os "points" é exactamente 100?
-✓ Usei Português de Portugal em todo o texto?
-✓ Cada questão é específica ao tópico (não genérica)?
-✓ Em questões com números/cálculos: refiz o cálculo do zero e "correctAnswer" está aritmeticamente correcto?
-✓ Em questões de optimização/divisibilidade ("o máximo/mínimo possível"): o enunciado tem todas as restrições necessárias para uma resposta única, sem soluções triviais alternativas?`
-
-// Tenta fechar um JSON truncado adicionando os caracteres em falta
-function repairTruncatedJson(raw: string): string {
-  let s = raw.trimEnd()
-  const stack: string[] = []
-  let inString = false
-  let escape = false
-  for (const ch of s) {
-    if (escape) { escape = false; continue }
-    if (ch === '\\' && inString) { escape = true; continue }
-    if (ch === '"') { inString = !inString; continue }
-    if (inString) continue
-    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']')
-    else if (ch === '}' || ch === ']') stack.pop()
-  }
-  // Se o JSON foi cortado no meio de uma string (ex: markScheme truncado), fechar a string primeiro
-  if (inString) s += '"'
-  // Remover vírgula final antes de fechar (trailing comma)
-  s = s.replace(/,\s*$/, '')
-  // Fechar o que ficou aberto (em ordem inversa)
-  return s + stack.reverse().join('')
-}
-
-// Helper para chamar qualquer endpoint OpenAI-compatible via fetch
-// systemPrompt: null → só mensagem user (útil para Tier 1 cujo prompt já tem tudo)
-async function callOpenAICompat(
-  url: string,
-  apiKey: string,
-  model: string,
-  prompt: string,
-  timeoutMs = 25_000,
-  label = '',
-  extraHeaders: Record<string, string> = {},
-  systemPrompt: string | null = FALLBACK_SYSTEM_ENHANCED,
-  maxTokens = 8192
-): Promise<string | null> {
-  try {
-    const messages = systemPrompt
-      ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
-      : [{ role: 'user', content: prompt }]
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.5,
-        max_tokens: maxTokens,
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    if (!res.ok) {
-      // Ler corpo da resposta para diagnóstico (primeiros 200 chars)
-      let body = ''
-      try { body = (await res.text()).slice(0, 200) } catch { /* ignore */ }
-      console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status} | ${body}`)
-      return null
-    }
-    const data = await res.json() as { choices: Array<{ message: { content: string } }> }
-    const text = data.choices[0]?.message?.content ?? ''
-    if (text.length > 50) {
-      console.log(`[PROFAI] ${label} OK (${text.length} chars)`)
-      return text
-    }
-    console.warn(`[PROFAI] ${label} resposta curta: "${text.slice(0, 100)}"`)
-    return null
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.warn(`[PROFAI] ${label} erro: ${msg.slice(0, 120)}`)
-    return null
-  }
-}
-
-interface GenerationResult { text: string; isFallback: boolean; modelUsed: string }
-
-// Cascade com dois níveis de qualidade:
-// TIER 1 (ouro): Groq + Gemini em PARALELO — primeiro a responder ganha
-//   Groq: ~300ms, Gemini: 10-25s mas qualidade superior — Promise.any() evita espera sequencial
-// TIER 2 (fallback com aviso amber): kimi, GitHub gpt-4o, NIM, SambaNova, Mistral, nemotron
-// DEADLINE GLOBAL: 58s (Render suporta 60s, 2s de margem)
-async function generateWithFallback(prompt: string): Promise<GenerationResult> {
-  const BUDGET = 58_000
-  const deadline = Date.now() + BUDGET
-  const tried: string[] = []
-
-  // Helper: tempo restante, mínimo 3s, máximo maxMs
-  const t = (maxMs: number) => Math.max(3_000, Math.min(maxMs, deadline - Date.now()))
-  const ok = (minMs = 3_000) => Date.now() < deadline - minMs
-
-  // ── TIER 1: Groq + Gemini em PARALELO — Promise.any() → primeiro sucesso vence ─
-  {
-    const tasks: Array<Promise<{ text: string; model: string } | null>> = []
-
-    if (process.env.GROQ_API_KEY) {
-      tried.push('groq-gpt-oss-20b')
-      tasks.push(
-        callOpenAICompat(
-          'https://api.groq.com/openai/v1/chat/completions',
-          process.env.GROQ_API_KEY, 'openai/gpt-oss-20b',
-          prompt, 20_000, 'Groq:gpt-oss-20b',
-          {}, FALLBACK_SYSTEM_ENHANCED, 16_000
-        ).then(text => text ? { text, model: 'groq-gpt-oss-20b' } : null)
-      )
-    }
-
-    if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN) {
-      tried.push('cf-llama-3.3-70b')
-      tasks.push(
-        callOpenAICompat(
-          `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`,
-          process.env.CLOUDFLARE_API_TOKEN, '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-          prompt, 40_000, 'CF:llama-3.3-70b',
-          {}, FALLBACK_SYSTEM_ENHANCED, 16_000
-        ).then(text => text ? { text, model: 'cf-llama-3.3-70b' } : null)
-      )
-    }
-
-    const geminiKeys = [
-      process.env.GEMINI_API_KEY,
-      process.env.GEMINI_API_KEY_2,
-      process.env.GEMINI_API_KEY_3,
-    ].filter((k): k is string => !!k)
-
-    for (const [i, key] of geminiKeys.entries()) {
-      tried.push(`gemini-${i + 1}`)
-      tasks.push(
-        callOpenAICompat(
-          'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-          key, 'gemini-2.5-flash', prompt, 40_000, `Gemini:2.5-flash-${i + 1}`,
-          {}, null, 16_000
-        ).then(text => text ? { text, model: 'gemini-2.5-flash' } : null)
-      )
-    }
-
-    if (tasks.length > 0) {
-      try {
-        const winner = await Promise.any(
-          tasks.map(p => p.then(r => r ?? Promise.reject(new Error('sem resultado'))))
-        )
-        console.log(`[PROFAI] ✓ Tier 1 vencedor: ${winner.model}`)
-        return { text: winner.text, isFallback: false, modelUsed: winner.model }
-      } catch {
-        console.warn('[PROFAI] Tier 1 sem sucesso — a usar Tier 2')
-      }
-    }
-  }
-
-  // ── TIER 2: fallback com prompt reforçado (banner amber no UI) ───────────────
-  console.warn('[PROFAI] Tier 1 indisponível — a usar Tier 2 com aviso ao utilizador')
-
-  if (process.env.OPENROUTER_API_KEY && ok()) {
-    tried.push('gemma-4-31b')
-    const orH = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
-    const r = await callOpenAICompat(
-      'https://openrouter.ai/api/v1/chat/completions',
-      process.env.OPENROUTER_API_KEY, 'google/gemma-4-31b-it:free',
-      prompt, t(18_000), 'OR:gemma-4-31b:free', orH,
-      FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'gemma-4-31b-free' }
-  }
-
-  if (process.env.MISTRAL_API_KEY && ok()) {
-    tried.push('mistral')
-    const r = await callOpenAICompat(
-      'https://api.mistral.ai/v1/chat/completions',
-      process.env.MISTRAL_API_KEY, 'mistral-small-latest',
-      prompt, t(12_000), 'Mistral:mistral-small',
-      {}, FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'mistral-small' }
-  }
-
-  if (process.env.OPENROUTER_API_KEY && ok()) {
-    tried.push('nemotron')
-    const orH2 = { 'HTTP-Referer': 'https://profai-app.onrender.com', 'X-Title': 'PROF.IA' }
-    const r = await callOpenAICompat(
-      'https://openrouter.ai/api/v1/chat/completions',
-      process.env.OPENROUTER_API_KEY, 'nvidia/nemotron-3-super-120b-a12b:free',
-      prompt, t(12_000), 'OR:nemotron-3-super:free', orH2,
-      FALLBACK_SYSTEM_ENHANCED, 12_000
-    )
-    if (r) return { text: r, isFallback: true, modelUsed: 'nemotron-3-super-free' }
-  }
-
-  const elapsed = Math.round((Date.now() - (deadline - BUDGET)) / 1000)
-  throw new Error(`Todos os modelos falharam (${elapsed}s). Tentados: ${tried.join(', ') || 'nenhum'}. Tenta novamente.`)
-}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -1208,7 +976,10 @@ Responde APENAS com este JSON:
       }
     }
 
-    const genResult = await generateWithFallback(prompt)
+    // Testes: geração por blocos paralelos (cabe nos limites/min dos fornecedores grátis)
+    const genResult = isTestLike
+      ? await generateChunked(prompt, numFromAI)
+      : await generateWithFallback(prompt)
     const { text, isFallback, modelUsed } = genResult
 
     // Em modo fallback: usar o máximo possível do banco para cobrir as questões
@@ -1454,13 +1225,14 @@ Responde APENAS com este JSON:
             String(subject ?? ''), Number(yearLevel ?? 0),
             String(topic ?? ''), allQsForCritic as Array<Record<string, unknown>>
           )
-          // Usa llama-3.3-70b como crítico — modelo DIFERENTE de Gemini (adversarial)
-          const rawCritic = await callOpenAICompat(
-            'https://api.groq.com/openai/v1/chat/completions',
-            process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile',
-            criticPrompt, Math.min(5_000, remainingForCritic - 1_000),
-            'Crítico:Groq:llama', {}, null
-          )
+          // Crítico adversarial: Cloudflare llama-3.3-70b (sem limite/min; o Groq
+          // llama-3.3-70b-versatile foi removido do catálogo → 404)
+          const critic = criticProvider()
+          const rawCritic = critic ? await callOpenAICompat(
+            critic.url, critic.key, critic.model,
+            criticPrompt, Math.min(8_000, remainingForCritic - 1_000),
+            `Crítico:${critic.label}`, critic.headers ?? {}, null, 1_500
+          ) : null
           if (rawCritic) {
             try {
               const jsonMatch = rawCritic.match(/\{[\s\S]*\}/)
