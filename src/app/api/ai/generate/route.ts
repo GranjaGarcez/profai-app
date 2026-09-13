@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
-import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores } from '@/lib/exam/questionBank'
+import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores, updateMarkSchemes } from '@/lib/exam/questionBank'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
+import { enrichMarkSchemes, needsRubric, type RubricInput } from '@/lib/exam/rubric'
+import { resolvePersonalProvider } from '@/lib/ai/personal'
 import { callOpenAICompat, repairTruncatedJson, generateWithFallback, generateChunked, criticProvider } from '@/lib/ai/cascade'
 
 // Netlify/Vercel: duração máxima da função (segundos)
@@ -976,11 +978,14 @@ Responde APENAS com este JSON:
       }
     }
 
+    // Chave pessoal do professor (Tier 0), se activa — usada primeiro, sem aviso amber
+    const personal = await resolvePersonalProvider(user.id)
+
     // Testes: geração por blocos paralelos (cabe nos limites/min dos fornecedores grátis)
     const genResult = isTestLike
-      ? await generateChunked(prompt, numFromAI)
-      : await generateWithFallback(prompt)
-    const { text, isFallback, modelUsed } = genResult
+      ? await generateChunked(prompt, numFromAI, { personal: personal ?? undefined })
+      : await generateWithFallback(prompt, 58_000, personal ?? undefined)
+    const { text, isFallback, modelUsed, personalModel, personalFellBack } = genResult
 
     // Em modo fallback: usar o máximo possível do banco para cobrir as questões
     // Isso reduz a quantidade de questões geradas pelo modelo inferior
@@ -1162,10 +1167,11 @@ Responde APENAS com este JSON:
           const saveable = allQsFinal.filter(
             q => q.text && String(q.text ?? '').trim().length > 10
           )
+          // Só gerações de confiança alta (Tier 1, completas) entram activas no banco
           const savedIds = await saveQuestions(saveable as Array<Record<string, unknown>>, {
             subject: String(subject), yearLevel: Number(yearLevel),
             topic: String(topic), difficulty: String(difficulty ?? 'medium'),
-          }, user.id)
+          }, user.id, { active: !isFallback })
           saveable.forEach((q, i) => { if (savedIds[i]) q._bankId = savedIds[i] })
           markUsed([...savedIds, ...bankIds], user.id).catch(
             err => console.warn('[BANK] markUsed falhou:', err)
@@ -1212,6 +1218,22 @@ Responde APENAS com este JSON:
         content._bloomWarning = msg
       }
       console.log(`[PROFAI] Bloom: ${JSON.stringify(bloomCounts)} | ${higherPct}% ordem superior`)
+
+      // ── Rubricas analíticas (em paralelo com o crítico) ─────────────────────
+      // Critérios de correcção de qualidade excepcional para TODAS as questões IA
+      // (também as do banco sem rubrica), gerados por um bom modelo. Se não couber
+      // no orçamento, termina em segundo plano e actualiza só o banco.
+      const rubricMeta = { subject: String(subject ?? ''), yearLevel: Number(yearLevel ?? 0), topic: String(topic ?? '') }
+      const rubricTargets = (content.groups as typeof groups).flatMap(g => g.questions)
+        .filter(q => q.text && q.type !== 'text' && needsRubric(q.markScheme))
+      const rubricInputs: RubricInput[] = rubricTargets.map(q => ({
+        index: Number(q.index), type: String(q.type ?? 'short_answer'), text: String(q.text ?? ''),
+        options: q.options, correctAnswer: q.correctAnswer, points: Number(q.points) || 0, markScheme: q.markScheme,
+      }))
+      const rubricBudget = genStartMs ? Math.min(14_000, 50_000 - (Date.now() - genStartMs)) : 0
+      const rubricPromise = rubricInputs.length > 0 && rubricBudget > 5_000
+        ? enrichMarkSchemes(rubricInputs, rubricMeta, rubricBudget)
+        : Promise.resolve(new Map<number, string>())
 
       // ── Crítico adversarial leve (inspirado em prompts.py::prompt_critico) ─
       // Corre apenas em Tier 1 (Gemini/Groq como gerador), com modelo DIFERENTE
@@ -1261,8 +1283,12 @@ Responde APENAS com este JSON:
                     const probs = (critica.problemas ?? []).filter(p => p.questao === q.index)
                     const penalty = probs.reduce((s, p) =>
                       s + (p.gravidade === 'alta' ? 0.15 : p.gravidade === 'media' ? 0.05 : 0), 0)
-                    return { id: q._bankId!, qualityScore: Math.max(0.2, Math.min(0.95, baseline - penalty)) }
+                    // Problema grave nesta questão, ou ficha globalmente fraca → quarentena
+                    const grave = probs.some(p => p.gravidade === 'alta') || critica.score < 6
+                    return { id: q._bankId!, qualityScore: Math.max(0.2, Math.min(0.95, baseline - penalty)), active: grave ? false : undefined }
                   })
+                const quarantined = scoreUpdates.filter(u => u.active === false).length
+                if (quarantined > 0) console.warn(`[BANK] ${quarantined} questão(ões) em quarentena pelo crítico`)
                 updateQualityScores(scoreUpdates).catch(
                   err => console.warn('[BANK] updateQualityScores falhou:', err)
                 )
@@ -1272,11 +1298,41 @@ Responde APENAS com este JSON:
         }
       }
 
+      // ── Aplicar rubricas: à ficha (se chegaram a tempo) e ao banco ──────────
+      {
+        const applyRubrics = (map: Map<number, string>, toTest: boolean) => {
+          const bankUpdates: Array<{ id: string; markScheme: string }> = []
+          for (const q of rubricTargets) {
+            const ms = map.get(Number(q.index))
+            if (!ms) continue
+            const fixed = fixMarkSchemeSum(PTPT_CORRECTOR_ON ? toPtPt(ms) : ms, Number(q.points) || 0) ?? ms
+            if (toTest) q.markScheme = fixed
+            if (q._bankId) bankUpdates.push({ id: q._bankId, markScheme: fixed })
+          }
+          if (bankUpdates.length > 0) updateMarkSchemes(bankUpdates).catch(err => console.warn('[BANK] updateMarkSchemes falhou:', err))
+          return bankUpdates.length
+        }
+        const rubrics = await rubricPromise
+        if (rubrics.size > 0) {
+          console.log(`[PROFAI] ✓ Rubricas: ${rubrics.size}/${rubricTargets.length} questões`)
+          applyRubrics(rubrics, true)
+        } else if (rubricInputs.length > 0) {
+          // Sem tempo/quota agora: gera em segundo plano só para o banco (o professor
+          // recebe a ficha já; o banco fica com critérios excelentes para o futuro)
+          console.warn(`[PROFAI] Rubricas adiadas para segundo plano (${rubricInputs.length} questões)`)
+          void enrichMarkSchemes(rubricInputs, rubricMeta, 45_000).then(map => applyRubrics(map, false))
+        }
+      }
+
       // Aviso de qualidade: activo quando foi usado modelo de fallback E há questões IA
       if (isFallback && groups.flatMap(g => g.questions).length > 0) {
         content._qualityWarning = true
         content._modelUsed = modelUsed
       }
+
+      // Chave pessoal: informa a UI de que modelo pessoal gerou, ou que se atingiu o limite
+      if (personalModel) content._personalModel = personalModel
+      if (personalFellBack) content._personalFallback = true
 
       // ── Diferenciação A/B/C/MU/MS: força o título IDÊNTICO ao teste original ──
       // Diferenciação invisível — o aluno nunca pode distinguir as versões pelo

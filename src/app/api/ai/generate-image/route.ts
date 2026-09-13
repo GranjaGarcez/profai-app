@@ -185,7 +185,7 @@ async function tryCloudflareFlux(imagePrompt: string): Promise<string | null> {
     const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acc}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: imagePrompt, steps: 6 }),
+      body: JSON.stringify({ prompt: imagePrompt, steps: 8 }),
       signal: AbortSignal.timeout(30_000),
     })
     if (!res.ok) {

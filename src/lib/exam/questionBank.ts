@@ -47,6 +47,16 @@ export interface BankSearchParams {
 
 // ── Pesquisa ──────────────────────────────────────────────────────────────────
 
+// O banco é um recurso de poupança (0 chamadas IA) — só compensa se não baixar a
+// qualidade: score mínimo 0.6 e critérios de correcção com corpo (rubrica com
+// pelo menos duas parcelas "(Npt)"), para a correcção automática ser fiável.
+const MIN_QUALITY = 0.6
+function servable(r: Record<string, unknown>): boolean {
+  const ms = typeof r.mark_scheme === 'string' ? r.mark_scheme : ''
+  const parcels = (ms.match(/\(\s*\d+(?:[.,]\d+)?\s*(?:pts?|pontos?)\s*\)/gi) ?? []).length
+  return Number(r.quality_score) >= MIN_QUALITY && ms.length >= 60 && parcels >= 1
+}
+
 export async function findQuestions(params: BankSearchParams): Promise<BankQuestion[]> {
   const supabase = createAdminClient()
 
@@ -97,7 +107,7 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
     }
 
     const usedSet = new Set(usedIds)
-    const fresh = (data ?? []).filter(r => !usedSet.has(r.id as string))
+    const fresh = (data ?? []).filter(r => !usedSet.has(r.id as string) && servable(r))
     if (fresh.length === 0 && (data ?? []).length > 0) {
       console.log(`[BANK] ${(data ?? []).length} candidatas FTS, todas já usadas — a tentar ILIKE`)
       return findQuestionsIlike(params, usedIds)
@@ -141,18 +151,23 @@ async function findQuestionsIlike(
   const { data, error } = await query
   if (error) console.warn('[BANK] Erro na pesquisa ILIKE:', error.message)
   const usedSet = new Set(usedIds)
-  const shuffled = (data ?? []).filter(r => !usedSet.has(r.id as string)).sort(() => Math.random() - 0.5)
+  const shuffled = (data ?? []).filter(r => !usedSet.has(r.id as string) && servable(r)).sort(() => Math.random() - 0.5)
   return shuffled.slice(0, params.numWanted) as BankQuestion[]
 }
 
 // ── Guardar questões novas ────────────────────────────────────────────────────
 
+// Admissão: só gerações de confiança alta (Tier 1, não parciais) entram ACTIVAS —
+// visíveis a outros professores. As restantes ficam em quarentena (is_active=false):
+// têm id para o autor votar 👍/👎, e um 👍 readmite-as (ver apply_question_vote).
 export async function saveQuestions(
   questions: Array<Record<string, unknown>>,
   meta: { subject: string; yearLevel: number; topic: string; difficulty: string },
-  userId: string
+  userId: string,
+  opts: { active?: boolean } = {}
 ): Promise<string[]> {
   const supabase = createAdminClient()
+  const active = opts.active ?? true
 
   const rows = questions
     .filter(q => q.text && String(q.text).trim().length > 10)
@@ -170,7 +185,8 @@ export async function saveQuestions(
       figure:           q.figure ?? null,
       points:           Number(q.points) || 5,
       allow_calculator: Boolean(q.allowCalculator),
-      quality_score:    0.75,
+      quality_score:    active ? 0.75 : 0.55,
+      is_active:        active,
       citation:         q.citation ? String(q.citation) : null,
       source_url:       q.sourceUrl ? String(q.sourceUrl) : null,
       created_by:       userId,
@@ -189,22 +205,35 @@ export async function saveQuestions(
   }
 
   const ids = (data ?? []).map(r => r.id as string)
-  console.log(`[BANK] ✓ ${ids.length} questões guardadas no banco`)
+  console.log(`[BANK] ✓ ${ids.length} questões guardadas no banco${active ? '' : ' (quarentena)'}`)
   return ids
 }
 
-// ── Actualizar quality_score após o crítico adversarial ────────────────────────
-// saveQuestions() grava com um valor por defeito (0.75) porque corre antes do
-// crítico estar disponível; isto substitui esse valor pela avaliação real,
-// por questão, quando o crítico conseguiu avaliar a ficha.
-export async function updateQualityScores(updates: Array<{ id: string; qualityScore: number }>): Promise<void> {
+// ── Actualizar quality_score / estado após o crítico adversarial ────────────────
+// saveQuestions() grava com um valor por defeito porque corre antes do crítico;
+// isto substitui esse valor pela avaliação real, por questão, e põe em quarentena
+// (active=false) as questões com problema grave identificado pelo crítico.
+export async function updateQualityScores(updates: Array<{ id: string; qualityScore: number; active?: boolean }>): Promise<void> {
   if (updates.length === 0) return
   const supabase = createAdminClient()
   const results = await Promise.allSettled(
-    updates.map(u => supabase.from('question_bank').update({ quality_score: u.qualityScore }).eq('id', u.id))
+    updates.map(u => supabase.from('question_bank')
+      .update(u.active === undefined ? { quality_score: u.qualityScore } : { quality_score: u.qualityScore, is_active: u.active })
+      .eq('id', u.id))
   )
   const failed = results.filter(r => r.status === 'rejected').length
   if (failed > 0) console.warn(`[BANK] ${failed} actualização(ões) de quality_score falharam`)
+}
+
+// ── Substituir critérios de correcção por rubricas analíticas ───────────────────
+export async function updateMarkSchemes(updates: Array<{ id: string; markScheme: string }>): Promise<void> {
+  if (updates.length === 0) return
+  const supabase = createAdminClient()
+  const results = await Promise.allSettled(
+    updates.map(u => supabase.from('question_bank').update({ mark_scheme: u.markScheme }).eq('id', u.id))
+  )
+  const ok = results.filter(r => r.status === 'fulfilled').length
+  console.log(`[BANK] ✓ ${ok}/${updates.length} rubricas guardadas`)
 }
 
 // ── Marcar como usadas ────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import SchoolProfileModal from '@/components/school/SchoolProfileModal'
 import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
+import AiKeysSection from '@/components/settings/AiKeysSection'
 
 export default function SettingsPage() {
   const { profile, saveProfile, hasProfile } = useSchoolProfile()
@@ -75,6 +76,9 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* A minha IA (chave de API pessoal) */}
+      <AiKeysSection />
 
       {/* Conta */}
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: '#0D1B2A10' }}>

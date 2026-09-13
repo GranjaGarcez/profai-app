@@ -1,12 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import Groq from 'groq-sdk'
 import type { Question, GradingDetail, RubricCriterion, TestSnapshot } from './types'
 import { getAllQuestions } from './types'
 import { fixMarkSchemeSum } from './markScheme'
+import { buildProviders, geminiProviders, callOpenAICompat, parseJsonObject, onCooldown, type Provider } from '@/lib/ai/cascade'
 
-// Inicialização lazy — evita falha de build quando as env vars não estão disponíveis em build time
-function getGenAI() { return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) }
-function getGroq()  { return new Groq({ apiKey: process.env.GROQ_API_KEY! }) }
+// Correcção: chaves Gemini com quota (rotação + cooldown partilhado com a geração),
+// depois Groq gpt-oss-20b (o llama-3.3-70b-versatile foi removido do Groq → 404).
+function gradingProviders(): Provider[] {
+  const groq = buildProviders().find(p => p.id === 'groq-gpt-oss-20b')
+  return [...geminiProviders(), ...(groq && !onCooldown(groq) ? [groq] : [])]
+}
 
 // ── Correcção automática MCQ / V-F ────────────────────────────────────────────
 function gradeObjective(q: Question, rawAnswer: string): GradingDetail {
@@ -146,13 +148,13 @@ ${rubricInstruction}
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
 ${responseFormat}`
 
-  try {
-    const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('no json')
-    const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
+  for (const p of gradingProviders()) {
+    const text = await callOpenAICompat(
+      p.url, p.key, p.model, prompt, 20_000, `Correcção:${p.label}`, p.headers ?? {},
+      'Responde APENAS com JSON válido. Nunca adiciones texto extra.', 900, p.extraBody
+    )
+    const parsed = text ? parseJsonObject(text) as { score?: number; feedback?: string; confidence?: number; rubric?: RubricCriterion[] } | null : null
+    if (!parsed) continue
     const rubric = clampRubric(parsed.rubric)
     const score  = rubric ? Math.min(rubric.reduce((s, r) => s + r.score, 0), q.points) : Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
     return {
@@ -161,38 +163,16 @@ ${responseFormat}`
       feedback: parsed.feedback ?? '',
       rubric,
       auto: true,
-      ai_confidence: parsed.confidence ?? 0.8,
+      ai_confidence: p.id.startsWith('gemini') ? (parsed.confidence ?? 0.8) : Math.min(parsed.confidence ?? 0.7, 0.7),
     }
-  } catch (geminiErr) {
-    console.warn('Gemini grading falhou, a usar Groq:', geminiErr instanceof Error ? geminiErr.message : geminiErr)
-    // Fallback Groq
-    try {
-      const completion = await getGroq().chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: 'Responde APENAS com JSON válido. Nunca adiciones texto extra.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 512,
-      })
-      const text = completion.choices[0]?.message?.content ?? ''
-      const match = text.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('no json')
-      const parsed = JSON.parse(match[0]) as { score: number; feedback: string; confidence: number; rubric?: RubricCriterion[] }
-      const rubric = clampRubric(parsed.rubric)
-      const score  = rubric ? Math.min(rubric.reduce((s, r) => s + r.score, 0), q.points) : Math.min(Math.max(0, Number(parsed.score) || 0), q.points)
-      return { score, max: q.points, feedback: parsed.feedback ?? '', rubric, auto: true, ai_confidence: 0.7 }
-    } catch {
-      // Falha total — marcar para revisão manual
-      return {
-        score: 0,
-        max: q.points,
-        feedback: '⚠️ Não foi possível avaliar automaticamente. Revê manualmente.',
-        auto: false,
-        ai_confidence: 0,
-      }
-    }
+  }
+  // Falha total — marcar para revisão manual
+  return {
+    score: 0,
+    max: q.points,
+    feedback: '⚠️ Não foi possível avaliar automaticamente. Revê manualmente.',
+    auto: false,
+    ai_confidence: 0,
   }
 }
 

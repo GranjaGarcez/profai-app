@@ -48,6 +48,8 @@ interface TestContent {
   _qualityWarning?: boolean
   _qualityWarningContext?: 'medida_suporte' | 'diferenciacao'
   _modelUsed?: string
+  _personalModel?: string      // modelo pessoal do professor que gerou o teste
+  _personalFallback?: boolean  // a chave pessoal atingiu o limite/falhou → usou-se a cascade gratuita
   _differentiationLevel?: 'A' | 'B' | 'C'
   _differentiationGroupId?: string
   _measureType?: 'MU' | 'MS'   // DL 54/2018 — Medida Universal / Medida Selectiva (impresso, discreto)
@@ -854,6 +856,33 @@ export default function TestPreview({
           </div>
         </div>
       ) : null}
+
+      {/* ── Chave pessoal: limite atingido → mudou para a cascade gratuita ─── */}
+      {editableTest._personalFallback && (
+        <div className="no-print mb-4 flex items-start gap-3 rounded-xl border px-4 py-3"
+          style={{ background: '#fffbeb', borderColor: '#f59e0b50' }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>🔑</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
+              A tua chave de IA pessoal atingiu o limite (ou falhou) — mudei para os modelos gratuitos
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+              Este teste foi gerado, no todo ou em parte, pela cascade gratuita. Verifica o crédito/limites da tua chave nas Definições e revê as questões antes de usar.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Chave pessoal usada com sucesso (confirmação discreta) ─────────── */}
+      {editableTest._personalModel && !editableTest._personalFallback && (
+        <div className="no-print mb-4 flex items-center gap-2 rounded-xl border px-4 py-2"
+          style={{ background: '#eff6ff', borderColor: '#3b82f640' }}>
+          <span style={{ fontSize: 16 }}>🔑</span>
+          <p className="text-xs" style={{ color: '#1e40af' }}>
+            Gerado com o teu modelo pessoal (<strong>{editableTest._personalModel}</strong>), à tua conta de API.
+          </p>
+        </div>
+      )}
 
       {/* ── Barra de acções ────────────────────────────────────────────────── */}
       <div className="no-print mb-5 space-y-3">

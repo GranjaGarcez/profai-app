@@ -123,7 +123,15 @@ export async function callOpenAICompat(
   }
 }
 
-export interface GenerationResult { text: string; isFallback: boolean; modelUsed: string }
+export interface GenerationResult {
+  text: string
+  isFallback: boolean
+  modelUsed: string
+  /** Modelo pessoal do professor usado (rótulo), se a chave pessoal gerou conteúdo. */
+  personalModel?: string
+  /** true quando a chave pessoal foi tentada mas o sistema teve de recorrer à cascade gratuita. */
+  personalFellBack?: boolean
+}
 
 // ── Fornecedores ─────────────────────────────────────────────────────────────
 // Limites medidos (2026-09-13):
@@ -138,7 +146,10 @@ export interface Provider {
   url: string
   key: string
   model: string
-  tier: 1 | 2
+  /** 0 = chave pessoal do professor (topo, sem aviso); 1 = gratuito principal; 2 = fallback amber. */
+  tier: 0 | 1 | 2
+  /** 'anthropic' usa a Messages API nativa; ausente/'openai' usa o endpoint compatível-OpenAI. */
+  dialect?: 'openai' | 'anthropic'
   timeoutMs: number
   /** max_tokens por bloco (Groq: conta para o TPM de 8 000 → tem de ficar abaixo). */
   maxTokens: number
@@ -230,10 +241,49 @@ export const geminiProviders = (env: NodeJS.ProcessEnv = process.env) =>
   buildProviders(env).filter(p => family(p) === 'gemini' && !onCooldown(p))
 
 async function callProvider(p: Provider, prompt: string, timeoutMs: number, suffix = '', maxTokens = p.maxTokens): Promise<string | null> {
-  return callOpenAICompat(p.url, p.key, p.model, prompt, timeoutMs, `${p.label}${suffix}`, p.headers ?? {}, p.system, maxTokens, p.extraBody, status => {
+  const onErr = (status: number) => {
     if (status === 429) cooldownUntil.set(p.id, Date.now() + (family(p) === 'gemini' ? 10 * 60_000 : 60_000))
     else if (status === 503) cooldownUntil.set(p.id, Date.now() + 60_000)
-  })
+  }
+  if (p.dialect === 'anthropic') {
+    return callAnthropicMessages(p.key, p.model, prompt, timeoutMs, `${p.label}${suffix}`, p.system, maxTokens, onErr)
+  }
+  return callOpenAICompat(p.url, p.key, p.model, prompt, timeoutMs, `${p.label}${suffix}`, p.headers ?? {}, p.system, maxTokens, p.extraBody, onErr)
+}
+
+// Chamada nativa à Messages API da Anthropic (não é compatível-OpenAI: endpoint,
+// cabeçalhos e forma do corpo são próprios). Devolve texto ou null, como callOpenAICompat.
+export async function callAnthropicMessages(
+  apiKey: string, model: string, prompt: string, timeoutMs = 30_000, label = '',
+  systemPrompt: string | null = null, maxTokens = 4_000, onHttpError?: (status: number) => void
+): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model, max_tokens: maxTokens,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    if (!res.ok) {
+      let body = ''
+      try { body = (await res.text()).slice(0, 200) } catch { /* ignore */ }
+      console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status} | ${body}`)
+      onHttpError?.(res.status)
+      return null
+    }
+    const data = await res.json() as { content?: Array<{ type: string; text?: string }> }
+    const text = (data.content ?? []).filter(b => b.type === 'text').map(b => b.text ?? '').join('').trim()
+    if (text.length > 50) { console.log(`[PROFAI] ${label} OK (${text.length} chars)`); return text }
+    console.warn(`[PROFAI] ${label} resposta curta`)
+    return null
+  } catch (e) {
+    console.warn(`[PROFAI] ${label} erro: ${(e instanceof Error ? e.message : String(e)).slice(0, 120)}`)
+    return null
+  }
 }
 
 // ── JSON ─────────────────────────────────────────────────────────────────────
@@ -254,7 +304,7 @@ function countQuestions(t: RawTest): number {
 
 // ── Geração única (ferramentas que não são testes) ───────────────────────────
 // Tier 1 em paralelo (primeiro sucesso vence); Tier 2 sequencial com aviso amber.
-export async function generateWithFallback(prompt: string, budgetMs = 58_000): Promise<GenerationResult> {
+export async function generateWithFallback(prompt: string, budgetMs = 58_000, personal?: Provider): Promise<GenerationResult> {
   const deadline = Date.now() + budgetMs
   const t = (maxMs: number) => Math.max(3_000, Math.min(maxMs, deadline - Date.now()))
   const ok = (minMs = 3_000) => Date.now() < deadline - minMs
@@ -262,6 +312,15 @@ export async function generateWithFallback(prompt: string, budgetMs = 58_000): P
   const tier1 = providers.filter(p => p.tier === 1)
   const tier2 = providers.filter(p => p.tier === 2)
   const tried = providers.map(p => p.id)
+
+  // Tier 0: chave pessoal do professor — tentada primeiro, sem aviso
+  if (personal && !onCooldown(personal)) {
+    tried.unshift(personal.id)
+    const text = await callProvider(personal, prompt, t(45_000), '', personal.maxTokensSingle ?? personal.maxTokens)
+    if (text) return { text, isFallback: false, modelUsed: personal.id, personalModel: personal.label }
+    console.warn(`[PROFAI] Chave pessoal (${personal.label}) falhou — a recorrer à cascade gratuita`)
+  }
+  const personalFellBack = !!personal
 
   // Tier 1 em duas vagas: primeiro os principais (Gemini), depois as reservas (Groq 20b, CF)
   for (const wave of [tier1.filter(p => !p.reserve && !onCooldown(p)), tier1.filter(p => p.reserve && !onCooldown(p))]) {
@@ -272,7 +331,7 @@ export async function generateWithFallback(prompt: string, budgetMs = 58_000): P
           .then(text => text ? { text, model: p.id } : Promise.reject(new Error('sem resultado')))
       ))
       console.log(`[PROFAI] ✓ Tier 1 vencedor: ${winner.model}`)
-      return { text: winner.text, isFallback: false, modelUsed: winner.model }
+      return { text: winner.text, isFallback: false, modelUsed: winner.model, personalFellBack }
     } catch {
       console.warn('[PROFAI] Tier 1 sem sucesso nesta vaga')
     }
@@ -281,7 +340,7 @@ export async function generateWithFallback(prompt: string, budgetMs = 58_000): P
   for (const p of tier2) {
     if (!ok()) break
     const text = await callProvider(p, prompt, t(p.timeoutMs), '', p.maxTokensSingle ?? p.maxTokens)
-    if (text) return { text, isFallback: true, modelUsed: p.id }
+    if (text) return { text, isFallback: true, modelUsed: p.id, personalFellBack }
   }
   const elapsed = Math.round((Date.now() - (deadline - budgetMs)) / 1000)
   throw new Error(`Todos os modelos falharam (${elapsed}s). Tentados: ${tried.join(', ') || 'nenhum'}. Tenta novamente.`)
@@ -443,7 +502,7 @@ export interface ChunkedResult extends GenerationResult { parts: number; partsOk
 export async function generateChunked(
   prompt: string,
   numQuestions: number,
-  opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv } = {}
+  opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv; personal?: Provider } = {}
 ): Promise<ChunkedResult> {
   const budgetMs = opts.budgetMs ?? 58_000
   const deadline = Date.now() + budgetMs
@@ -465,9 +524,12 @@ export async function generateChunked(
   const maxSlots = Math.max(...starters.map(p => p.slots), 0)
   for (let r = 0; r < maxSlots; r++) for (const p of starters) if (r < p.slots) queue.push(p)
 
+  // Tier 0: chave pessoal do professor — gera TODOS os blocos primeiro, sem aviso
+  const personal = opts.personal && !onCooldown(opts.personal) ? opts.personal : undefined
+
   const usage = new Map<string, number>()
   const triedBy: Set<string>[] = counts.map(() => new Set())
-  const results: Array<{ content: RawTest; model: string; tier: 1 | 2 } | null> = counts.map(() => null)
+  const results: Array<{ content: RawTest; model: string; tier: 0 | 1 | 2 } | null> = counts.map(() => null)
   const tried = new Set<string>()
 
   const take = (p: Provider) => { usage.set(p.id, (usage.get(p.id) ?? 0) + 1); tried.add(p.id) }
@@ -492,13 +554,22 @@ export async function generateChunked(
     results[i] = { content: parsed, model: p.id, tier: p.tier }
   }
 
-  // Ronda 1: todos os blocos em paralelo, fornecedores rotativos
-  const first = counts.map((_, i) => queue.length ? queue[i % queue.length] : tier2[i % tier2.length])
-  if (K === 1 && queue.length > 1) {
-    // Teste pequeno: corrida entre dois fornecedores — o primeiro com JSON válido vence
+  // Ronda 0: se há chave pessoal, gera todos os blocos com ela (em paralelo)
+  if (personal) {
+    console.log(`[PROFAI] Chave pessoal: ${personal.label} a gerar ${K} bloco(s)`)
+    await Promise.all(counts.map((_, i) => run(i, personal)))
+    const okCount = results.filter(Boolean).length
+    if (okCount < K) console.warn(`[PROFAI] Chave pessoal cobriu ${okCount}/${K} — resto pela cascade gratuita`)
+  }
+
+  // Ronda 1: blocos ainda por gerar → fornecedores gratuitos rotativos
+  const pending1 = counts.map((_, i) => i).filter(i => !results[i])
+  const first = pending1.map(i => queue.length ? queue[i % queue.length] : tier2[i % tier2.length])
+  if (!personal && K === 1 && queue.length > 1) {
+    // Teste pequeno sem chave pessoal: corrida entre dois fornecedores — o primeiro JSON válido vence
     await Promise.any([queue[0], queue[1]].map(p => run(0, p).then(() => { if (!results[0]) throw new Error('sem resultado') }))).catch(() => {})
-  } else {
-    await Promise.all(first.map((p, i) => run(i, p)))
+  } else if (pending1.length > 0) {
+    await Promise.all(pending1.map((i, k) => run(i, first[k])))
   }
 
   // Rondas seguintes: blocos falhados → fornecedor ainda não tentado (Tier 1 primeiro)
@@ -528,14 +599,21 @@ export async function generateChunked(
   }
   const partial = done.length < K
   const usedTier2 = done.some(r => r.tier === 2)
+  const usedPersonal = done.some(r => r.tier === 0)
+  const usedFree = done.some(r => r.tier !== 0)
+  // A chave pessoal foi tentada mas não cobriu tudo — o professor deve ser avisado
+  const personalFellBack = !!personal && usedFree
   const models = [...new Set(done.map(r => r.model))].join('+')
   console.log(`[PROFAI] ✓ ${done.length}/${K} bloco(s) em ${elapsed}s — ${models}${partial ? ' (PARCIAL)' : ''}`)
 
   const merged = mergeChunks(done.map(r => r.content), numQuestions)
   return {
     text: JSON.stringify(merged),
+    // Só é "fallback" (banner amber) se entrou Tier 2 ou ficou parcial; blocos pessoais + Tier 1 não são amber
     isFallback: usedTier2 || partial,
     modelUsed: partial ? `${models} (parcial ${done.length}/${K})` : models,
+    personalModel: usedPersonal ? personal!.label : undefined,
+    personalFellBack,
     parts: K,
     partsOk: done.length,
   }
