@@ -30,8 +30,10 @@ const STYLE_GUIDE = `Escolhe UM destes estilos visuais — o que melhor servir e
 
 - REALISTA → comece o prompt com "Photorealistic photograph," — iluminação natural ou de estúdio bem descrita, profundidade de campo, textura e materiais autênticos, composição editorial/documental. Usa para temas contemporâneos, desportivos, geográficos, ou fenómenos científicos concretos com registo fotográfico real. NÃO uses para épocas sem fotografia (seria anacrónico) — prefere PICTÓRICO nesses casos.
 - PICTÓRICO → comece o prompt com "Painterly illustration," — pincelada visível, paleta cuidadosamente escolhida, atmosfera evocativa, qualidade de ilustração de livro premiado. Usa para temas literários, históricos anteriores à fotografia, ou conceitos com carga emocional/narrativa.
-- VECTOR PLANO → comece o prompt com "Flat vector illustration," — formas geométricas limpas, paleta harmoniosa e limitada, clareza absoluta, sem textura ruidosa. Usa para conceitos simples, públicos mais jovens, ou quando a clareza deve dominar sobre o detalhe.
+- VECTOR PLANO → comece o prompt com "Flat vector illustration," — formas geométricas limpas, paleta harmoniosa e limitada, clareza absoluta, sem textura ruidosa. Usa para conceitos abstractos simples (regras, sequências, símbolos). PROIBIDO para seres vivos, células, anatomia, rochas, minerais, ecossistemas ou qualquer conteúdo de Ciências Naturais/Biologia/Geologia — fica pobre e falso.
 - RENDER 3D → comece o prompt com "Clean 3D render," — iluminação de estúdio suave e direccional, enquadramento tipo still-life ou isométrico, sombras suaves. Usa para um objecto ou conceito isolado, sem necessidade de cena ou narrativa.
+- CIENTÍFICO NATURALISTA → comece o prompt com "Detailed scientific illustration in the style of a natural history plate," — aguarela e tinta-da-china, traço fino e rigoroso, fundo creme ou branco, luz difusa uniforme, cores naturais fiéis, sensação de prancha de enciclopédia ilustrada ou caderno de naturalista. É o estilo POR DEFEITO para Ciências Naturais e Biologia: células, tecidos, plantas, animais, órgãos, rochas, fósseis, ecossistemas.
+- FOTOMICROGRAFIA → comece o prompt com "Photomicrograph through an optical microscope," — campo circular escuro nas margens, iluminação transmitida, ligeira profundidade de campo, tons translúcidos (verdes de clorofila, rosas/violetas de coloração), textura orgânica real. Usa para o mundo microscópico visto ao microscópio: células da epiderme da cebola, água de um charco, protozoários, células animais coradas, tecidos.
 
 Em qualquer estilo escolhido, EXIGÊNCIA PLÁSTICA elevada sempre: composição deliberada (não centrada por defeito — considera a regra dos terços, espaço negativo), iluminação explicitamente descrita em inglês, paleta de cores intencional e coerente, sensação de obra profissional. Nunca um resultado genérico, plano ou "clip-art" — a precisão e relevância pedagógica importam tanto como a qualidade plástica.`
 
@@ -171,7 +173,37 @@ async function tryGeminiImage(imagePrompt: string, aspectRatio: string, geminis:
   return null
 }
 
-// ── Passo 2b: Pollinations.ai (Flux) — gratuito, sem autenticação, fallback ──────
+// ── Passo 2b: Cloudflare Workers AI — FLUX.1 [schnell] (10k neurónios/dia grátis) ──
+// O free tier do Nano Banana esgota-se em poucas imagens; o Flux na Cloudflare responde
+// em ~2 s com qualidade bem acima do Pollinations. Só formato quadrado (o modelo não
+// aceita width/height no plano grátis).
+async function tryCloudflareFlux(imagePrompt: string): Promise<string | null> {
+  const acc = process.env.CLOUDFLARE_ACCOUNT_ID
+  const tok = process.env.CLOUDFLARE_API_TOKEN
+  if (!acc || !tok) return null
+  try {
+    const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acc}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: imagePrompt, steps: 6 }),
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (!res.ok) {
+      console.warn('[IMAGE] Cloudflare Flux falhou:', res.status, (await res.text().catch(() => '')).slice(0, 160))
+      return null
+    }
+    const data = await res.json() as { success?: boolean; result?: { image?: string } }
+    const b64 = data.result?.image
+    if (!data.success || !b64 || b64.length < 1_000) return null
+    console.log(`[IMAGE] Cloudflare Flux OK (${Math.round(b64.length / 1024)} KB)`)
+    return `data:image/jpeg;base64,${b64}`
+  } catch (err) {
+    console.warn('[IMAGE] Cloudflare Flux erro:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+// ── Passo 2c: Pollinations.ai (Flux) — gratuito, sem autenticação, último recurso ──
 const ASPECT_DIMENSIONS: Record<string, [number, number]> = {
   '1:1': [768, 768],
   '16:9': [1024, 576],
@@ -224,7 +256,9 @@ export async function POST(request: NextRequest) {
       correctAnswer ? String(correctAnswer) : undefined
     )
 
-    const image = await tryGeminiImage(imagePrompt, aspectRatio, geminis) ?? await tryPollinations(imagePrompt, aspectRatio)
+    const image = await tryGeminiImage(imagePrompt, aspectRatio, geminis)
+      ?? await tryCloudflareFlux(imagePrompt)
+      ?? await tryPollinations(imagePrompt, aspectRatio)
     if (!image) {
       return NextResponse.json({ error: 'Não foi possível gerar a imagem. Tenta novamente.' }, { status: 503 })
     }
