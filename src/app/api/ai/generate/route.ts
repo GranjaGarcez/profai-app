@@ -479,12 +479,16 @@ export async function POST(request: NextRequest) {
   const isTestLike = tool === 'test' || tool === 'differentiate'
 
   let prompt = ''
+  // Diferenciação a partir de um teste existente: adapta as questões da fonte
+  // mantendo a estrutura (grupos, número, ordem, tipo, cotação), em vez de gerar de novo.
+  let adaptFromSource = false
 
   if (isTestLike) {
-    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle } =
+    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle, sourceTest } =
       inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
         questionTypes: string[]; numQuestions: number; duration?: number; country: string
-        avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string }
+        avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string
+        sourceTest?: { title?: string; instructions?: string; groups?: Array<{ label?: string; description?: string; questions?: Array<Record<string, unknown>> }> } }
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
     // Disciplinas cuja estrutura pede explicitamente gráficos no campo "figure"
@@ -815,6 +819,38 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
     }
   ]
 }`
+
+    // ── Diferenciação a partir do teste existente: adaptar preservando a estrutura ──
+    const srcGroups = sourceTest?.groups ?? []
+    adaptFromSource = tool === 'differentiate'
+      && srcGroups.some(g => (g.questions?.length ?? 0) > 0)
+    if (adaptFromSource) {
+      const srcForModel = srcGroups.map(g => ({
+        label: g.label, description: g.description,
+        questions: (g.questions ?? []).map(q => ({
+          type: q.type, bloomLevel: q.bloomLevel, points: q.points,
+          text: q.text, options: q.options ?? null,
+          correctAnswer: q.correctAnswer, markScheme: q.markScheme,
+        })),
+      }))
+      prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação. Conheces em profundidade as Aprendizagens Essenciais da DGE.
+
+TAREFA: ADAPTA o teste ORIGINAL abaixo, produzindo uma versão que MANTÉM a base estrutural do original e conforma cada questão à adaptação pedida.
+
+REGRAS DE PRESERVAÇÃO DA ESTRUTURA (invioláveis):
+• Mantém EXACTAMENTE o mesmo número de questões, os mesmos grupos e rótulos, a mesma ordem e o mesmo "type" de cada questão.
+• Mantém a cotação ("points") de cada questão IGUAL à do original — a soma continua exactamente 100. (Excepção MS: podes repartir a cotação de UMA questão em sub-passos, mantendo o total dessa questão.)
+• Cada questão adaptada avalia o MESMO conceito/descritor curricular da questão original — muda a forma e a exigência conforme o nível, NUNCA o conteúdo avaliado nem o tema.
+• NÃO acrescentes, removas nem reordenes questões. Mantém o título IDÊNTICO ao original.
+${differentiationNote}
+${curriculumConstraint}CRITÉRIOS DE CORRECÇÃO: reescreve o markScheme de cada questão adaptada, específico e com pontos parciais cuja soma = "points" da questão. Português de Portugal estrito (correcto, actividade, óptimo — nunca formas brasileiras). Dirige-te ao aluno por "tu". PROIBIDO qualquer notação LaTeX (usa Unicode: × ÷ ² ³ √ π ≠ ≤ ≥). "figure": null salvo se essencial.
+
+TESTE ORIGINAL (JSON):
+${JSON.stringify({ title: forcedTitle ?? '', groups: srcForModel })}
+
+Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`), com a MESMA estrutura do original:
+{"title":"${forcedTitle ?? ''}","subject":"${subject}","yearLevel":${yearLevel},"topic":"${topic}","difficulty":"${difficulty}","totalPoints":100,"duration":${testDuration},"instructions":"<instruções adaptadas ao nível>","groups":[{"label":"...","description":"...","totalPoints":0,"questions":[{"index":1,"type":"...","bloomLevel":"...","text":"...","figure":null,"options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":"...","points":0,"allowCalculator":false,"markScheme":"..."}]}]}`
+    }
   } else if (tool === 'lesson_plan') {
     const { subject, yearLevel, topic, duration, country, methodologies, preferences } = inputs as {
       subject: string; yearLevel: number; topic: string; duration: number; country: string
@@ -922,7 +958,7 @@ Responde APENAS com este JSON:
     let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
     let numFromAI = isTestLike ? (inputs as Record<string, unknown>).numQuestions as number : 0
 
-    if (isTestLike) {
+    if (isTestLike && !adaptFromSource) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
@@ -981,15 +1017,16 @@ Responde APENAS com este JSON:
     // Chave pessoal do professor (Tier 0), se activa — usada primeiro, sem aviso amber
     const personal = await resolvePersonalProvider(user.id)
 
-    // Testes: geração por blocos paralelos (cabe nos limites/min dos fornecedores grátis)
-    const genResult = isTestLike
+    // Adaptação a partir da fonte → passagem única (preserva a estrutura do original).
+    // Testes normais → geração por blocos paralelos. Outras ferramentas → passagem única.
+    const genResult = (isTestLike && !adaptFromSource)
       ? await generateChunked(prompt, numFromAI, { personal: personal ?? undefined })
       : await generateWithFallback(prompt, 58_000, personal ?? undefined)
     const { text, isFallback, modelUsed, personalModel, personalFellBack } = genResult
 
     // Em modo fallback: usar o máximo possível do banco para cobrir as questões
     // Isso reduz a quantidade de questões geradas pelo modelo inferior
-    if (isFallback && isTestLike) {
+    if (isFallback && isTestLike && !adaptFromSource) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
@@ -1162,7 +1199,8 @@ Responde APENAS com este JSON:
       // Guardar questões novas no banco (await para injectar _bankId na resposta)
       const { subject, yearLevel, topic, difficulty } = (inputs ?? {}) as Record<string, unknown>
       const bankIds = bankHits.map(bq => bq.id)
-      if (subject && topic) {
+      // Adaptações (A/C/MU/MS) são variantes de questões existentes — não poluir o banco
+      if (subject && topic && !adaptFromSource) {
         try {
           const saveable = allQsFinal.filter(
             q => q.text && String(q.text ?? '').trim().length > 10

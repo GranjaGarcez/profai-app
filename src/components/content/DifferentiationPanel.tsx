@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import BrewingLoader from '@/components/shared/BrewingLoader'
 
+interface SourceQuestion { type: string; text: string }
+interface SourceGroup { label?: string; description?: string; questions: SourceQuestion[] }
 interface SourceTest {
   title: string
   subject: string
@@ -10,8 +12,9 @@ interface SourceTest {
   topic: string
   difficulty: string
   duration?: number
-  groups?: Array<{ questions: Array<{ type: string; text: string }> }>
-  questions?: Array<{ type: string; text: string }>
+  instructions?: string
+  groups?: SourceGroup[]
+  questions?: SourceQuestion[]
 }
 
 interface DifferentiationPanelProps {
@@ -50,6 +53,10 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
   async function generateLevel(level: Level): Promise<unknown> {
     const allQs = getAllQuestions(test)
     const questionTypes = [...new Set(allQs.map(q => q.type))]
+    // Estrutura-fonte: adapta o teste existente mantendo grupos/ordem/tipo/cotação.
+    const sourceGroups = test.groups?.length
+      ? test.groups
+      : [{ label: 'Grupo I', description: '', questions: test.questions ?? [] }]
     const res = await fetch('/api/ai/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,6 +73,8 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
           country: 'PT',
           level,
           title: test.title, // título forçado a ser idêntico — diferenciação invisível
+          // Teste-fonte completo → o servidor adapta preservando a base estrutural
+          sourceTest: { title: test.title, instructions: test.instructions, groups: sourceGroups },
         },
       }),
     })
