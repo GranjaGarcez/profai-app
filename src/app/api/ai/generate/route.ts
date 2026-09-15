@@ -709,10 +709,40 @@ MEDIDA SELECTIVA (MS) — DL 54/2018, Adaptação Curricular Não Significativa 
 • markScheme com cotação mais granular: mais oportunidades de cotação parcial em cada passo intermédio, em vez de "tudo ou nada" na resposta final.
 • PROIBIDO ABSOLUTO: descer abaixo do nível de Bloom mínimo da AE, eliminar o descritor central, ou qualquer menção a "medida", "MS", "adaptado", "selectiva" no título, enunciado, instruções ou rodapé.` : ''
 
-    prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e os perfis dos alunos do ${yearLevel}.º ano.
+    // Directrizes CONCRETAS de dificuldade — sem isto, "Fácil"/"Difícil" era só uma etiqueta
+    // e o teste saía igual. Calibra Bloom, complexidade dos dados, scaffolding e distratores.
+    const difficultyNote = difficulty === 'easy' ? `
+CALIBRAÇÃO DE DIFICULDADE — FÁCIL (consolidação do essencial):
+• Bloom predominante: Lembrar, Compreender e Aplicar directo. No máximo 1 questão de análise simples; nada de Avaliar/Criar.
+• Dados simples e explícitos; contextos directos do quotidiano; UM só passo de raciocínio por questão.
+• Enunciados curtos e claros; quando útil, scaffolding leve (indica o que fazer primeiro ou dá parte dos dados organizados).
+• Escolha múltipla: distratores plausíveis mas claramente distinguíveis — sem "pegadinhas" nem duplos negativos.
+• Meta: um aluno médio que estudou o essencial deve conseguir ter bom resultado.` : difficulty === 'hard' ? `
+CALIBRAÇÃO DE DIFICULDADE — DIFÍCIL (desafio e distinção), SEM sair das AE do ${yearLevel}.º ano:
+• Bloom predominante: Analisar, Avaliar e Criar — pelo menos METADE das questões de ordem superior.
+• Dados que exigem interpretação/selecção antes de aplicar; questões multi-passo; pelo menos UMA situação-problema que confronte uma concepção errada comum do tema.
+• Sem scaffolding — o aluno decide a estratégia. Distratores subtis (erros conceptuais finos, não absurdos).
+• Meta: discriminar os melhores desempenhos, mantendo tudo dentro do currículo do ano.` : `
+CALIBRAÇÃO DE DIFICULDADE — MÉDIA (sumativa típica do ano):
+• Distribuição equilibrada de Bloom, com ~30–40% de ordem superior (Analisar/Avaliar/Criar).
+• Mistura de aplicação directa e de situações com algum raciocínio (um a dois passos).
+• Scaffolding mínimo; distratores plausíveis. Meta: avaliação sumativa representativa.`
+
+    // Perfil dos Alunos à Saída da Escolaridade Obrigatória (PASEO) — as AE operacionalizam
+    // estas competências; a avaliação deve mobilizá-las, não só memória de conteúdos.
+    const paseoNote = `
+PERFIL DO ALUNO (PASEO) — as questões devem mobilizar COMPETÊNCIAS, não apenas memória:
+• Raciocínio e resolução de problemas: parte das questões exige interpretar dados, relacionar e decidir — não só recordar.
+• Pensamento crítico e criativo: inclui pelo menos uma questão que peça justificar, avaliar uma afirmação, ou propor algo fundamentado.
+• Saber científico/técnico e linguagens: exige terminologia correcta da disciplina e comunicação clara na resposta esperada.
+• Adequação ao ${yearLevel}.º ano: competências e vocabulário próprios da idade — nem infantilizado, nem de anos seguintes.`
+
+    prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e o Perfil dos Alunos à Saída da Escolaridade Obrigatória.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
 Duração: ${testDuration} minutos | Dificuldade: ${diffLabel} | Total: ${numQuestions} questões | 100 pontos
+${difficultyNote}
+${paseoNote}
 
 ${structureNote}
 ${figureNote}
@@ -744,7 +774,7 @@ ${scoringRule}
 DISCIPLINA ESPECÍFICA: ${subjectNote}
 
 VARIEDADE E RIQUEZA — REGRAS ABSOLUTAS:
-• Cobre pelo menos ${Math.min(numQuestions, Math.ceil(numQuestions * 0.6))} sub-aspectos DISTINTOS de "${topic}" — nunca repitas o mesmo conceito, procedimento ou contexto em questões diferentes.
+• COBERTURA (prioridade máxima): identifica todos os sub-aspectos/descritores essenciais de "${topic}" para este ano e procura cobri-los TODOS — uma questão por sub-aspecto distinto. Se as questões forem MAIS do que os sub-aspectos essenciais, usa as sobrantes para aprofundar os mais centrais (Bloom superior), nunca para repetir. Só se as questões forem MENOS do que os sub-aspectos essenciais é que escolhes os mais importantes (cobertura parcial). Nunca repitas o mesmo conceito/procedimento/contexto enquanto houver sub-aspecto essencial por cobrir.
 • Cada questão avalia algo diferente: um conceito, uma aplicação, um erro conceptual frequente, uma conexão com outro tópico, uma situação do mundo real distinta.
 • Proibido: duas questões com o mesmo tipo de cálculo/raciocínio aplicado a números diferentes (isso não é avaliação — é repetição).
 • A variedade de contextos (situações do mundo real) é tão importante quanto a variedade de conceitos.
@@ -958,7 +988,10 @@ Responde APENAS com este JSON:
     let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
     let numFromAI = isTestLike ? (inputs as Record<string, unknown>).numQuestions as number : 0
 
-    if (isTestLike && !adaptFromSource) {
+    // Interruptor de dev: PROFAI_BANK_OFF=1 desliga o banco-first (para testar a geração
+    // pura sem o banco a curto-circuitar). Nunca definido em produção.
+    const bankOff = process.env.PROFAI_BANK_OFF === '1'
+    if (isTestLike && !adaptFromSource && !bankOff) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
@@ -1018,15 +1051,24 @@ Responde APENAS com este JSON:
     const personal = await resolvePersonalProvider(user.id)
 
     // Adaptação a partir da fonte → passagem única (preserva a estrutura do original).
-    // Testes normais → geração por blocos paralelos. Outras ferramentas → passagem única.
+    // Testes normais → matriz de especificação + geração colada às células.
+    // Outras ferramentas → passagem única.
+    const ti = inputs as Record<string, unknown>
     const genResult = (isTestLike && !adaptFromSource)
-      ? await generateChunked(prompt, numFromAI, { personal: personal ?? undefined })
+      ? await generateChunked(prompt, numFromAI, {
+          personal: personal ?? undefined,
+          // Matriz só na geração de teste normal; a diferenciação usa a sua passagem única.
+          meta: tool === 'test' ? { subject: String(ti.subject ?? ''), yearLevel: Number(ti.yearLevel ?? 0), topic: String(ti.topic ?? '') } : undefined,
+          types: Array.isArray(ti.questionTypes) ? ti.questionTypes as string[] : [],
+          difficulty: String(ti.difficulty ?? 'medium'),
+          avoid: bankHits.map(b => String((b as { text?: unknown }).text ?? '')).filter(Boolean).slice(0, 20),
+        })
       : await generateWithFallback(prompt, 58_000, personal ?? undefined)
     const { text, isFallback, modelUsed, personalModel, personalFellBack } = genResult
 
     // Em modo fallback: usar o máximo possível do banco para cobrir as questões
     // Isso reduz a quantidade de questões geradas pelo modelo inferior
-    if (isFallback && isTestLike && !adaptFromSource) {
+    if (isFallback && isTestLike && !adaptFromSource && !bankOff) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number

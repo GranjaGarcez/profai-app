@@ -499,33 +499,143 @@ export function mergeChunks(parts: RawTest[], target?: number): RawTest {
 
 export interface ChunkedResult extends GenerationResult { parts: number; partsOk: number }
 
+// ── Matriz de especificação ───────────────────────────────────────────────────
+// Blueprint curricular do teste (grupos × Bloom × tipo × pontos × faceta do tema),
+// gerado numa chamada curta ANTES das questões. Depois cada questão é gerada colada a
+// uma célula concreta — cobertura, ponderação e fidelidade ao tópico ficam garantidas
+// por construção, em vez de dependerem de um modelo compor tudo às cegas.
+export interface MatrixCell { grupo: string; tipo: string; bloom: string; pontos: number; faceta: string }
+export interface MatrixMeta { subject: string; yearLevel: number; topic: string }
+
+export async function buildMatrix(
+  basePrompt: string, meta: MatrixMeta, numQuestions: number, types: string[], avoid: string[],
+  providers: Provider[], timeoutMs: number, difficulty = 'medium',
+): Promise<MatrixCell[] | null> {
+  const bloomRule = difficulty === 'easy'
+    ? 'DIFICULDADE FÁCIL: predomina Lembrar/Compreender/Aplicar; no máximo 1 célula de Analisar; nenhuma de Avaliar/Criar.'
+    : difficulty === 'hard'
+    ? 'DIFICULDADE DIFÍCIL: pelo menos METADE das células em Analisar/Avaliar/Criar; as de ordem superior valem mais pontos.'
+    : 'DIFICULDADE MÉDIA: distribuição equilibrada, com ~30–40% das células em Analisar/Avaliar/Criar (valem mais pontos).'
+  const ci = basePrompt.indexOf('CURRÍCULO OBRIGATÓRIO')
+  const di = ci >= 0 ? basePrompt.indexOf('DIRECTRIZES', ci) : -1
+  const curriculum = ci >= 0 ? basePrompt.slice(ci, di > ci ? di : ci + 1_800).trim().slice(0, 1_800) : ''
+  const typeList = types.length ? types.join(', ') : 'multiple_choice, true_false, short_answer, long_answer'
+  const avoidNote = avoid.length
+    ? `\nJÁ EXISTEM no teste estas questões (do banco) — as tuas facetas têm de ser DISTINTAS destas, sem repetir conceito:\n${avoid.slice(0, 15).map((t, i) => `${i + 1}. ${t.slice(0, 110)}`).join('\n')}\n`
+    : ''
+  const ask = `És um professor especialista de ${meta.subject} do ${meta.yearLevel}.º ano em Portugal a desenhar a MATRIZ DE ESPECIFICAÇÃO de um teste sobre "${meta.topic}".
+${curriculum ? `APRENDIZAGENS ESSENCIAIS / CURRÍCULO DO ANO (guarda-fatos):\n${curriculum}\n` : ''}${avoidNote}
+ANCORAGEM (passo prévio obrigatório): localiza "${meta.topic}" dentro do currículo do ano acima e identifica o DOMÍNIO e os descritores das Aprendizagens Essenciais a que pertence. Todas as células têm de avaliar descritores desse domínio. Se "${meta.topic}" não constar textualmente no currículo, ancora-o ao domínio mais próximo das AE do ano e mantém o foco no que o professor pediu — nunca derives para conteúdos de anos seguintes nem para associações vagas ao título.
+
+Define EXACTAMENTE ${numQuestions} células — uma por questão. Foca-te nos descritores próprios DESTA unidade, não no tema geral do ano.
+${bloomRule}
+
+COBERTURA (prioridade máxima): primeiro enumera mentalmente TODOS os sub-aspectos/descritores essenciais de "${meta.topic}" para este ano. Depois:
+• Se ${numQuestions} ≥ nº de sub-aspectos essenciais → cobre-os TODOS (uma faceta por sub-aspecto) e usa as células restantes para APROFUNDAR os mais centrais com Bloom superior — nunca para repetir um sub-aspecto já coberto.
+• Se ${numQuestions} < nº de sub-aspectos essenciais → escolhe os MAIS importantes/estruturantes para maximizar a cobertura (regra do "pelo menos").
+Enquanto houver um sub-aspecto essencial por cobrir, NUNCA gastes duas células no mesmo sub-aspecto.
+Cada célula tem:
+• "grupo": "Grupo I" (escolha múltipla / objectivas), "Grupo II" (resposta curta justificada) ou "Grupo III" (resolução de problemas / desenvolvimento) — por exigência cognitiva crescente.
+• "tipo": um de: ${typeList}.
+• "bloom": Lembrar | Compreender | Aplicar | Analisar | Avaliar | Criar — distribui conforme a regra de dificuldade indicada acima.
+• "pontos": inteiro positivo; a SOMA de TODAS as células = exactamente 100.
+• "faceta": o CONTEÚDO curricular concreto que a questão avalia — um descritor específico de "${meta.topic}" (um mecanismo, uma relação causa-efeito, uma propriedade, uma definição-chave). É o "quê" curricular, NUNCA um contexto do quotidiano nem uma faceta genérica que serviria outro tema. Cada faceta é distinta; juntas cobrem o essencial da unidade.
+Regras: Português de Portugal estrito; nível do ${meta.yearLevel}.º ano (nada de anos/ciclos seguintes); zero facetas repetidas ou genéricas.
+Responde APENAS com JSON válido: {"celulas":[{"grupo":"...","tipo":"...","bloom":"...","pontos":0,"faceta":"..."}]}`
+
+  const cands = providers.filter(p => !onCooldown(p)).slice(0, 3)
+  if (cands.length === 0) return null
+  try {
+    return await Promise.any(cands.map(async p => {
+      const text = await callProvider(p, ask, timeoutMs, ' [matriz]', 2_500)
+      const obj = text ? parseJsonObject(text) as { celulas?: unknown } | null : null
+      const rawCells = Array.isArray(obj?.celulas) ? obj!.celulas as Array<Record<string, unknown>> : []
+      let cells: MatrixCell[] = rawCells.map(c => ({
+        grupo: String(c.grupo ?? 'Grupo I').trim(),
+        tipo: String(c.tipo ?? 'short_answer').trim(),
+        bloom: String(c.bloom ?? 'Aplicar').trim(),
+        pontos: Number(c.pontos) || 0,
+        faceta: String(c.faceta ?? '').trim(),
+      })).filter(c => c.faceta.length >= 6)
+      if (cells.length < Math.max(3, Math.floor(numQuestions * 0.7))) throw new Error('matriz insuficiente')
+      cells = cells.slice(0, numQuestions)
+      // Normaliza os pontos a soma exacta 100
+      const sum = cells.reduce((s, c) => s + c.pontos, 0)
+      if (sum > 0 && sum !== 100) {
+        let acc = 0
+        for (const c of cells) { c.pontos = Math.max(1, Math.round(c.pontos / sum * 100)); acc += c.pontos }
+        cells[0].pontos = Math.max(1, cells[0].pontos + (100 - acc))
+      }
+      return cells
+    }))
+  } catch { return null }
+}
+
+// Prompt de geração colado à matriz: gera exactamente estas células, por ordem.
+export function matrixBlockPrompt(basePrompt: string, cells: MatrixCell[]): string {
+  const list = cells.map((c, i) => `${i + 1}. [${c.grupo} · ${c.tipo} · Bloom ${c.bloom} · ${c.pontos}pt] Avalia: ${c.faceta}`).join('\n')
+  const note = `GERA EXACTAMENTE ESTAS ${cells.length} QUESTÕES, uma por linha da matriz e PELA MESMA ORDEM. Cada questão TEM de:
+• avaliar exactamente a faceta curricular indicada em "Avalia:" — com rigor científico e ao nível do ano; NUNCA uma questão genérica que serviria outro tema;
+• respeitar o grupo, o tipo, o nível de Bloom e a cotação (pontos) indicados;
+• usar contexto real apenas quando ajuda a avaliar a faceta, nunca a substituí-la.
+MATRIZ DO TESTE:
+${list}
+
+`
+  return basePrompt
+    .replace(/Total: \d+ questões[^\n|]*/, `Total: ${cells.length} questões`)
+    .replace(/Cobre pelo menos \d+ sub-aspectos[^\n]*\n?/, '')
+    .replace('Responde APENAS com este JSON', STYLE_RULES + '\n' + note + 'Responde APENAS com este JSON')
+}
+
 export async function generateChunked(
   prompt: string,
   numQuestions: number,
-  opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv; personal?: Provider } = {}
+  opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv; personal?: Provider
+          meta?: MatrixMeta; types?: string[]; avoid?: string[]; difficulty?: string } = {}
 ): Promise<ChunkedResult> {
   const budgetMs = opts.budgetMs ?? 58_000
   const deadline = Date.now() + budgetMs
   const remaining = () => deadline - Date.now()
-  // Em produção cada questão rende ~700 tokens de JSON (markScheme, figura, opções):
-  // blocos de 3 (+1 de folga) ficam em ~12-18 s no Gemini; de 4-5 passavam dos 25 s.
   const size = opts.chunkSize ?? 3
-  const K = numQuestions <= size + 1 ? 1 : Math.ceil(numQuestions / size)
-  const counts = Array.from({ length: K }, (_, i) => Math.floor(numQuestions / K) + (i < numQuestions % K ? 1 : 0) + (K > 1 ? 1 : 0))
 
   const providers = buildProviders(opts.env)
   if (providers.length === 0) throw new Error('Nenhum fornecedor de IA configurado.')
   const tier1 = providers.filter(p => p.tier === 1)
   const tier2 = providers.filter(p => p.tier === 2)
+  // Tier 0: chave pessoal do professor — gera TODOS os blocos primeiro, sem aviso
+  const personal = opts.personal && !onCooldown(opts.personal) ? opts.personal : undefined
+
+  // Matriz de especificação: blueprint curricular gerado primeiro. Se falhar, cai no
+  // modo genérico (plano + corte por semelhança). Só quando há meta (geração de teste).
+  const matrix = opts.meta
+    ? await buildMatrix(prompt, opts.meta, numQuestions, opts.types ?? [], opts.avoid ?? [],
+        [personal, ...tier1, ...tier2].filter((p): p is Provider => !!p), 10_000, opts.difficulty ?? 'medium')
+    : null
+  if (matrix) console.log(`[PROFAI] Matriz: ${matrix.length} células`)
+
+  // Passagem única quando cabe e há modelo capaz — melhor coerência que blocos.
+  const strong = !!personal || tier1.some(p => !p.reserve && !onCooldown(p))
+  const K0 = matrix
+    ? ((numQuestions <= 14 && strong) ? 1 : Math.max(1, Math.ceil(matrix.length / size)))
+    : (numQuestions <= size + 1 ? 1 : Math.ceil(numQuestions / size))
+  const cellSlices: MatrixCell[][] = []
+  if (matrix) {
+    const per = Math.ceil(matrix.length / K0)
+    for (let i = 0; i < K0; i++) { const s = matrix.slice(i * per, (i + 1) * per); if (s.length) cellSlices.push(s) }
+  }
+  // Em produção cada questão rende ~700 tokens de JSON: blocos de 3 (+1 de folga no modo
+  // genérico) ficam em ~12-18 s no Gemini; de 4-5 passavam dos 25 s.
+  const counts = matrix
+    ? cellSlices.map(c => c.length)
+    : Array.from({ length: K0 }, (_, i) => Math.floor(numQuestions / K0) + (i < numQuestions % K0 ? 1 : 0) + (K0 > 1 ? 1 : 0))
+  const K = counts.length
 
   // Fila de arranque: intercala fornecedores por ronda de "slots" (cf, gemini-1, groq, gemini-2, …)
   const queue: Provider[] = []
   const starters = tier1.filter(p => !p.reserve && !onCooldown(p))
   const maxSlots = Math.max(...starters.map(p => p.slots), 0)
   for (let r = 0; r < maxSlots; r++) for (const p of starters) if (r < p.slots) queue.push(p)
-
-  // Tier 0: chave pessoal do professor — gera TODOS os blocos primeiro, sem aviso
-  const personal = opts.personal && !onCooldown(opts.personal) ? opts.personal : undefined
 
   const usage = new Map<string, number>()
   const triedBy: Set<string>[] = counts.map(() => new Set())
@@ -535,9 +645,9 @@ export async function generateChunked(
   const take = (p: Provider) => { usage.set(p.id, (usage.get(p.id) ?? 0) + 1); tried.add(p.id) }
   const free = (p: Provider) => (usage.get(p.id) ?? 0) < p.slots
 
-  const planT0 = Date.now()
-  const plan = K > 1 ? await planSubtopics(prompt, counts.reduce((a, b) => a + b, 0), providers, 8_000) : []
-  if (plan.length > 0) console.log(`[PROFAI] Plano: ${plan.length} sub-aspectos em ${Date.now() - planT0}ms`)
+  // Plano genérico só no modo NÃO-matriz (fallback); a matriz já dá facetas concretas.
+  const plan = (!matrix && K > 1) ? await planSubtopics(prompt, counts.reduce((a, b) => a + b, 0), providers, 8_000) : []
+  if (plan.length > 0) console.log(`[PROFAI] Plano: ${plan.length} sub-aspectos`)
   const planFor = (i: number) => {
     const start = counts.slice(0, i).reduce((a, b) => a + b, 0)
     return plan.slice(start, start + counts[i])
@@ -545,8 +655,11 @@ export async function generateChunked(
 
   async function run(i: number, p: Provider): Promise<void> {
     take(p); triedBy[i].add(p.id)
-    const timeout = Math.max(4_000, Math.min(p.timeoutMs, remaining() - 1_500))
-    const text = await callProvider(p, chunkPrompt(prompt, counts[i], i, K, planFor(i)), timeout, K > 1 ? ` [${i + 1}/${K}]` : '')
+    const bigSingle = !!matrix && K === 1
+    const timeout = Math.max(4_000, Math.min(bigSingle ? 48_000 : p.timeoutMs, remaining() - 1_500))
+    const blockPrompt = matrix ? matrixBlockPrompt(prompt, cellSlices[i]) : chunkPrompt(prompt, counts[i], i, K, planFor(i))
+    const maxTokens = matrix ? Math.min(16_000, 1_400 + cellSlices[i].length * 950) : p.maxTokens
+    const text = await callProvider(p, blockPrompt, timeout, K > 1 ? ` [${i + 1}/${K}]` : '', maxTokens)
     if (!text) return
     const parsed = parseJsonObject(text) as RawTest | null
     const n = parsed ? countQuestions(parsed) : 0

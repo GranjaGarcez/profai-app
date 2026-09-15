@@ -7,15 +7,25 @@
  * Usado em /api/ai/generate para injectar restrição curricular no prompt.
  */
 
+export interface CurriculumDomain {
+  name: string
+  /** Conteúdos-chave (resumo). Mantido para retrocompatibilidade e como apoio. */
+  topics: string[]
+  /** Descritores oficiais "O aluno deve ficar capaz de…" (verbatim das AE DGE). */
+  descriptors?: string[]
+}
+
 export interface CurriculumEntry {
-  /** Domínios / temas organizadores com conteúdos específicos */
-  domains: Array<{ name: string; topics: string[] }>
+  /** Domínios / temas organizadores com conteúdos e (quando curados) descritores oficiais */
+  domains: CurriculumDomain[]
   /** O que É avaliável neste ano — phrased for AI prompt */
   canTest: string
   /** O que NÃO pertence a este ano — phrased for AI prompt */
   cannotTest: string
   /** URL do PDF oficial DGE */
   source: string
+  /** Áreas de Competência do Perfil dos Alunos (PASEO) associadas — das próprias AE. */
+  perfilAreas?: string[]
 }
 
 export type SubjectCurriculum = Partial<Record<number, CurriculumEntry>>
@@ -484,29 +494,68 @@ const cienciasNaturais: SubjectCurriculum = {
     source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/5_ciencias_naturais.pdf',
     domains: [
       {
-        name: 'A Terra em transformação — Materiais Terrestres',
+        name: 'A água, o ar, as rochas e o solo – Materiais Terrestres',
         topics: [
-          'A água: estados físicos, ciclo da água, propriedades, importância para os seres vivos',
-          'O ar: composição (azoto, oxigénio, dióxido de carbono, outros), propriedades, importância',
-          'As rochas e o solo: tipos de rochas (eruptivas, sedimentares, metamórficas), formação, constituição do solo, importância',
-          'Relações entre materiais terrestres e seres vivos',
+          'A existência de vida na Terra e as características do planeta (água líquida, atmosfera adequada, temperatura amena)',
+          'Ambientes terrestres e aquáticos; subsistemas terrestres',
+          'Minerais e rochas (magmáticas, metamórficas, sedimentares); génese e constituição do solo',
+          'Água: disponibilidade e circulação, propriedades e funções; água potável vs imprópria; gestão sustentável',
+          'Ar: propriedades, constituintes e funções na atmosfera; impactes humanos na qualidade do ar',
+        ],
+        descriptors: [
+          'Relacionar a existência de vida na Terra com algumas características do planeta (água líquida, atmosfera adequada e temperatura amena)',
+          'Caracterizar ambientes terrestres e ambientes aquáticos, explorando exemplos locais ou regionais, a partir de dados recolhidos no campo',
+          'Identificar os subsistemas terrestres em documentos diversificados, integrando saberes de outras disciplinas',
+          'Distinguir mineral de rocha e indicar um exemplo de rochas de cada grupo (magmáticas, metamórficas e sedimentares)',
+          'Explicar a importância dos agentes biológicos e atmosféricos na génese do solo, indicando os seus constituintes, propriedades e funções',
+          'Discutir a importância dos minerais, das rochas e do solo nas atividades humanas, com exemplos locais ou regionais',
+          'Interpretar informação diversificada sobre a disponibilidade e a circulação de água na Terra',
+          'Identificar as propriedades da água, relacionando-as com a função da água nos seres vivos',
+          'Distinguir água própria para consumo (potável e mineral) de água imprópria para consumo (salobra e inquinada)',
+          'Interpretar os rótulos de garrafas de água e justificar a importância da água para a saúde humana',
+          'Discutir a importância da gestão sustentável da água ao nível da sua utilização, exploração e proteção',
+          'Identificar as propriedades do ar e os seus constituintes, explorando as funções que desempenham na atmosfera terrestre',
+          'Argumentar acerca dos impactes das atividades humanas na qualidade do ar e sobre medidas que contribuam para a sua preservação',
         ],
       },
       {
-        name: 'A Terra em transformação — Diversidade de Seres Vivos',
+        name: 'Diversidade de seres vivos e suas interações com o meio',
         topics: [
-          'Célula: unidade básica de vida; célula animal vs. célula vegetal (parede celular, cloroplastos, vacúolo)',
-          'Organização dos seres vivos: célula → tecido → órgão → sistema → organismo',
-          'Classificação dos seres vivos: critérios, reinos (animais, plantas, fungos, protistas, moneras)',
-          'Biodiversidade: adaptações dos seres vivos ao meio (aquático, terrestre, aéreo)',
-          'Relações entre seres vivos: predação, parasitismo, mutualismo, comensalismo',
-          'Cadeias e teias alimentares; produtores, consumidores, decompositores',
-          'Fotossíntese: conceito geral, importância, factores (luz, CO₂, água, clorofila)',
+          'Animais: características (forma, revestimento, locomoção), regimes alimentares e habitat',
+          'Reprodução animal (rituais de acasalamento, células sexuais, ovíparos/ovovivíparos/vivíparos, metamorfoses)',
+          'Influência da água, luz e temperatura no desenvolvimento das plantas; adaptações',
+          'Biodiversidade local/regional/nacional; espécies invasoras; conservação da Natureza e áreas protegidas',
+        ],
+        descriptors: [
+          'Relacionar as características (forma do corpo, revestimento, órgãos de locomoção) de diferentes animais com o meio onde vivem',
+          'Relacionar os regimes alimentares de alguns animais com o respetivo habitat',
+          'Discutir a importância dos rituais de acasalamento dos animais na transmissão de características e na continuidade das espécies',
+          'Explicar a necessidade da intervenção de células sexuais na reprodução de alguns seres vivos e a sua importância para a evolução das espécies',
+          'Distinguir animais ovíparos de ovovivíparos e de vivíparos',
+          'Interpretar informação sobre animais que passam por metamorfoses completas durante o seu desenvolvimento',
+          'Interpretar a influência da água, da luz e da temperatura no desenvolvimento das plantas',
+          'Identificar adaptações morfológicas e comportamentais dos animais e as respetivas respostas à variação da água, luz e temperatura',
+          'Caracterizar alguma da biodiversidade existente a nível local, regional e nacional, apresentando exemplos de relações entre a flora e a fauna nos diferentes habitats',
+          'Identificar espécies da fauna e da flora invasora e suas consequências para a biodiversidade local',
+          'Formular opiniões críticas sobre ações humanas que condicionam a biodiversidade e sobre a importância da sua preservação',
+          'Valorizar as áreas protegidas e o seu papel na proteção da vida selvagem',
+        ],
+      },
+      {
+        name: 'Unidade na diversidade de seres vivos',
+        topics: [
+          'A célula como unidade básica dos seres vivos; tipos de células e principais constituintes',
+          'Importância da ciência e da tecnologia na evolução do conhecimento celular',
+        ],
+        descriptors: [
+          'Reconhecer a célula como unidade básica dos seres vivos e distinguir diferentes tipos de células e os seus principais constituintes',
+          'Discutir a importância da ciência e da tecnologia na evolução do conhecimento celular',
         ],
       },
     ],
-    canTest: 'Estados físicos e ciclo da água; composição e propriedades do ar; tipos de rochas e constituição do solo; célula animal e vegetal (estrutura e diferenças); organização dos seres vivos (célula→organismo); classificação em reinos; adaptações ao meio; relações entre seres vivos (predação, parasitismo, mutualismo); cadeias alimentares; fotossíntese (conceito, factores, importância).',
-    cannotTest: 'Sistemas do corpo humano detalhados (6.º ano); sistema imunitário (6.º ano); reprodução (6.º ano); genética; evolução.',
+    canTest: 'Existência de vida na Terra e características do planeta (água líquida, atmosfera adequada, temperatura amena); ambientes terrestres/aquáticos e subsistemas terrestres; minerais e rochas (magmáticas, metamórficas, sedimentares) e génese/constituição do solo; propriedades, disponibilidade e gestão da água; propriedades e constituintes do ar e impactes na sua qualidade; características, regimes alimentares e habitat dos animais; reprodução animal (ovíparos/ovovivíparos/vivíparos, metamorfoses, células sexuais); influência de água/luz/temperatura nas plantas; adaptações; biodiversidade, espécies invasoras e conservação; a célula como unidade básica e seus constituintes.',
+    cannotTest: 'Classificação formal em reinos e chaves dicotómicas (não é AE do 5.º); fotossíntese ao nível celular; sistemas do corpo humano (6.º ano); reprodução humana (6.º ano); genética; evolução como mecanismo formal.',
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
   },
 
   6: {
@@ -1236,21 +1285,32 @@ export function getCurriculumConstraint(subject: string, yearLevel: number): str
   const entry = subjectDB[yearLevel]
   if (!entry) return ''
 
+  // Quando há descritores oficiais curados, emite-os (é o alinhamento a sério);
+  // senão, cai nos conteúdos-chave (resumo) — retrocompatível.
   const domainsText = entry.domains
-    .map(d => `  • ${d.name}: ${d.topics.join('; ')}`)
+    .map(d => {
+      if (d.descriptors?.length) {
+        return `  ▸ ${d.name}\n    Descritores (o aluno deve ficar capaz de):\n${d.descriptors.map(x => `      - ${x}`).join('\n')}`
+      }
+      return `  • ${d.name}: ${d.topics.join('; ')}`
+    })
     .join('\n')
 
+  const perfilText = entry.perfilAreas?.length
+    ? `\nÁREAS DE COMPETÊNCIA DO PERFIL DOS ALUNOS (as questões devem mobilizá-las): ${entry.perfilAreas.join('; ')}.\n`
+    : ''
+
   return `
-CURRÍCULO OBRIGATÓRIO — ${subject} ${yearLevel}.º ano (AE DGE)
+CURRÍCULO OBRIGATÓRIO — ${subject} ${yearLevel}.º ano (Aprendizagens Essenciais, DGE)
 Fonte oficial: ${entry.source}
 
-DOMÍNIOS E CONTEÚDOS ESPECÍFICOS:
+DOMÍNIOS E ${entry.domains.some(d => d.descriptors?.length) ? 'DESCRITORES DAS APRENDIZAGENS ESSENCIAIS' : 'CONTEÚDOS ESPECÍFICOS'}:
 ${domainsText}
-
+${perfilText}
 ✅ O QUE PODES AVALIAR: ${entry.canTest}
 
 ❌ O QUE NÃO PERTENCE A ESTE ANO: ${entry.cannotTest}
 
-REGRA INVIOLÁVEL: Todas as questões devem ser estritamente retiradas dos conteúdos acima. Se o tópico pedido tocar em conteúdos de outros anos, restringe ao que é permitido no ${yearLevel}.º ano.
+REGRA INVIOLÁVEL: Todas as questões devem avaliar directamente um ou mais descritores/conteúdos acima, ao nível do ${yearLevel}.º ano. Se o tópico pedido tocar em conteúdos de outros anos, restringe ao que é permitido neste ano.
 `
 }
