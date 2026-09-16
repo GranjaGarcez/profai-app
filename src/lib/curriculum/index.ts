@@ -1513,14 +1513,17 @@ export function getCurriculumConstraint(subject: string, yearLevel: number): str
   const entry = subjectDB[yearLevel]
   if (!entry) return ''
 
-  // Quando há descritores oficiais curados, emite-os (é o alinhamento a sério);
-  // senão, cai nos conteúdos-chave (resumo) — retrocompatível.
+  // Para alinhamento total, emite AMBAS as camadas por domínio: os conteúdos-chave
+  // (visão geral) E os descritores oficiais das AE ("o aluno deve ficar capaz de…").
+  // Domínios ainda sem descritores curados caem só nos conteúdos (retrocompatível).
   const domainsText = entry.domains
     .map(d => {
-      if (d.descriptors?.length) {
-        return `  ▸ ${d.name}\n    Descritores (o aluno deve ficar capaz de):\n${d.descriptors.map(x => `      - ${x}`).join('\n')}`
-      }
-      return `  • ${d.name}: ${d.topics.join('; ')}`
+      const head = `  ▸ ${d.name}`
+      const conteudos = d.topics.length ? `\n    Conteúdos: ${d.topics.join('; ')}` : ''
+      const descritores = d.descriptors?.length
+        ? `\n    Descritores (o aluno deve ficar capaz de):\n${d.descriptors.map(x => `      - ${x}`).join('\n')}`
+        : ''
+      return head + conteudos + descritores
     })
     .join('\n')
 
