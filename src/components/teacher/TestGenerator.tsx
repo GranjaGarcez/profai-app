@@ -98,6 +98,7 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     duration: 50,
     questionTypes: ['multiple_choice'],
     country: 'PT',
+    aeMode: 'equilibrado' as 'equilibrado' | 'estrito',
   })
 
   function toggleType(id: string) {
@@ -262,6 +263,34 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   </p>
                 )}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Alinhamento curricular</label>
+              <div className="flex gap-2">
+                {[
+                  { id: 'equilibrado', label: 'Equilibrado' },
+                  { id: 'estrito', label: 'AE estrito' },
+                ].map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setForm(f => ({ ...f, aeMode: m.id as 'equilibrado' | 'estrito' }))}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border transition-colors"
+                    style={{
+                      background: form.aeMode === m.id ? '#0D1B2A' : 'white',
+                      color: form.aeMode === m.id ? '#F7F3EE' : '#6B7280',
+                      borderColor: '#0D1B2A30',
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
+                {form.aeMode === 'estrito'
+                  ? 'Cada pergunta ancora num descritor oficial das Aprendizagens Essenciais — nada fora das AE.'
+                  : 'Prioriza as Aprendizagens Essenciais, admitindo conteúdo consagrado do mesmo domínio.'}
+              </p>
             </div>
 
             <div>

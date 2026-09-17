@@ -1061,6 +1061,7 @@ Responde APENAS com este JSON:
           meta: tool === 'test' ? { subject: String(ti.subject ?? ''), yearLevel: Number(ti.yearLevel ?? 0), topic: String(ti.topic ?? '') } : undefined,
           types: Array.isArray(ti.questionTypes) ? ti.questionTypes as string[] : [],
           difficulty: String(ti.difficulty ?? 'medium'),
+          aeMode: ti.aeMode === 'estrito' ? 'estrito' : 'equilibrado',
           avoid: bankHits.map(b => String((b as { text?: unknown }).text ?? '')).filter(Boolean).slice(0, 20),
         })
       : await generateWithFallback(prompt, 58_000, personal ?? undefined)

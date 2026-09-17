@@ -507,9 +507,17 @@ export interface ChunkedResult extends GenerationResult { parts: number; partsOk
 export interface MatrixCell { grupo: string; tipo: string; bloom: string; pontos: number; faceta: string }
 export interface MatrixMeta { subject: string; yearLevel: number; topic: string }
 
+// Modo de ancoragem curricular:
+// • 'equilibrado' (defeito): prioriza os descritores AE mas admite conteúdo
+//   pedagógico consagrado e directamente conexo ao domínio (ex.: Batalha de
+//   Ourique num tópico cujo descritor AE fixa o Tratado de Zamora).
+// • 'estrito': cada faceta tem de corresponder a um descritor AE literal; nada
+//   fora das AE, mesmo que tradicionalmente ensinado. Máxima fidelidade curricular.
+export type AeMode = 'equilibrado' | 'estrito'
+
 export async function buildMatrix(
   basePrompt: string, meta: MatrixMeta, numQuestions: number, types: string[], avoid: string[],
-  providers: Provider[], timeoutMs: number, difficulty = 'medium',
+  providers: Provider[], timeoutMs: number, difficulty = 'medium', aeMode: AeMode = 'equilibrado',
 ): Promise<MatrixCell[] | null> {
   const bloomRule = difficulty === 'easy'
     ? 'DIFICULDADE FÁCIL: predomina Lembrar/Compreender/Aplicar; no máximo 1 célula de Analisar; nenhuma de Avaliar/Criar.'
@@ -518,7 +526,12 @@ export async function buildMatrix(
     : 'DIFICULDADE MÉDIA: distribuição equilibrada, com ~30–40% das células em Analisar/Avaliar/Criar (valem mais pontos).'
   const ci = basePrompt.indexOf('CURRÍCULO OBRIGATÓRIO')
   const di = ci >= 0 ? basePrompt.indexOf('DIRECTRIZES', ci) : -1
-  const curriculum = ci >= 0 ? basePrompt.slice(ci, di > ci ? di : ci + 1_800).trim().slice(0, 1_800) : ''
+  // Janela ampla: com os descritores AE completos, um ano pode ter >16k caracteres
+  // de currículo. A secção está bem delimitada por DIRECTRIZES, por isso passamos o
+  // bloco inteiro (cap só de segurança) — cortar cedo fazia a matriz ancorar apenas
+  // no primeiro domínio listado e ignorar o resto das AE.
+  const CURR_CAP = 18_000
+  const curriculum = ci >= 0 ? basePrompt.slice(ci, di > ci ? di : ci + CURR_CAP).trim().slice(0, CURR_CAP) : ''
   const typeList = types.length ? types.join(', ') : 'multiple_choice, true_false, short_answer, long_answer'
   const avoidNote = avoid.length
     ? `\nJÁ EXISTEM no teste estas questões (do banco) — as tuas facetas têm de ser DISTINTAS destas, sem repetir conceito:\n${avoid.slice(0, 15).map((t, i) => `${i + 1}. ${t.slice(0, 110)}`).join('\n')}\n`
@@ -526,6 +539,9 @@ export async function buildMatrix(
   const ask = `És um professor especialista de ${meta.subject} do ${meta.yearLevel}.º ano em Portugal a desenhar a MATRIZ DE ESPECIFICAÇÃO de um teste sobre "${meta.topic}".
 ${curriculum ? `APRENDIZAGENS ESSENCIAIS / CURRÍCULO DO ANO (guarda-fatos):\n${curriculum}\n` : ''}${avoidNote}
 ANCORAGEM (passo prévio obrigatório): localiza "${meta.topic}" dentro do currículo do ano acima e identifica o DOMÍNIO e os descritores das Aprendizagens Essenciais a que pertence. Todas as células têm de avaliar descritores desse domínio. Se "${meta.topic}" não constar textualmente no currículo, ancora-o ao domínio mais próximo das AE do ano e mantém o foco no que o professor pediu — nunca derives para conteúdos de anos seguintes nem para associações vagas ao título.
+${aeMode === 'estrito'
+  ? 'MODO AE ESTRITO (fidelidade máxima): cada faceta TEM de corresponder a um descritor das Aprendizagens Essenciais literalmente presente no currículo acima. É PROIBIDO introduzir factos, batalhas, datas, figuras, fórmulas ou exemplos que não constem de um descritor AE — mesmo que sejam tradicionalmente ensinados ou pareçam próximos do tema. Antes de escrever cada faceta, aponta o descritor AE exacto que ela avalia; se nenhum descritor a sustentar, descarta-a. Se os descritores do domínio forem poucos, gera menos ângulos (aprofundando com Bloom superior os existentes) — nunca preenchas com conteúdo fora da AE.'
+  : 'MODO EQUILIBRADO: os descritores AE têm prioridade; podes complementar com conteúdo pedagógico consagrado e directamente conexo ao mesmo domínio quando enriquece a cobertura, sem nunca sair do tema nem do ano.'}
 
 Define EXACTAMENTE ${numQuestions} células — uma por questão. Foca-te nos descritores próprios DESTA unidade, não no tema geral do ano.
 ${bloomRule}
@@ -592,7 +608,7 @@ export async function generateChunked(
   prompt: string,
   numQuestions: number,
   opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv; personal?: Provider
-          meta?: MatrixMeta; types?: string[]; avoid?: string[]; difficulty?: string } = {}
+          meta?: MatrixMeta; types?: string[]; avoid?: string[]; difficulty?: string; aeMode?: AeMode } = {}
 ): Promise<ChunkedResult> {
   const budgetMs = opts.budgetMs ?? 58_000
   const deadline = Date.now() + budgetMs
@@ -610,7 +626,7 @@ export async function generateChunked(
   // modo genérico (plano + corte por semelhança). Só quando há meta (geração de teste).
   const matrix = opts.meta
     ? await buildMatrix(prompt, opts.meta, numQuestions, opts.types ?? [], opts.avoid ?? [],
-        [personal, ...tier1, ...tier2].filter((p): p is Provider => !!p), 10_000, opts.difficulty ?? 'medium')
+        [personal, ...tier1, ...tier2].filter((p): p is Provider => !!p), 10_000, opts.difficulty ?? 'medium', opts.aeMode ?? 'equilibrado')
     : null
   if (matrix) console.log(`[PROFAI] Matriz: ${matrix.length} células`)
 

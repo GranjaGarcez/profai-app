@@ -14,3 +14,17 @@
 +- Proper cookie get/set/remove handlers
 +
 +No 'any' types. TypeScript strict.
+
+# 2026-09-07 17:57:08.895506
++Faz exactamente estas alterações cirúrgicas em src/app/api/ai/generate/route.ts — nada mais:
++
++1. Linha 603: muda tried.push('groq-llama') para tried.push('groq-qwen3')
++2. Linha 607: muda o model 'llama-3.3-70b-versatile' para 'qwen/qwen3.8-27b'
++3. Linha 608: muda o label 'Groq:llama-3.3-70b' para 'Groq:qwen3.8-27b'
++4. Linha 610: muda o .then result model 'groq-llama-3.3-70b' para 'groq-qwen3.8-27b'
++5. Remove COMPLETAMENTE o bloco kimi (linhas 647-657): começa em [if (process.env.OPENROUTER_API_KEY && ok()) {] que tem tried.push('kimi-k2.6') e termina no [}] antes do bloco GitHub
++6. Remove COMPLETAMENTE o bloco GitHub gpt-4o (linhas 659-668): começa em [if (process.env.GITHUB_API_KEY && ok()) {] e termina no [}] antes do comentário NIM
++7. Remove COMPLETAMENTE o bloco NIM (linhas 670-685): começa no comentário [// NIM (NVIDIA)] e termina no [}] antes do bloco SambaNova
++8. Remove COMPLETAMENTE o bloco SambaNova (linhas 687-696): começa em [if (process.env.SAMBANOVA_API_KEY && ok()) {] e termina no [}] antes do bloco Mistral
++
++Manter intactos: bloco Mistral, bloco nemotron, toda a lógica de Promise.any(), Tier 1, e todo o resto do ficheiro.
