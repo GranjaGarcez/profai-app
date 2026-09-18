@@ -1727,6 +1727,363 @@ const filosofia: SubjectCurriculum = {
   },
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDUCAÇÃO VISUAL / TECNOLÓGICA / MUSICAL / FÍSICA  (2.º ciclo)
+// AE oficiais (DGE). EV/ET/EM são documentos de ciclo (mesmos descritores em 5.º e 6.º).
+// Descritores verbatim; canTest orienta a avaliação ESCRITA para a componente teórica.
+// ─────────────────────────────────────────────────────────────────────────────
+const educacaoVisual: SubjectCurriculum = {
+  5: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/educacao_visual_2c_ff.pdf",
+    domains: [
+      {
+        name: "Apropriação e Reflexão",
+        topics: [],
+        descriptors: [
+          "Identificar diferentes manifestações culturais do património local e global (obras e artefactos de arte – pintura, escultura, desenho, assemblage, colagem, fotografia; instalação, land’art, banda desenhada, design, arquitetura, artesanato, multimédia e linguagens cinematográficas), utilizando um vocabulário específico e adequado.",
+          "Compreender os princípios da linguagem das artes visuais integrada em diferentes contextos culturais (estilos e movimentos artísticos, épocas e geografias).",
+          "Reconhecer a tipologia e a função do objeto de arte, design, arquitetura e artesanato de acordo com os contextos históricos, geográficos e culturais.",
+          "Descrever com vocabulário adequado (qualidades formais, físicas e expressivas) os objetos artísticos.",
+          "Analisar criticamente narrativas visuais, tendo em conta as técnicas e tecnologias artísticas (pintura, desenho, escultura, fotografia, banda desenhada, artesanato, multimédia, entre outros).",
+          "Selecionar com autonomia informação relevante para os trabalhos individuais e de grupo.",
+        ],
+      },
+      {
+        name: "Interpretação e Comunicação",
+        topics: [],
+        descriptors: [
+          "Utilizar os conceitos específicos da comunicação visual (luz, cor, espaço, forma, movimento, ritmo; proporção, desproporção, entre outros), com intencionalidade e sentido crítico, na análise dos trabalhos individuais e de grupo;",
+          "Interpretar os objetos da cultura visual em função do(s) contexto(s) e dos(s) públicos(s);",
+          "Compreender os significados, processos e intencionalidades dos objetos artísticos;",
+          "Intervir na comunidade, individualmente ou em grupo, reconhecendo o papel das artes nas mudanças sociais;",
+          "Expressar ideias, utilizando diferentes meios e processos (pintura, escultura, desenho, fotografia, multimédia, entre outros);",
+          "Transformar narrativas visuais, criando novos modos de interpretação;",
+          "Transformar os conhecimentos adquiridos em novos modos de apreciação do mundo;",
+        ],
+      },
+      {
+        name: "Experimentação e Criação",
+        topics: [],
+        descriptors: [
+          "Utilizar diferentes materiais e suportes para realização dos seus trabalhos;",
+          "Reconhecer o quotidiano como um potencial criativo para a construção de ideias, mobilizando as várias etapas do processo artístico (pesquisa, investigação, experimentação e reflexão);",
+          "Inventar soluções para a resolução de problemas no processo de produção artística;",
+          "Tomar consciência da importância das características do trabalho artístico (sistemático, reflexivo e pessoal) para o desenvolvimento do seu sistema próprio de trabalho;",
+          "Manifestar capacidades expressivas e criativas nas suas produções, evidenciando os conhecimentos adquiridos;",
+          "Recorrer a vários processos de registo de ideias (ex.: diários gráficos), de planeamento (ex.: projeto, portefólio) de trabalho individual, em grupo e em rede;",
+          "Desenvolver individualmente e em grupo projetos de trabalho, recorrendo a cruzamentos disciplinares (artes performativas, multimédia, instalações, happening, entre outros);",
+          "Justificar a intencionalidade dos seus trabalhos, conjugando a organização dos elementos visuais com ideias e temáticas, inventadas ou sugeridas.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual (luz, cor, espaço, forma, movimento, ritmo, proporção); análise e interpretação de imagens e objetos artísticos; tipologia e função de arte, design, arquitetura e artesanato; estilos e movimentos artísticos; vocabulário específico das artes visuais; etapas do processo artístico (pesquisa, experimentação, reflexão).",
+    cannotTest: "Execução prática/plástica (desenhar, pintar, construir, produzir trabalhos) — não avaliável em prova escrita.",
+  },
+  6: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/educacao_visual_2c_ff.pdf",
+    domains: [
+      {
+        name: "Apropriação e Reflexão",
+        topics: [],
+        descriptors: [
+          "Identificar diferentes manifestações culturais do património local e global (obras e artefactos de arte – pintura, escultura, desenho, assemblage, colagem, fotografia; instalação, land’art, banda desenhada, design, arquitetura, artesanato, multimédia e linguagens cinematográficas), utilizando um vocabulário específico e adequado.",
+          "Compreender os princípios da linguagem das artes visuais integrada em diferentes contextos culturais (estilos e movimentos artísticos, épocas e geografias).",
+          "Reconhecer a tipologia e a função do objeto de arte, design, arquitetura e artesanato de acordo com os contextos históricos, geográficos e culturais.",
+          "Descrever com vocabulário adequado (qualidades formais, físicas e expressivas) os objetos artísticos.",
+          "Analisar criticamente narrativas visuais, tendo em conta as técnicas e tecnologias artísticas (pintura, desenho, escultura, fotografia, banda desenhada, artesanato, multimédia, entre outros).",
+          "Selecionar com autonomia informação relevante para os trabalhos individuais e de grupo.",
+        ],
+      },
+      {
+        name: "Interpretação e Comunicação",
+        topics: [],
+        descriptors: [
+          "Utilizar os conceitos específicos da comunicação visual (luz, cor, espaço, forma, movimento, ritmo; proporção, desproporção, entre outros), com intencionalidade e sentido crítico, na análise dos trabalhos individuais e de grupo;",
+          "Interpretar os objetos da cultura visual em função do(s) contexto(s) e dos(s) públicos(s);",
+          "Compreender os significados, processos e intencionalidades dos objetos artísticos;",
+          "Intervir na comunidade, individualmente ou em grupo, reconhecendo o papel das artes nas mudanças sociais;",
+          "Expressar ideias, utilizando diferentes meios e processos (pintura, escultura, desenho, fotografia, multimédia, entre outros);",
+          "Transformar narrativas visuais, criando novos modos de interpretação;",
+          "Transformar os conhecimentos adquiridos em novos modos de apreciação do mundo;",
+        ],
+      },
+      {
+        name: "Experimentação e Criação",
+        topics: [],
+        descriptors: [
+          "Utilizar diferentes materiais e suportes para realização dos seus trabalhos;",
+          "Reconhecer o quotidiano como um potencial criativo para a construção de ideias, mobilizando as várias etapas do processo artístico (pesquisa, investigação, experimentação e reflexão);",
+          "Inventar soluções para a resolução de problemas no processo de produção artística;",
+          "Tomar consciência da importância das características do trabalho artístico (sistemático, reflexivo e pessoal) para o desenvolvimento do seu sistema próprio de trabalho;",
+          "Manifestar capacidades expressivas e criativas nas suas produções, evidenciando os conhecimentos adquiridos;",
+          "Recorrer a vários processos de registo de ideias (ex.: diários gráficos), de planeamento (ex.: projeto, portefólio) de trabalho individual, em grupo e em rede;",
+          "Desenvolver individualmente e em grupo projetos de trabalho, recorrendo a cruzamentos disciplinares (artes performativas, multimédia, instalações, happening, entre outros);",
+          "Justificar a intencionalidade dos seus trabalhos, conjugando a organização dos elementos visuais com ideias e temáticas, inventadas ou sugeridas.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual (luz, cor, espaço, forma, movimento, ritmo, proporção); análise e interpretação de imagens e objetos artísticos; tipologia e função de arte, design, arquitetura e artesanato; estilos e movimentos artísticos; vocabulário específico das artes visuais; etapas do processo artístico (pesquisa, experimentação, reflexão).",
+    cannotTest: "Execução prática/plástica (desenhar, pintar, construir, produzir trabalhos) — não avaliável em prova escrita.",
+  },
+}
+
+const educacaoTecnologica: SubjectCurriculum = {
+  5: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/2c_educacao_tecnologica.pdf",
+    domains: [
+      {
+        name: "PROCESSOS TECNOLÓGICOS",
+        topics: [],
+        descriptors: [
+          "Distinguir as fases de realização de um projeto: identificação, pesquisa, realização e avaliação.",
+          "Identificar e representar as necessidades e oportunidades tecnológicas decorrentes da observação e investigação de contextos socias e comunitários.",
+          "Identificar requisitos técnicos, condicionalismos e recursos para a concretização de projetos.",
+          "Reconhecer a importância dos protótipos e teste para o desenvolvimento e melhoria (aplicações de criação e tratamento de imagem 2D e 3D) dos projetos.",
+          "Comunicar, através do desenho, formas de representação gráfica das ideias e soluções, utilizando: esquemas, codificações e simbologias, assim como meios digitais com ferramentas de modelação e representação.",
+          "Diferenciar modos de produção (artesanal, industrial), analisando os fatores de desenvolvimento tecnológico.",
+          "Compreender a importância dos objetos técnicos face às necessidades humanas.",
+        ],
+      },
+      {
+        name: "RECURSOS E UTILIZAÇÕES TECNOLÓGICAS",
+        topics: [],
+        descriptors: [
+          "Produzir artefactos, objetos e sistemas técnicos, adequando os meios materiais e técnicos à ideia ou intenção expressa.",
+          "Apreciar as qualidades dos materiais (físicas, mecânicas e tecnológicas), através do exercício sistemático dos diferentes sentidos, estabelecendo relações com a utilização de técnicas específicas de materiais: madeiras, papéis, plásticos, fios têxteis, pastas entre outros.",
+          "Selecionar materiais de acordo com as suas características físicas e mecânicas.",
+          "Investigar, através de experiências simples, algumas características de materiais comuns (dureza, flexibilidade, resistência, elasticidade, plasticidade).",
+          "Manipular operadores tecnológicos (de energia, movimento/mecanismos, estruturas resistentes) de acordo com as suas funções, princípios e relações com as produções tecnológicas.",
+          "Criar soluções tecnológicas através da reutilização ou reciclagem de materiais, tendo em atenção a sustentabilidade ambiental.",
+          "Utilizar as principais técnicas de transformação dos materiais usados (união, separação-corte, assemblagem, conformação), identificando os utensílios e as ferramentas na realização de projetos.",
+          "Identificar fontes de energia e os seus processos de transformação (elétrico, térmico, mecânico e sonoro), relacionando-as com soluções tecnológicas aplicáveis aos projetos.",
+          "Colaborar nos cuidados com o seu corpo e no cumprimento de normas de higiene e segurança na utilização de recursos tecnológicos.",
+        ],
+      },
+      {
+        name: "TECNOLOGIA E SOCIEDADE",
+        topics: [],
+        descriptors: [
+          "Reconhecer o potencial tecnológico dos recursos do meio ambiente, explicitando as suas funções, vantagens e impactos (positivos ou negativos) pessoais, sociais e ambientais.",
+          "Compreender a evolução dos artefactos, objetos e equipamentos, estabelecendo relações entre o presente e o passado, tendo em conta contextos sociais e naturais que possam influenciar a sua criação, ou reformulação.",
+          "Analisar situações concretas como consumidor prudente e defensor do património cultural e natural da sua localidade e região, manifestando preocupações com a conservação da natureza e respeito pelo ambiente.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita: fases do projeto tecnológico (identificação, pesquisa, realização, avaliação); propriedades físicas e mecânicas dos materiais (madeiras, papéis, plásticos, fios têxteis, pastas); operadores tecnológicos e mecanismos; fontes de energia e sua transformação; técnicas de transformação de materiais (união, corte, assemblagem, conformação); higiene e segurança; evolução dos objetos técnicos; tecnologia, sociedade e ambiente.",
+    cannotTest: "Execução prática/manual (produzir artefactos, manipular ferramentas e utensílios) — não avaliável por escrito.",
+  },
+  6: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/2c_educacao_tecnologica.pdf",
+    domains: [
+      {
+        name: "PROCESSOS TECNOLÓGICOS",
+        topics: [],
+        descriptors: [
+          "Distinguir as fases de realização de um projeto: identificação, pesquisa, realização e avaliação.",
+          "Identificar e representar as necessidades e oportunidades tecnológicas decorrentes da observação e investigação de contextos socias e comunitários.",
+          "Identificar requisitos técnicos, condicionalismos e recursos para a concretização de projetos.",
+          "Reconhecer a importância dos protótipos e teste para o desenvolvimento e melhoria (aplicações de criação e tratamento de imagem 2D e 3D) dos projetos.",
+          "Comunicar, através do desenho, formas de representação gráfica das ideias e soluções, utilizando: esquemas, codificações e simbologias, assim como meios digitais com ferramentas de modelação e representação.",
+          "Diferenciar modos de produção (artesanal, industrial), analisando os fatores de desenvolvimento tecnológico.",
+          "Compreender a importância dos objetos técnicos face às necessidades humanas.",
+        ],
+      },
+      {
+        name: "RECURSOS E UTILIZAÇÕES TECNOLÓGICAS",
+        topics: [],
+        descriptors: [
+          "Produzir artefactos, objetos e sistemas técnicos, adequando os meios materiais e técnicos à ideia ou intenção expressa.",
+          "Apreciar as qualidades dos materiais (físicas, mecânicas e tecnológicas), através do exercício sistemático dos diferentes sentidos, estabelecendo relações com a utilização de técnicas específicas de materiais: madeiras, papéis, plásticos, fios têxteis, pastas entre outros.",
+          "Selecionar materiais de acordo com as suas características físicas e mecânicas.",
+          "Investigar, através de experiências simples, algumas características de materiais comuns (dureza, flexibilidade, resistência, elasticidade, plasticidade).",
+          "Manipular operadores tecnológicos (de energia, movimento/mecanismos, estruturas resistentes) de acordo com as suas funções, princípios e relações com as produções tecnológicas.",
+          "Criar soluções tecnológicas através da reutilização ou reciclagem de materiais, tendo em atenção a sustentabilidade ambiental.",
+          "Utilizar as principais técnicas de transformação dos materiais usados (união, separação-corte, assemblagem, conformação), identificando os utensílios e as ferramentas na realização de projetos.",
+          "Identificar fontes de energia e os seus processos de transformação (elétrico, térmico, mecânico e sonoro), relacionando-as com soluções tecnológicas aplicáveis aos projetos.",
+          "Colaborar nos cuidados com o seu corpo e no cumprimento de normas de higiene e segurança na utilização de recursos tecnológicos.",
+        ],
+      },
+      {
+        name: "TECNOLOGIA E SOCIEDADE",
+        topics: [],
+        descriptors: [
+          "Reconhecer o potencial tecnológico dos recursos do meio ambiente, explicitando as suas funções, vantagens e impactos (positivos ou negativos) pessoais, sociais e ambientais.",
+          "Compreender a evolução dos artefactos, objetos e equipamentos, estabelecendo relações entre o presente e o passado, tendo em conta contextos sociais e naturais que possam influenciar a sua criação, ou reformulação.",
+          "Analisar situações concretas como consumidor prudente e defensor do património cultural e natural da sua localidade e região, manifestando preocupações com a conservação da natureza e respeito pelo ambiente.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita: fases do projeto tecnológico (identificação, pesquisa, realização, avaliação); propriedades físicas e mecânicas dos materiais (madeiras, papéis, plásticos, fios têxteis, pastas); operadores tecnológicos e mecanismos; fontes de energia e sua transformação; técnicas de transformação de materiais (união, corte, assemblagem, conformação); higiene e segurança; evolução dos objetos técnicos; tecnologia, sociedade e ambiente.",
+    cannotTest: "Execução prática/manual (produzir artefactos, manipular ferramentas e utensílios) — não avaliável por escrito.",
+  },
+}
+
+const educacaoMusical: SubjectCurriculum = {
+  5: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/2c_educacao_musical.pdf",
+    domains: [
+      {
+        name: "Experimentação e criação",
+        topics: [],
+        descriptors: [
+          "Improvisar peças musicais, combinando e manipulando vários elementos da música (timbre, altura, dinâmica, ritmo, forma, texturas), utilizando múltiplos recursos (fontes sonoras convencionais e não convencionais, imagens, esculturas, textos, vídeos, gravações, etc.) e com técnicas e tecnologias gradualmente mais complexas.",
+          "Compor peças musicais com diversos propósitos, combinando e manipulando vários elementos da música (altura, dinâmica, ritmo, forma, timbres e texturas), utilizando recursos diversos (voz, corpo, objetos sonoros, instrumentos musicais, tecnologias e software).",
+          "Mobilizar aprendizagens de diferentes áreas do conhecimento para a construção do seu referencial criativo.",
+        ],
+      },
+      {
+        name: "Interpretação e comunicação",
+        topics: [],
+        descriptors: [
+          "Cantar, a solo e em grupo, a uma e duas vozes, repertório variado com e sem acompanhamento instrumental, evidenciando confiança e domínio básico da técnica vocal.",
+          "Tocar diversos instrumentos acústicos e eletrónicos, a solo e em grupo, repertório variado, controlando o tempo, o ritmo e a dinâmica, com progressiva destreza e confiança.",
+          "Interpretar, através do movimento corporal, contextos musicais contrastantes.",
+          "Mobilizar sequências de movimentos corporais em contextos musicais diferenciados.",
+          "Publicar, na internet, criações musicais (originais ou de outros), construindo, por exemplo, playlists, podcasts e blogs.",
+          "Apresentar publicamente atividades artísticas em que se articula a música com outras áreas do conhecimento.",
+        ],
+      },
+      {
+        name: "Apropriação e reflexão",
+        topics: [],
+        descriptors: [
+          "Comparar características rítmicas, melódicas, harmónicas, dinâmicas, formais, tímbricas e de textura em peças musicais de épocas, estilos e géneros musicais diversificados.",
+          "Utilizar, com crescente domínio, vocabulário e simbologias para documentar, descrever e comparar diversas peças musicais.",
+          "Investigar diferentes tipos de interpretações escutadas e observadas em espetáculos musicais (concertos, bailados, teatros musicais, óperas e outros), ao vivo ou gravados, de diferentes tradições e épocas utilizando vocabulário apropriado.",
+          "Comparar criticamente estilos e géneros musicais, tendo em conta os enquadramentos socioculturais do passado e do presente.",
+          "Relacionar a sua experiência musical com outras áreas do conhecimento, através de atividades diversificadas que integrem e potenciem a transversalidade do saber.",
+          "Identificar criticamente a música, enquanto modo de conhecer e dar significado ao mundo, relacionando-a com o seu dia a dia, e os seus mundos pessoais e sociais.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/auditiva escrita: elementos da música (timbre, altura, dinâmica, ritmo, forma, textura); vocabulário e simbologia musical; comparação de características de peças de diferentes épocas, estilos e géneros; enquadramentos socioculturais; audição e apreciação crítica.",
+    cannotTest: "Execução prática (cantar, tocar, improvisar, compor, dançar, movimento corporal) — não avaliável em prova escrita.",
+  },
+  6: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/2c_educacao_musical.pdf",
+    domains: [
+      {
+        name: "Experimentação e criação",
+        topics: [],
+        descriptors: [
+          "Improvisar peças musicais, combinando e manipulando vários elementos da música (timbre, altura, dinâmica, ritmo, forma, texturas), utilizando múltiplos recursos (fontes sonoras convencionais e não convencionais, imagens, esculturas, textos, vídeos, gravações, etc.) e com técnicas e tecnologias gradualmente mais complexas.",
+          "Compor peças musicais com diversos propósitos, combinando e manipulando vários elementos da música (altura, dinâmica, ritmo, forma, timbres e texturas), utilizando recursos diversos (voz, corpo, objetos sonoros, instrumentos musicais, tecnologias e software).",
+          "Mobilizar aprendizagens de diferentes áreas do conhecimento para a construção do seu referencial criativo.",
+        ],
+      },
+      {
+        name: "Interpretação e comunicação",
+        topics: [],
+        descriptors: [
+          "Cantar, a solo e em grupo, a uma e duas vozes, repertório variado com e sem acompanhamento instrumental, evidenciando confiança e domínio básico da técnica vocal.",
+          "Tocar diversos instrumentos acústicos e eletrónicos, a solo e em grupo, repertório variado, controlando o tempo, o ritmo e a dinâmica, com progressiva destreza e confiança.",
+          "Interpretar, através do movimento corporal, contextos musicais contrastantes.",
+          "Mobilizar sequências de movimentos corporais em contextos musicais diferenciados.",
+          "Publicar, na internet, criações musicais (originais ou de outros), construindo, por exemplo, playlists, podcasts e blogs.",
+          "Apresentar publicamente atividades artísticas em que se articula a música com outras áreas do conhecimento.",
+        ],
+      },
+      {
+        name: "Apropriação e reflexão",
+        topics: [],
+        descriptors: [
+          "Comparar características rítmicas, melódicas, harmónicas, dinâmicas, formais, tímbricas e de textura em peças musicais de épocas, estilos e géneros musicais diversificados.",
+          "Utilizar, com crescente domínio, vocabulário e simbologias para documentar, descrever e comparar diversas peças musicais.",
+          "Investigar diferentes tipos de interpretações escutadas e observadas em espetáculos musicais (concertos, bailados, teatros musicais, óperas e outros), ao vivo ou gravados, de diferentes tradições e épocas utilizando vocabulário apropriado.",
+          "Comparar criticamente estilos e géneros musicais, tendo em conta os enquadramentos socioculturais do passado e do presente.",
+          "Relacionar a sua experiência musical com outras áreas do conhecimento, através de atividades diversificadas que integrem e potenciem a transversalidade do saber.",
+          "Identificar criticamente a música, enquanto modo de conhecer e dar significado ao mundo, relacionando-a com o seu dia a dia, e os seus mundos pessoais e sociais.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/auditiva escrita: elementos da música (timbre, altura, dinâmica, ritmo, forma, textura); vocabulário e simbologia musical; comparação de características de peças de diferentes épocas, estilos e géneros; enquadramentos socioculturais; audição e apreciação crítica.",
+    cannotTest: "Execução prática (cantar, tocar, improvisar, compor, dançar, movimento corporal) — não avaliável em prova escrita.",
+  },
+}
+
+const educacaoFisica: SubjectCurriculum = {
+  5: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/5_educacao_fisica.pdf",
+    domains: [
+      {
+        name: "ÁREA DAS ATIVIDADES FÍSICAS",
+        topics: [],
+        descriptors: [
+          "Participar em JOGOS, ajustando a iniciativa própria e as qualidades motoras na prestação às possibilidades oferecidas pela situação de jogo e ao seu objetivo, realizando habilidades básicas e ações técnico-táticas fundamentais, com oportunidade e correção de movimentos.",
+          "Cooperar com os companheiros para o alcance do objetivo dos JOGOS DESPORTIVOS COLETIVOS (Basquetebol, Futebol, Andebol, Voleibol), desempenhando com oportunidade e correção as ações solicitadas pelas situações de jogo, aplicando a ética do jogo e as suas regras.",
+          "Compor e realizar, da GINÁSTICA (Solo, Aparelhos, Rítmica), as destrezas elementares de solo, aparelhos e minitrampolim, em esquemas individuais e/ou de grupo, aplicando os critérios de correção técnica e expressão e apreciando os esquemas de acordo com esses critérios.",
+          "Realizar, do ATLETISMO, saltos, corridas e lançamentos, segundo padrões simplificados, e cumprindo corretamente as exigências elementares técnicas e regulamentares.",
+          "Patinar com equilíbrio e segurança, ajustando as suas ações para orientar o seu deslocamento com intencionalidade e oportunidade na realização de sequências rítmicas, percursos ou jogos.",
+          "Interpretar sequências de habilidades específicas elementares das ATIVIDADES RÍTMICAS E EXPRESSIVAS (Dança, Danças Sociais, Danças Tradicionais) , em coreografias individuais e/ou em grupo, aplicando os critérios de expressividade considerados, de acordo com os motivos das composições.",
+          "Realizar ações de oposição direta solicitadas de COMBATE (Luta), utilizando as técnicas fundamentais de controlo e desequilíbrio, com segurança (própria e do opositor), aplicando as regras e os princípios éticos.",
+          "Deslocar-se com segurança no MEIO AQUÁTICO (Natação), coordenando a respiração com as ações propulsivas específicas das técnicas selecionadas.",
+        ],
+      },
+      {
+        name: "ÁREA DA APTIDÃO FÍSICA",
+        topics: [],
+        descriptors: [
+          "Desenvolver capacidades motoras evidenciando aptidão muscular e aptidão aeróbia, enquadradas na Zona Saudável de Aptidão Física do programa Fitescola®, para a sua idade e sexo.",
+        ],
+      },
+      {
+        name: "ÁREA DOS CONHECIMENTOS",
+        topics: [],
+        descriptors: [
+          "Identificar as capacidades físicas: resistência, força, velocidade, flexibilidade, agilidade e coordenação (geral), de acordo com as características do esforço realizado.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas (resistência, força, velocidade, flexibilidade, agilidade, coordenação); adaptações do organismo à atividade física; aptidão física e Zona Saudável de Aptidão Física (Fitescola); regras, objetivos e princípios éticos das modalidades.",
+    cannotTest: "Execução motora (jogos desportivos, ginástica, atletismo, natação, patinagem, dança, combate) — não avaliável em prova escrita.",
+  },
+  6: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/6_educacao_fisica.pdf",
+    domains: [
+      {
+        name: "ÁREA DAS ATIVIDADES FÍSICAS",
+        topics: [],
+        descriptors: [
+          "Cooperar com os companheiros para o alcance do objetivo dos JOGOS DESPORTIVOS COLETIVOS (Basquetebol, Futebol, Andebol, Voleibol), desempenhando com oportunidade e correção as ações solicitadas pelas situações de jogo, aplicando a ética do jogo e as suas regras.",
+          "Compor e realizar, da GINÁSTICA (Solo, Aparelhos, Rítmica), as destrezas elementares de solo, aparelhos e minitrampolim, em esquemas individuais e/ou de grupo, aplicando os critérios de correção técnica e expressão, e apreciando os esquemas de acordo com esses critérios.",
+          "Realizar, do ATLETISMO, saltos, corridas e lançamentos, segundo padrões simplificados, e cumprindo corretamente as exigências elementares técnicas e regulamentares.",
+          "Patinar com equilíbrio e segurança, ajustando as suas ações para orientar o seu deslocamento com intencionalidade e oportunidade na realização de sequências rítmicas, percursos ou jogos.",
+          "Interpretar, nas ATIVIDADES RÍTMICAS E EXPRESSIVAS (Dança, Danças Sociais, Danças Tradicionais), sequências de elementos técnicos elementares, em coreografias individuais e ou em grupo, aplicando os critérios de expressividade, de acordo com os motivos das composições.",
+          "Realizar PERCURSOS (Orientação) elementares, utilizando técnicas de orientação e respeitando as regras de organização, participação e de preservação da qualidade do ambiente.",
+          "Realizar ações de oposição direta solicitadas de COMBATE (Luta), utilizando as técnicas fundamentais de controlo e desequilíbrio, com segurança (própria e do opositor), aplicando as regras e os princípios éticos.",
+          "Deslocar-se com segurança no MEIO AQUÁTICO (Natação), coordenando a respiração com as ações propulsivas específicas das técnicas selecionadas.",
+        ],
+      },
+      {
+        name: "ÁREA DA APTIDÃO FÍSICA",
+        topics: [],
+        descriptors: [
+          "Desenvolver capacidades motoras evidenciando aptidão muscular e aptidão aeróbia, enquadradas na Zona Saudável de Aptidão Física do programa Fitescola®, para a sua idade e sexo.",
+        ],
+      },
+      {
+        name: "ÁREA DOS CONHECIMENTOS",
+        topics: [],
+        descriptors: [
+          "Identificar as capacidades físicas: resistência, força, velocidade, flexibilidade, agilidade e coordenação (geral), de acordo com as características do esforço realizado.",
+          "Interpreta as principais adaptações do funcionamento do seu organismo durante a atividade física.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas (resistência, força, velocidade, flexibilidade, agilidade, coordenação); adaptações do organismo à atividade física; aptidão física e Zona Saudável de Aptidão Física (Fitescola); regras, objetivos e princípios éticos das modalidades.",
+    cannotTest: "Execução motora (jogos desportivos, ginástica, atletismo, natação, patinagem, dança, combate) — não avaliável em prova escrita.",
+  },
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BASE DE DADOS PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1744,6 +2101,10 @@ export const CURRICULUM_DB: CurriculumDB = {
   'Inglês':                             ingles,
   'Espanhol':                           {}, // placeholder — estrutura idêntica ao Inglês com QECR
   'Francês':                            {}, // placeholder
+  'Educação Visual':                    educacaoVisual,
+  'Educação Tecnológica':               educacaoTecnologica,
+  'Educação Musical':                   educacaoMusical,
+  'Educação Física':                    educacaoFisica,
   // Ensino Secundário (disciplinas próprias)
   'Biologia e Geologia':                biologiaGeologia,
   'Física e Química A':                 fisicaQuimicaA,

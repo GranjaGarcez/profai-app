@@ -344,6 +344,23 @@ ${ctx}`,
     }
   }
 
+  // ── Educação Musical (componente teórica/auditiva escrita) ──────────────────
+  if (s.includes('educação musical') || s.includes('educacao musical') || s.includes('ed. musical') || s.includes('ed musical')) {
+    return {
+      structureNote: `ESTRUTURA OBRIGATÓRIA — Educação Musical (${yearLevel}.º ano) — componente teórica/auditiva escrita:
+• Grupo I — Elementos e conceitos musicais (25 pts): EM/VF sobre os elementos da música (timbre, altura, dinâmica, ritmo, forma, textura), simbologia e vocabulário musical. 5 pts/questão (valor fixo). 5 questões.
+• Grupo II — Análise de excerto/contexto musical (35 pts): CADA questão incorpora no seu campo "text" a descrição de um excerto, obra, estilo ou género musical (já que não há áudio disponível), seguida da pergunta de análise (características rítmicas/melódicas/tímbricas, época, género, função). short_answer, 7 pts/questão. 5 questões.
+• Grupo III — Apreciação crítica fundamentada (40 pts, 1 questão): long_answer — compara ou enquadra socioculturalmente estilos/géneros musicais, ou relaciona a música com outras áreas. markScheme: Conhecimento musical e conceptual (16pt) + Fundamentação e enquadramento (16pt) + Vocabulário musical específico (8pt).
+PROIBIDO ABSOLUTO: type='text', points=0, questões sem pergunta real, ou pedidos de execução prática (cantar, tocar, compor) — este é um teste escrito teórico.
+${ctx}`,
+      scoringRule: `6. COTAÇÃO (totalPoints = 100 exactamente, pontos sempre inteiros):
+   • Elementos e conceitos musicais (EM/VF): 5 pts/questão (valor fixo); 5 questões = 25 pts
+   • Análise de excerto/contexto (resposta curta): 7 pts/questão (valor fixo); 5 questões = 35 pts
+   • Apreciação crítica (long_answer, 1 questão): 40 pts fixos — markScheme: Conhecimento musical (16pt) + Fundamentação (16pt) + Vocabulário musical (8pt) = 40pt
+   • Distribuição: 25 + 35 + 40 = 100 pts exactamente`,
+    }
+  }
+
   // ── TIC — Tecnologias de Informação e Comunicação (3.º ciclo, AE DGE) ────────
   // ATENÇÃO: 'tic' é substring de "matemática"/"artística" — usa SEMPRE fronteira de palavra.
   if (/\btic\b/.test(s)) {
@@ -593,6 +610,11 @@ export async function POST(request: NextRequest) {
 • Tópicos DGE: materiais (madeira, metal, plástico, têxteis), ferramentas e processos de fabrico, mecanismos simples, segurança no trabalho, desenho técnico básico
 • Situações-problema de concepção devem ser tecnicamente plausíveis — materiais e processos coerentes com o objecto descrito
 • Proibido: pedidos de execução prática/manual (este é um teste escrito teórico), processos de fabrico tecnicamente incorrectos`,
+
+      'Educação Musical': `CONTEÚDO E CONTEXTO — Educação Musical (componente teórica/auditiva):
+• Tópicos DGE: elementos da música (timbre, altura, dinâmica, ritmo, forma, textura), simbologia e vocabulário musical, estilos/géneros e épocas, enquadramento sociocultural
+• Como não há áudio disponível, descreve o excerto/obra/estilo em texto com detalhe suficiente para a questão fazer sentido sem ouvir
+• Proibido: pedidos de execução prática (cantar, tocar, compor, dançar) — este é um teste escrito teórico; inventar obras ou compositores`,
 
       'TIC': `CONTEÚDO E CONTEXTO — TIC (4 domínios AE DGE, 3.º ciclo):
 • Domínio 1 — Segurança, responsabilidade e respeito em ambientes digitais: cibersegurança, palavras-passe seguras, phishing/malware, protecção de dados pessoais, pegada digital, netiqueta

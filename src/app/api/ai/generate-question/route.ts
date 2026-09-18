@@ -26,6 +26,7 @@ const SUBJECT_NOTES: Record<string, string> = {
   'Educação Física':  'Componente teórica escrita — regras, modalidades, aptidão física e saúde. PROIBIDO exigir execução motora.',
   'Educação Visual':  'Componente teórica escrita — elementos visuais, composição, análise de imagem descrita em texto. PROIBIDO pedir desenho/execução prática.',
   'Educação Tecnológica': 'Componente teórica escrita — materiais, processos, análise de objectos técnicos. PROIBIDO pedir execução prática/manual.',
+  'Educação Musical': 'Componente teórica/auditiva escrita — elementos da música, vocabulário e simbologia, análise de excerto descrito em texto, estilos e géneros. PROIBIDO pedir execução prática (cantar, tocar, compor).',
   'TIC':              '4 domínios AE DGE: segurança digital, investigar/pesquisar, colaborar/comunicar, criar/inovar (pensamento computacional). PROIBIDO pedir execução prática num computador real.',
 }
 
