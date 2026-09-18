@@ -3911,6 +3911,126 @@ const educacaoVisual: SubjectCurriculum = {
     canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual (luz, cor, espaço, forma, movimento, ritmo, proporção); análise e interpretação de imagens e objetos artísticos; tipologia e função de arte, design, arquitetura e artesanato; estilos e movimentos artísticos; vocabulário específico das artes visuais; etapas do processo artístico (pesquisa, experimentação, reflexão).",
     cannotTest: "Execução prática/plástica (desenhar, pintar, construir, produzir trabalhos) — não avaliável em prova escrita.",
   },
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_visual_3c_ff.pdf",
+    domains: [
+      {
+        name: "Apropriação e Reflexão",
+        topics: [],
+        descriptors: [
+          "Refletir sobre as manifestações culturais do património local e global (obras e artefactos de arte - pintura, escultura, desenho, assemblage, colagem, fotografia, instalação, land´art, banda desenhada, design, arquitetura, artesanato, multimédia e linguagens cinematográficas).",
+          "Dominar os conceitos de plano, ritmo, espaço, estrutura, luz-cor, enquadramento, entre outros - em diferentes contextos e modalidades expressivas: pintura, escultura, desenho, design, fotografia, cinema, vídeo, banda desenhada.",
+          "Reconhecer a importância das imagens como meios de comunicação de massas, capazes de veicular diferentes significados (económicos, políticos, sociais, religiosos, ambientais, entre outros).",
+          "Enquadrar os objetos artísticos de diferentes culturas e períodos históricos, tendo como referência os saberes da História da Arte (estilos, movimentos, intencionalidades e ruturas).",
+        ],
+      },
+      {
+        name: "Interpretação e Comunicação",
+        topics: [],
+        descriptors: [
+          "Compreender a importância da inter-relação dos saberes da comunicação visual (espaço, volume, cor, luz, forma, movimento, estrutura, ritmo, entre outros) nos processos de fruição dos universos culturais.",
+          "Relacionar o modo como os processos de criação interferem na(s) intencionalidade(s) dos objetos artísticos.",
+          "Perceber os “jogos de poder” das imagens e da sua capacidade de mistificação ou desmistificação do real.",
+          "Interrogar os processos artísticos para a compreensão da arte contemporânea.",
+          "Transformar os conhecimentos adquiridos em novos modos de apreciação do mundo.",
+        ],
+      },
+      {
+        name: "Experimentação e Criação",
+        topics: [],
+        descriptors: [
+          "Articular conceitos (espaço, volume, cor, luz, movimento, estrutura, forma, ritmo), referências, experiências, materiais e suportes nas suas composições plásticas.",
+          "Manifestar expressividade nos seus trabalhos, selecionando, de forma intencional, conceitos, temáticas, materiais, suportes e técnicas.",
+          "Justificar a intencionalidade das suas composições, recorrendo a critérios de ordem estética (vivências, experiências e conhecimentos).",
+          "Organizar exposições em diferentes formatos – físicos e/ou digitais - individuais ou de grupo, selecionando trabalhos tendo por base os processos de análise, síntese e comparação, que conjugam as noções de composição e de harmonia, de acordo com o objetivo escolhido/proposto.",
+          "Selecionar, de forma autónoma, processos de trabalho e de registo de ideias que envolvam a pesquisa, investigação e experimentação.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual; análise e interpretação de imagens e objetos artísticos; tipologia/função de arte, design, arquitetura; estilos e movimentos; vocabulário específico; processo artístico.",
+    cannotTest: "Execução prática/plástica (desenhar, pintar, construir) — não avaliável em prova escrita.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_visual_3c_ff.pdf",
+    domains: [
+      {
+        name: "Apropriação e Reflexão",
+        topics: [],
+        descriptors: [
+          "Refletir sobre as manifestações culturais do património local e global (obras e artefactos de arte - pintura, escultura, desenho, assemblage, colagem, fotografia, instalação, land´art, banda desenhada, design, arquitetura, artesanato, multimédia e linguagens cinematográficas).",
+          "Dominar os conceitos de plano, ritmo, espaço, estrutura, luz-cor, enquadramento, entre outros - em diferentes contextos e modalidades expressivas: pintura, escultura, desenho, design, fotografia, cinema, vídeo, banda desenhada.",
+          "Reconhecer a importância das imagens como meios de comunicação de massas, capazes de veicular diferentes significados (económicos, políticos, sociais, religiosos, ambientais, entre outros).",
+          "Enquadrar os objetos artísticos de diferentes culturas e períodos históricos, tendo como referência os saberes da História da Arte (estilos, movimentos, intencionalidades e ruturas).",
+        ],
+      },
+      {
+        name: "Interpretação e Comunicação",
+        topics: [],
+        descriptors: [
+          "Compreender a importância da inter-relação dos saberes da comunicação visual (espaço, volume, cor, luz, forma, movimento, estrutura, ritmo, entre outros) nos processos de fruição dos universos culturais.",
+          "Relacionar o modo como os processos de criação interferem na(s) intencionalidade(s) dos objetos artísticos.",
+          "Perceber os “jogos de poder” das imagens e da sua capacidade de mistificação ou desmistificação do real.",
+          "Interrogar os processos artísticos para a compreensão da arte contemporânea.",
+          "Transformar os conhecimentos adquiridos em novos modos de apreciação do mundo.",
+        ],
+      },
+      {
+        name: "Experimentação e Criação",
+        topics: [],
+        descriptors: [
+          "Articular conceitos (espaço, volume, cor, luz, movimento, estrutura, forma, ritmo), referências, experiências, materiais e suportes nas suas composições plásticas.",
+          "Manifestar expressividade nos seus trabalhos, selecionando, de forma intencional, conceitos, temáticas, materiais, suportes e técnicas.",
+          "Justificar a intencionalidade das suas composições, recorrendo a critérios de ordem estética (vivências, experiências e conhecimentos).",
+          "Organizar exposições em diferentes formatos – físicos e/ou digitais - individuais ou de grupo, selecionando trabalhos tendo por base os processos de análise, síntese e comparação, que conjugam as noções de composição e de harmonia, de acordo com o objetivo escolhido/proposto.",
+          "Selecionar, de forma autónoma, processos de trabalho e de registo de ideias que envolvam a pesquisa, investigação e experimentação.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual; análise e interpretação de imagens e objetos artísticos; tipologia/função de arte, design, arquitetura; estilos e movimentos; vocabulário específico; processo artístico.",
+    cannotTest: "Execução prática/plástica (desenhar, pintar, construir) — não avaliável em prova escrita.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_visual_3c_ff.pdf",
+    domains: [
+      {
+        name: "Apropriação e Reflexão",
+        topics: [],
+        descriptors: [
+          "Refletir sobre as manifestações culturais do património local e global (obras e artefactos de arte - pintura, escultura, desenho, assemblage, colagem, fotografia, instalação, land´art, banda desenhada, design, arquitetura, artesanato, multimédia e linguagens cinematográficas).",
+          "Dominar os conceitos de plano, ritmo, espaço, estrutura, luz-cor, enquadramento, entre outros - em diferentes contextos e modalidades expressivas: pintura, escultura, desenho, design, fotografia, cinema, vídeo, banda desenhada.",
+          "Reconhecer a importância das imagens como meios de comunicação de massas, capazes de veicular diferentes significados (económicos, políticos, sociais, religiosos, ambientais, entre outros).",
+          "Enquadrar os objetos artísticos de diferentes culturas e períodos históricos, tendo como referência os saberes da História da Arte (estilos, movimentos, intencionalidades e ruturas).",
+        ],
+      },
+      {
+        name: "Interpretação e Comunicação",
+        topics: [],
+        descriptors: [
+          "Compreender a importância da inter-relação dos saberes da comunicação visual (espaço, volume, cor, luz, forma, movimento, estrutura, ritmo, entre outros) nos processos de fruição dos universos culturais.",
+          "Relacionar o modo como os processos de criação interferem na(s) intencionalidade(s) dos objetos artísticos.",
+          "Perceber os “jogos de poder” das imagens e da sua capacidade de mistificação ou desmistificação do real.",
+          "Interrogar os processos artísticos para a compreensão da arte contemporânea.",
+          "Transformar os conhecimentos adquiridos em novos modos de apreciação do mundo.",
+        ],
+      },
+      {
+        name: "Experimentação e Criação",
+        topics: [],
+        descriptors: [
+          "Articular conceitos (espaço, volume, cor, luz, movimento, estrutura, forma, ritmo), referências, experiências, materiais e suportes nas suas composições plásticas.",
+          "Manifestar expressividade nos seus trabalhos, selecionando, de forma intencional, conceitos, temáticas, materiais, suportes e técnicas.",
+          "Justificar a intencionalidade das suas composições, recorrendo a critérios de ordem estética (vivências, experiências e conhecimentos).",
+          "Organizar exposições em diferentes formatos – físicos e/ou digitais - individuais ou de grupo, selecionando trabalhos tendo por base os processos de análise, síntese e comparação, que conjugam as noções de composição e de harmonia, de acordo com o objetivo escolhido/proposto.",
+          "Selecionar, de forma autónoma, processos de trabalho e de registo de ideias que envolvam a pesquisa, investigação e experimentação.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/reflexiva escrita: elementos da comunicação visual; análise e interpretação de imagens e objetos artísticos; tipologia/função de arte, design, arquitetura; estilos e movimentos; vocabulário específico; processo artístico.",
+    cannotTest: "Execução prática/plástica (desenhar, pintar, construir) — não avaliável em prova escrita.",
+  },
 }
 
 const educacaoTecnologica: SubjectCurriculum = {
@@ -4004,6 +4124,156 @@ const educacaoTecnologica: SubjectCurriculum = {
     canTest: "Componente teórica escrita: fases do projeto tecnológico (identificação, pesquisa, realização, avaliação); propriedades físicas e mecânicas dos materiais (madeiras, papéis, plásticos, fios têxteis, pastas); operadores tecnológicos e mecanismos; fontes de energia e sua transformação; técnicas de transformação de materiais (união, corte, assemblagem, conformação); higiene e segurança; evolução dos objetos técnicos; tecnologia, sociedade e ambiente.",
     cannotTest: "Execução prática/manual (produzir artefactos, manipular ferramentas e utensílios) — não avaliável por escrito.",
   },
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_tecnologica.pdf",
+    domains: [
+      {
+        name: "Processos Tecnológicos",
+        topics: [],
+        descriptors: [
+          "Distinguir as fases de realização de um projeto: identificação, pesquisa, realização e avaliação;",
+          "Identificar e representar as necessidades e oportunidades tecnológicas, decorrentes da observação e investigação de contextos socias e comunitários;",
+          "Diferenciar requisitos técnicos, condicionalismos e recursos para a concretização de projetos;",
+          "Reconhecer a importância dos protótipos e teste para o desenvolvimento e melhoria (aplicações de criação e tratamento de imagem 2D e 3D) dos projetos;",
+          "Comunicar, através do desenho, formas de representação gráfica das ideias e soluções, utilizando: esquemas, codificações e simbologias, assim como meios digitais com ferramentas de modelação e representação;",
+          "Distinguir modos de produção (artesanal, industrial), analisando os fatores de desenvolvimento tecnológico;",
+          "Compreender a importância dos objetos técnicos face às necessidades humanas e relacionar a sua existência através da análise do material, da forma, da função, do princípio de funcionamento e das partes que o constituem;",
+          "Analisar as funções sociais dos objetos técnicos que determinam os seus valores práticos, estéticos e simbólicos.",
+        ],
+      },
+      {
+        name: "Recursos e Utilizações Tecnológicas",
+        topics: [],
+        descriptors: [
+          "Produzir artefactos, objetos e sistemas técnicos, adequando os meios materiais e técnicos à ideia ou intenção expressa;",
+          "Distinguir as propriedades dos materiais (físicas, mecânicas e tecnológicas), estabelecendo relações com a utilização de técnicas específicas de materiais: madeiras, papéis, plásticos, fios têxteis, pastas, metais, entre outros;",
+          "Utilizar as principais técnicas de transformação dos materiais utilizados (união, separação-corte, assemblagem, conformação), identificando os utensílios e as ferramentas na realização de projetos;",
+          "Criar soluções tecnológicas através da reutilização ou reciclagem de materiais tendo em atenção a sustentabilidade ambiental;",
+          "Manipular operadores tecnológicos (de transformação de energia, de transmissão do movimento nos mecanismos, de organização e triangulação nas estruturas resistentes) de acordo com as suas funções, princípios e relações com as produções tecnológicas;",
+          "Conhecer fontes de energia e os seus processos de transformação (elétrico, térmico, mecânico e sonoro), relacionando-as com soluções tecnológicas aplicáveis aos projetos;",
+          "Identificar diferentes tipos de comandos, (manuais, mecânicos, programação automação), de sistemas técnicos comuns;",
+          "Reconhecer a importância da necessidade de rigor na escolha de instrumentos e técnicas a utilizar no seu trabalho;",
+          "Elaborar informações e esquemas, utilizando a codificação e simbologia especifica, nas etapas de organização do fabrico e da planificação das condições de trabalho;",
+          "Colaborar nos cuidados com o seu corpo e no cumprimento de normas de higiene e segurança na utilização de recursos tecnológicos.",
+        ],
+      },
+      {
+        name: "Tecnologia e Sociedade",
+        topics: [],
+        descriptors: [
+          "Reconhecer o potencial tecnológico dos recursos do meio ambiente, explicitando as suas funções, vantagens e impactos (positivos ou negativos) pessoais, sociais e ambientais;",
+          "Compreender a evolução dos artefactos, objetos e equipamentos, estabelecendo relações entre o presente e o passado, tendo em conta contextos sociais e naturais que possam influenciar a sua criação, ou reformulação;",
+          "Analisar situações concretas como consumidor prudente e defensor do património cultural, natural da sua localidade e região, manifestando preocupações com a conservação da natureza e respeito pelo ambiente;",
+          "Analisar a atividade humana como transformadora do meio natural e da vida das pessoas, bem como reconhecer que através dos processos técnicos o ser humano é criador incessante da tecnologia, sendo capaz de criar propostas para novos desafios;",
+          "Interagir consigo e com os outros, interligando ideias, com todos, no trabalho de grupo, nos cuidados com o seu corpo e no cumprimento de normas de higiene na utilização de recursos tecnológico;",
+          "Agir como consumidor prudente e defensor do património cultural, natural da sua localidade e região manifestando preocupações com a conservação da natureza e respeito pelo ambiente, (gestão e utilização responsável dos recursos do planeta: utilização de energias renováveis, economia sustentável e “pegada ecológica”).",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita: processos e projeto tecnológico; propriedades dos materiais; operadores e mecanismos; energia; técnicas de transformação; higiene e segurança; tecnologia, sociedade e ambiente.",
+    cannotTest: "Execução prática/manual — não avaliável por escrito.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_tecnologica.pdf",
+    domains: [
+      {
+        name: "Processos Tecnológicos",
+        topics: [],
+        descriptors: [
+          "Distinguir as fases de realização de um projeto: identificação, pesquisa, realização e avaliação;",
+          "Identificar e representar as necessidades e oportunidades tecnológicas, decorrentes da observação e investigação de contextos socias e comunitários;",
+          "Diferenciar requisitos técnicos, condicionalismos e recursos para a concretização de projetos;",
+          "Reconhecer a importância dos protótipos e teste para o desenvolvimento e melhoria (aplicações de criação e tratamento de imagem 2D e 3D) dos projetos;",
+          "Comunicar, através do desenho, formas de representação gráfica das ideias e soluções, utilizando: esquemas, codificações e simbologias, assim como meios digitais com ferramentas de modelação e representação;",
+          "Distinguir modos de produção (artesanal, industrial), analisando os fatores de desenvolvimento tecnológico;",
+          "Compreender a importância dos objetos técnicos face às necessidades humanas e relacionar a sua existência através da análise do material, da forma, da função, do princípio de funcionamento e das partes que o constituem;",
+          "Analisar as funções sociais dos objetos técnicos que determinam os seus valores práticos, estéticos e simbólicos.",
+        ],
+      },
+      {
+        name: "Recursos e Utilizações Tecnológicas",
+        topics: [],
+        descriptors: [
+          "Produzir artefactos, objetos e sistemas técnicos, adequando os meios materiais e técnicos à ideia ou intenção expressa;",
+          "Distinguir as propriedades dos materiais (físicas, mecânicas e tecnológicas), estabelecendo relações com a utilização de técnicas específicas de materiais: madeiras, papéis, plásticos, fios têxteis, pastas, metais, entre outros;",
+          "Utilizar as principais técnicas de transformação dos materiais utilizados (união, separação-corte, assemblagem, conformação), identificando os utensílios e as ferramentas na realização de projetos;",
+          "Criar soluções tecnológicas através da reutilização ou reciclagem de materiais tendo em atenção a sustentabilidade ambiental;",
+          "Manipular operadores tecnológicos (de transformação de energia, de transmissão do movimento nos mecanismos, de organização e triangulação nas estruturas resistentes) de acordo com as suas funções, princípios e relações com as produções tecnológicas;",
+          "Conhecer fontes de energia e os seus processos de transformação (elétrico, térmico, mecânico e sonoro), relacionando-as com soluções tecnológicas aplicáveis aos projetos;",
+          "Identificar diferentes tipos de comandos, (manuais, mecânicos, programação automação), de sistemas técnicos comuns;",
+          "Reconhecer a importância da necessidade de rigor na escolha de instrumentos e técnicas a utilizar no seu trabalho;",
+          "Elaborar informações e esquemas, utilizando a codificação e simbologia especifica, nas etapas de organização do fabrico e da planificação das condições de trabalho;",
+          "Colaborar nos cuidados com o seu corpo e no cumprimento de normas de higiene e segurança na utilização de recursos tecnológicos.",
+        ],
+      },
+      {
+        name: "Tecnologia e Sociedade",
+        topics: [],
+        descriptors: [
+          "Reconhecer o potencial tecnológico dos recursos do meio ambiente, explicitando as suas funções, vantagens e impactos (positivos ou negativos) pessoais, sociais e ambientais;",
+          "Compreender a evolução dos artefactos, objetos e equipamentos, estabelecendo relações entre o presente e o passado, tendo em conta contextos sociais e naturais que possam influenciar a sua criação, ou reformulação;",
+          "Analisar situações concretas como consumidor prudente e defensor do património cultural, natural da sua localidade e região, manifestando preocupações com a conservação da natureza e respeito pelo ambiente;",
+          "Analisar a atividade humana como transformadora do meio natural e da vida das pessoas, bem como reconhecer que através dos processos técnicos o ser humano é criador incessante da tecnologia, sendo capaz de criar propostas para novos desafios;",
+          "Interagir consigo e com os outros, interligando ideias, com todos, no trabalho de grupo, nos cuidados com o seu corpo e no cumprimento de normas de higiene na utilização de recursos tecnológico;",
+          "Agir como consumidor prudente e defensor do património cultural, natural da sua localidade e região manifestando preocupações com a conservação da natureza e respeito pelo ambiente, (gestão e utilização responsável dos recursos do planeta: utilização de energias renováveis, economia sustentável e “pegada ecológica”).",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita: processos e projeto tecnológico; propriedades dos materiais; operadores e mecanismos; energia; técnicas de transformação; higiene e segurança; tecnologia, sociedade e ambiente.",
+    cannotTest: "Execução prática/manual — não avaliável por escrito.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_tecnologica.pdf",
+    domains: [
+      {
+        name: "Processos Tecnológicos",
+        topics: [],
+        descriptors: [
+          "Distinguir as fases de realização de um projeto: identificação, pesquisa, realização e avaliação;",
+          "Identificar e representar as necessidades e oportunidades tecnológicas, decorrentes da observação e investigação de contextos socias e comunitários;",
+          "Diferenciar requisitos técnicos, condicionalismos e recursos para a concretização de projetos;",
+          "Reconhecer a importância dos protótipos e teste para o desenvolvimento e melhoria (aplicações de criação e tratamento de imagem 2D e 3D) dos projetos;",
+          "Comunicar, através do desenho, formas de representação gráfica das ideias e soluções, utilizando: esquemas, codificações e simbologias, assim como meios digitais com ferramentas de modelação e representação;",
+          "Distinguir modos de produção (artesanal, industrial), analisando os fatores de desenvolvimento tecnológico;",
+          "Compreender a importância dos objetos técnicos face às necessidades humanas e relacionar a sua existência através da análise do material, da forma, da função, do princípio de funcionamento e das partes que o constituem;",
+          "Analisar as funções sociais dos objetos técnicos que determinam os seus valores práticos, estéticos e simbólicos.",
+        ],
+      },
+      {
+        name: "Recursos e Utilizações Tecnológicas",
+        topics: [],
+        descriptors: [
+          "Produzir artefactos, objetos e sistemas técnicos, adequando os meios materiais e técnicos à ideia ou intenção expressa;",
+          "Distinguir as propriedades dos materiais (físicas, mecânicas e tecnológicas), estabelecendo relações com a utilização de técnicas específicas de materiais: madeiras, papéis, plásticos, fios têxteis, pastas, metais, entre outros;",
+          "Utilizar as principais técnicas de transformação dos materiais utilizados (união, separação-corte, assemblagem, conformação), identificando os utensílios e as ferramentas na realização de projetos;",
+          "Criar soluções tecnológicas através da reutilização ou reciclagem de materiais tendo em atenção a sustentabilidade ambiental;",
+          "Manipular operadores tecnológicos (de transformação de energia, de transmissão do movimento nos mecanismos, de organização e triangulação nas estruturas resistentes) de acordo com as suas funções, princípios e relações com as produções tecnológicas;",
+          "Conhecer fontes de energia e os seus processos de transformação (elétrico, térmico, mecânico e sonoro), relacionando-as com soluções tecnológicas aplicáveis aos projetos;",
+          "Identificar diferentes tipos de comandos, (manuais, mecânicos, programação automação), de sistemas técnicos comuns;",
+          "Reconhecer a importância da necessidade de rigor na escolha de instrumentos e técnicas a utilizar no seu trabalho;",
+          "Elaborar informações e esquemas, utilizando a codificação e simbologia especifica, nas etapas de organização do fabrico e da planificação das condições de trabalho;",
+          "Colaborar nos cuidados com o seu corpo e no cumprimento de normas de higiene e segurança na utilização de recursos tecnológicos.",
+        ],
+      },
+      {
+        name: "Tecnologia e Sociedade",
+        topics: [],
+        descriptors: [
+          "Reconhecer o potencial tecnológico dos recursos do meio ambiente, explicitando as suas funções, vantagens e impactos (positivos ou negativos) pessoais, sociais e ambientais;",
+          "Compreender a evolução dos artefactos, objetos e equipamentos, estabelecendo relações entre o presente e o passado, tendo em conta contextos sociais e naturais que possam influenciar a sua criação, ou reformulação;",
+          "Analisar situações concretas como consumidor prudente e defensor do património cultural, natural da sua localidade e região, manifestando preocupações com a conservação da natureza e respeito pelo ambiente;",
+          "Analisar a atividade humana como transformadora do meio natural e da vida das pessoas, bem como reconhecer que através dos processos técnicos o ser humano é criador incessante da tecnologia, sendo capaz de criar propostas para novos desafios;",
+          "Interagir consigo e com os outros, interligando ideias, com todos, no trabalho de grupo, nos cuidados com o seu corpo e no cumprimento de normas de higiene na utilização de recursos tecnológico;",
+          "Agir como consumidor prudente e defensor do património cultural, natural da sua localidade e região manifestando preocupações com a conservação da natureza e respeito pelo ambiente, (gestão e utilização responsável dos recursos do planeta: utilização de energias renováveis, economia sustentável e “pegada ecológica”).",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita: processos e projeto tecnológico; propriedades dos materiais; operadores e mecanismos; energia; técnicas de transformação; higiene e segurança; tecnologia, sociedade e ambiente.",
+    cannotTest: "Execução prática/manual — não avaliável por escrito.",
+  },
 }
 
 const educacaoMusical: SubjectCurriculum = {
@@ -4089,6 +4359,123 @@ const educacaoMusical: SubjectCurriculum = {
     canTest: "Componente teórica/auditiva escrita: elementos da música (timbre, altura, dinâmica, ritmo, forma, textura); vocabulário e simbologia musical; comparação de características de peças de diferentes épocas, estilos e géneros; enquadramentos socioculturais; audição e apreciação crítica.",
     cannotTest: "Execução prática (cantar, tocar, improvisar, compor, dançar, movimento corporal) — não avaliável em prova escrita.",
   },
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_musical.pdf",
+    domains: [
+      {
+        name: "Experimentação e criação",
+        topics: [],
+        descriptors: [
+          "Improvisa, sozinho e em grupo, em diversos contextos musicais, combinando e manipulando vários elementos da música e recorrendo a qualquer tipo de fonte sonora acústica, analógica ou digital.",
+          "Compõe peças, sozinho e em grupo e faz arranjos musicais para determinadas finalidades, selecionando, mobilizando e combinando técnicas composicionais e tecnologias diversificadas, tais como, instrumentos electrónicos e software.",
+          "Cria produtos artísticos diversificados (instalações sonoras, concertos, teatros musicais, espetáculos multimédia...), articulando a música com outras formas de arte e utilizando diferentes formas de produção musical.",
+        ],
+      },
+      {
+        name: "Interpretação e comunicação",
+        topics: [],
+        descriptors: [
+          "Canta, a solo e em grupo, a uma, duas e três vozes, repertório variado com e sem acompanhamento instrumental, evidenciando crescente domínio da técnica vocal.",
+          "Toca instrumentos musicais de natureza diversa, acústicos e electrónicos e virtuais, interpretando repertório variado, segundo as orientações e características estilísticas de cada peça, com progressiva destreza.",
+          "Apresenta publicamente criações musicais (originais ou de outros) em que se articula a música com outras formas de arte em diferentes formações.",
+          "Organiza espetáculos em colaboração com músicos e/ou instituições da comunidade.",
+          "Publica em suportes e plataformas digitais os resultados dos projectos artísticos.",
+        ],
+      },
+      {
+        name: "Apropriação e reflexão",
+        topics: [],
+        descriptors: [
+          "Compara características rítmicas, melódicas, harmónicas, dinâmicas, formais tímbricas e de textura, de uma ou mais peças/obras musicais, relacionando-as com os estilos e géneros musicais de acordo com contextos históricos e socioculturais.",
+          "Revela domínio do vocabulário e simbologias para descrever, comparar, documentar e refletir sobre música em diversos contextos.",
+          "Compara criticamente peças musicais em estilos e géneros musicais diversificados (escuta de obras do património universal, designadamente música erudita, jazz, popular, fado, entre outros), interpretadas ao vivo e/ou gravadas, tendo em conta os enquadramentos socioculturais do passado e do presente e relacionando-a com outras áreas do conhecimento.",
+          "Analisa criticamente a música enquanto modo de conhecer e dar significado ao mundo, relacionando-a com o seu dia a dia, e os seus mundos pessoais e sociais.",
+          "Produz e partilha produtos artísticos em diversos formatos físicos ou digitais utilizando vocabulário apropriado.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/auditiva escrita: elementos da música; vocabulário e simbologia; estilos, géneros e épocas; enquadramento sociocultural; audição crítica.",
+    cannotTest: "Execução prática (cantar, tocar, compor, dançar) — não avaliável em prova escrita.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_musical.pdf",
+    domains: [
+      {
+        name: "Experimentação e criação",
+        topics: [],
+        descriptors: [
+          "Improvisa, sozinho e em grupo, em diversos contextos musicais, combinando e manipulando vários elementos da música e recorrendo a qualquer tipo de fonte sonora acústica, analógica ou digital.",
+          "Compõe peças, sozinho e em grupo e faz arranjos musicais para determinadas finalidades, selecionando, mobilizando e combinando técnicas composicionais e tecnologias diversificadas, tais como, instrumentos electrónicos e software.",
+          "Cria produtos artísticos diversificados (instalações sonoras, concertos, teatros musicais, espetáculos multimédia...), articulando a música com outras formas de arte e utilizando diferentes formas de produção musical.",
+        ],
+      },
+      {
+        name: "Interpretação e comunicação",
+        topics: [],
+        descriptors: [
+          "Canta, a solo e em grupo, a uma, duas e três vozes, repertório variado com e sem acompanhamento instrumental, evidenciando crescente domínio da técnica vocal.",
+          "Toca instrumentos musicais de natureza diversa, acústicos e electrónicos e virtuais, interpretando repertório variado, segundo as orientações e características estilísticas de cada peça, com progressiva destreza.",
+          "Apresenta publicamente criações musicais (originais ou de outros) em que se articula a música com outras formas de arte em diferentes formações.",
+          "Organiza espetáculos em colaboração com músicos e/ou instituições da comunidade.",
+          "Publica em suportes e plataformas digitais os resultados dos projectos artísticos.",
+        ],
+      },
+      {
+        name: "Apropriação e reflexão",
+        topics: [],
+        descriptors: [
+          "Compara características rítmicas, melódicas, harmónicas, dinâmicas, formais tímbricas e de textura, de uma ou mais peças/obras musicais, relacionando-as com os estilos e géneros musicais de acordo com contextos históricos e socioculturais.",
+          "Revela domínio do vocabulário e simbologias para descrever, comparar, documentar e refletir sobre música em diversos contextos.",
+          "Compara criticamente peças musicais em estilos e géneros musicais diversificados (escuta de obras do património universal, designadamente música erudita, jazz, popular, fado, entre outros), interpretadas ao vivo e/ou gravadas, tendo em conta os enquadramentos socioculturais do passado e do presente e relacionando-a com outras áreas do conhecimento.",
+          "Analisa criticamente a música enquanto modo de conhecer e dar significado ao mundo, relacionando-a com o seu dia a dia, e os seus mundos pessoais e sociais.",
+          "Produz e partilha produtos artísticos em diversos formatos físicos ou digitais utilizando vocabulário apropriado.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/auditiva escrita: elementos da música; vocabulário e simbologia; estilos, géneros e épocas; enquadramento sociocultural; audição crítica.",
+    cannotTest: "Execução prática (cantar, tocar, compor, dançar) — não avaliável em prova escrita.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/3c_educacao_musical.pdf",
+    domains: [
+      {
+        name: "Experimentação e criação",
+        topics: [],
+        descriptors: [
+          "Improvisa, sozinho e em grupo, em diversos contextos musicais, combinando e manipulando vários elementos da música e recorrendo a qualquer tipo de fonte sonora acústica, analógica ou digital.",
+          "Compõe peças, sozinho e em grupo e faz arranjos musicais para determinadas finalidades, selecionando, mobilizando e combinando técnicas composicionais e tecnologias diversificadas, tais como, instrumentos electrónicos e software.",
+          "Cria produtos artísticos diversificados (instalações sonoras, concertos, teatros musicais, espetáculos multimédia...), articulando a música com outras formas de arte e utilizando diferentes formas de produção musical.",
+        ],
+      },
+      {
+        name: "Interpretação e comunicação",
+        topics: [],
+        descriptors: [
+          "Canta, a solo e em grupo, a uma, duas e três vozes, repertório variado com e sem acompanhamento instrumental, evidenciando crescente domínio da técnica vocal.",
+          "Toca instrumentos musicais de natureza diversa, acústicos e electrónicos e virtuais, interpretando repertório variado, segundo as orientações e características estilísticas de cada peça, com progressiva destreza.",
+          "Apresenta publicamente criações musicais (originais ou de outros) em que se articula a música com outras formas de arte em diferentes formações.",
+          "Organiza espetáculos em colaboração com músicos e/ou instituições da comunidade.",
+          "Publica em suportes e plataformas digitais os resultados dos projectos artísticos.",
+        ],
+      },
+      {
+        name: "Apropriação e reflexão",
+        topics: [],
+        descriptors: [
+          "Compara características rítmicas, melódicas, harmónicas, dinâmicas, formais tímbricas e de textura, de uma ou mais peças/obras musicais, relacionando-as com os estilos e géneros musicais de acordo com contextos históricos e socioculturais.",
+          "Revela domínio do vocabulário e simbologias para descrever, comparar, documentar e refletir sobre música em diversos contextos.",
+          "Compara criticamente peças musicais em estilos e géneros musicais diversificados (escuta de obras do património universal, designadamente música erudita, jazz, popular, fado, entre outros), interpretadas ao vivo e/ou gravadas, tendo em conta os enquadramentos socioculturais do passado e do presente e relacionando-a com outras áreas do conhecimento.",
+          "Analisa criticamente a música enquanto modo de conhecer e dar significado ao mundo, relacionando-a com o seu dia a dia, e os seus mundos pessoais e sociais.",
+          "Produz e partilha produtos artísticos em diversos formatos físicos ou digitais utilizando vocabulário apropriado.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica/auditiva escrita: elementos da música; vocabulário e simbologia; estilos, géneros e épocas; enquadramento sociocultural; audição crítica.",
+    cannotTest: "Execução prática (cantar, tocar, compor, dançar) — não avaliável em prova escrita.",
+  },
 }
 
 const educacaoFisica: SubjectCurriculum = {
@@ -4164,6 +4551,129 @@ const educacaoFisica: SubjectCurriculum = {
     perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
     canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas (resistência, força, velocidade, flexibilidade, agilidade, coordenação); adaptações do organismo à atividade física; aptidão física e Zona Saudável de Aptidão Física (Fitescola); regras, objetivos e princípios éticos das modalidades.",
     cannotTest: "Execução motora (jogos desportivos, ginástica, atletismo, natação, patinagem, dança, combate) — não avaliável em prova escrita.",
+  },
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_fisica_3c_7a_ff.pdf",
+    domains: [
+      {
+        name: "ÁREA DAS ATIVIDADES FÍSICAS",
+        topics: [],
+        descriptors: [
+          "O aluno desenvolve as competências essenciais para o 7.º ano de escolaridade de nível INTRODUÇÃO em 5 matérias, de diferentes subáreas e de acordo com as seguintes condições de possibilidade.",
+          "SUBÁREA JOGOS DESPORTIVOS COLETIVOS (uma matéria) Cooperar com os companheiros para o alcance do objetivo, nos JOGOS DESPORTIVOS COLETIVOS (Basquetebol, Futebol, Andebol, Voleibol), realizando com oportunidade e correção as ações técnico-táticas elementares em todas as funções, conforme a oposição em cada fase do jogo, aplicando as regras, não só como jogador, mas também como árbitro.",
+          "SUBÁREA GINÁSTICA (uma matéria) Compor, realizar e analisar da GINÁSTICA (Solo, Aparelhos, Rítmica), as destrezas elementares de acrobacia, dos saltos, do solo e dos outros aparelhos, em esquemas individuais e/ou de grupo, aplicando os critérios de correção técnica, expressão e combinação, e apreciando os esquemas de acordo com esses critérios.",
+          "SUBÁREAS ATLETISMO, PATINAGEM, ATIVIDADES RÍTMICAS EXPRESSIVAS e OUTRAS (três matérias) Realizar e analisar do ATLETISMO, saltos, corridas, lançamentos e marcha, cumprindo corretamente as exigências elementares, técnicas e do regulamento, não só como praticante, mas também como juiz.",
+          "Patinar adequadamente em combinações de deslocamentos e paragens, com equilíbrio e segurança, realizando as ações técnico-táticas elementares em jogo e as ações de composições rítmicas «individuais» e «a pares».",
+          "Apreciar, compor e realizar, nas ATIVIDADES RÍTMICAS E EXPRESSIVAS (Dança, Danças Sociais, Danças Tradicionais), sequências de elementos técnicos elementares, em coreografias individuais e ou em grupo, aplicando os critérios de expressividade, de acordo com os motivos das composições.",
+          "OUTRAS Realizar com oportunidade e correção as ações técnico-táticas elementares, nos JOGOS DE RAQUETES (Badminton, Ténis e Ténis de Mesa), garantindo a iniciativa e ofensividade em participações «individuais» e «a pares», aplicando as regras, não só como jogador, mas também como árbitro.",
+          "Realizar com oportunidade e correção as ações do domínio de oposição em ATIVIDADE DE COMBATE (Luta), utilizando as técnicas elementares de projeção e controlo, com segurança (própria e do opositor) e aplicando as regras, quer como executante quer como árbitro.",
+          "Realizar PERCURSOS (Orientação) elementares, utilizando técnicas de orientação e respeitando as regras de organização, participação, e de preservação da qualidade do ambiente.",
+          "Deslocar-se com segurança no MEIO AQUÁTICO (Natação), coordenando a respiração com as ações propulsivas específicas das técnicas selecionadas.",
+        ],
+      },
+      {
+        name: "ÁREA DA APTIDÃO FÍSICA",
+        topics: [],
+        descriptors: [
+          "Desenvolver capacidades motoras evidenciando aptidão muscular e aptidão aeróbia, enquadradas na Zona Saudável de Aptidão Física do programa FITescola, para a sua idade e sexo.",
+        ],
+      },
+      {
+        name: "ÁREA DOS CONHECIMENTOS",
+        topics: [],
+        descriptors: [
+          "Relacionar aptidão física e saúde e identificar os benefícios do exercício físico para a saúde.",
+          "Interpretar a dimensão sociocultural dos desportos na atualidade e ao longo dos tempos, nomeadamente os jogos olímpicos e paralímpicos.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas; adaptações do organismo à atividade física; aptidão física e saúde; regras e princípios das modalidades.",
+    cannotTest: "Execução motora — não avaliável em prova escrita.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_fisica_3c_8a_ff.pdf",
+    domains: [
+      {
+        name: "Área das Atividades Físicas",
+        topics: [],
+        descriptors: [
+          "O aluno desenvolve as competências essenciais para o 8.º ano de escolaridade de nível INTRODUÇÃO em 6 matérias, de diferentes subáreas e de acordo com as seguintes condições de possibilidade.",
+          "SUBÁREA JOGOS DESPORTIVOS COLETIVOS (uma matéria) Cooperar com os companheiros para o alcance do objetivo, nos JOGOS DESPORTIVOS COLETIVOS (Basquetebol, Futebol, Andebol, Voleibol), realizando com oportunidade e correção as ações técnico-táticas elementares em todas as funções, conforme a oposição em cada fase do jogo, aplicando as regras, não só como jogador, mas também como árbitro.",
+          "SUBÁREA GINÁSTICA (uma matéria) Compor, realizar e analisar da GINÁSTICA (Solo, Aparelhos, Rítmica), as destrezas elementares de acrobacia, dos saltos, do solo e dos outros aparelhos, em esquemas individuais e/ou de grupo, aplicando os critérios de correção técnica, expressão e combinação, e apreciando os esquemas de acordo com esses critérios.",
+          "SUBÁREAS ATLETISMO, PATINAGEM, ATIVIDADES RÍTMICAS EXPRESSIVAS e OUTRAS (quatro matérias) Realizar e analisar do ATLETISMO, saltos, corridas, lançamentos e marcha, cumprindo corretamente as exigências elementares, técnicas e do regulamento, não só como praticante, mas também como juiz.",
+          "Patinar adequadamente em combinações de deslocamentos e paragens, com equilíbrio e segurança, realizando as ações técnico-táticas elementares em jogo e as ações de composições rítmicas «individuais» e «a pares».",
+          "Apreciar, compor e realizar, nas ATIVIDADES RÍTMICAS E EXPRESSIVAS (Dança, Danças Sociais, Danças Tradicionais), sequências de elementos técnicos elementares, em coreografias individuais e ou em grupo, aplicando os critérios de expressividade, de acordo com os motivos das composições.",
+          "OUTRAS Realizar com oportunidade e correção as ações técnico-táticas elementares, nos JOGOS DE RAQUETAS (Badminton, Ténis e Ténis de Mesa), garantindo a iniciativa e ofensividade em participações «individuais» e «a pares», aplicando as regras, não só como jogador, mas também como árbitro.",
+          "Realizar com oportunidade e correção as ações do domínio de oposição em ATIVIDADE DE COMBATE (Luta), utilizando as técnicas elementares de projeção e controlo, com segurança (própria e do opositor) e aplicando as regras, quer como executante quer como árbitro.",
+          "Realizar PERCURSOS (Orientação) elementares, utilizando técnicas de orientação e respeitando as regras de organização, participação, e de preservação da qualidade do ambiente.",
+          "Deslocar-se com segurança no MEIO AQUÁTICO (Natação), coordenando a respiração com as ações propulsivas específicas das técnicas selecionadas.",
+        ],
+      },
+      {
+        name: "Área da Aptidão Física",
+        topics: [],
+        descriptors: [
+          "Desenvolver capacidades motoras evidenciando aptidão muscular e aptidão aeróbia, enquadradas na Zona Saudável de Aptidão Física do programa FITescola, para a sua idade e sexo.",
+        ],
+      },
+      {
+        name: "Área dos Conhecimentos",
+        topics: [],
+        descriptors: [
+          "Relacionar aptidão física e saúde e identificar os fatores associados a um estilo de vida saudável, nomeadamente o desenvolvimento das capacidades motoras.",
+          "Identificar e interpretar os valores olímpicos e paralímpicos, compreendendo a sua importância para a construção de uma sociedade moderna e inclusiva.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas; adaptações do organismo à atividade física; aptidão física e saúde; regras e princípios das modalidades.",
+    cannotTest: "Execução motora — não avaliável em prova escrita.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/educacao_fisica_3c_9a_ff.pdf",
+    domains: [
+      {
+        name: "Área das Atividades Físicas",
+        topics: [],
+        descriptors: [
+          "Cooperar com os companheiros para o alcance do objetivo, nos JOGOS DESPORTIVOS COLETIVOS (Basquetebol, Futebol, Andebol, Voleibol), realizando com oportunidade e correção as ações técnico‑táticas elementares em todas as funções, conforme a oposição em cada fase do jogo, aplicando as regras, não só como jogador, mas também como árbitro.",
+          "Compor, realizar e analisar da GINÁSTICA (Solo, Aparelhos, Rítmica), as destrezas elementares de acrobacia, dos saltos, do solo e dos outros aparelhos, em esquemas individuais e/ou de grupo, aplicando os critérios de correção técnica, expressão e combinação, e apreciando os esquemas de acordo com esses critérios.",
+          "Apreciar, compor e realizar, nas ATIVIDADES RÍTMICAS E EXPRESSIVAS (Dança, Danças Sociais, Danças Tradicionais), sequências de elementos técnicos elementares, em coreografias individuais e ou em grupo, aplicando os critérios de expressividade, de acordo com os motivos das composições.",
+          "Realizar e analisar do ATLETISMO, saltos, corridas, lançamentos e marcha, cumprindo corretamente as exigências elementares, técnicas e do regulamento, não só como praticante, mas também como juiz.",
+          "Patinar adequadamente em combinações de deslocamentos e paragens, com equilíbrio e segurança, realizando as ações técnico‑táticas elementares em jogo e as ações de composições rítmicas «individuais» e «a pares».",
+          "Realizar com oportunidade e correção as ações técnico‑táticas elementares, nos JOGOS DE RAQUETES (Badminton, Ténis e Ténis de Mesa), garantindo a iniciativa e ofensividade em participações «individuais» e «a pares», aplicando as regras, não só como jogador, mas também como árbitro.",
+          "Realizar com oportunidade e correção as ações do domínio de oposição em ATIVIDADE DE COMBATE (Luta), utilizando as técnicas elementares de projeção e controlo, com segurança (própria e do opositor) e aplicando as regras, quer como executante quer como árbitro.",
+          "Realizar PERCURSOS (Orientação) elementares, utilizando técnicas de orientação e respeitando as regras de organização, participação, e de preservação da qualidade do ambiente.",
+          "Deslocar‑se com segurança no MEIO AQUÁTICO (Natação), coordenando a respiração com as ações propulsivas específicas das técnicas selecionadas.",
+          "Praticar e conhecer JOGOS TRADICIONAIS POPULARES de acordo com os padrões culturais característicos.",
+        ],
+      },
+      {
+        name: "Área da Aptidão Física",
+        topics: [],
+        descriptors: [
+          "Elevar o nível funcional das capacidades condicionais e coordenativas gerais, particularmente, de resistência geral de longa e média durações; da força resistente; da força rápida; da velocidade de reação simples e complexa, de execução, de deslocamento e de resistência; das destrezas geral e específica.",
+          "Conhecer e aplicar diversos processos de elevação e manutenção da condição física de forma autónoma no quotidiano.",
+          "Desenvolver capacidades motoras evidenciando aptidão muscular e aptidão aeróbia, enquadradas na Zona Saudável de Aptidão Física do programa FITescola, para a sua idade e sexo.",
+          "Aplicar processos de elevação do nível funcional da aptidão física.",
+        ],
+      },
+      {
+        name: "Área dos Conhecimentos",
+        topics: [],
+        descriptors: [
+          "Compreender as atividades físicas e as condições da sua prática e aperfeiçoamento como elementos de elevação cultural dos praticantes e da comunidade em geral, interpretando crítica e corretamente os acontecimentos na esfera da cultura física.",
+          "Identificar e interpretar os fenómenos da industrialização, urbanismo e poluição como fatores limitativos da aptidão física das populações e das possibilidades de prática das modalidades da cultura física.",
+          "Conhecer e interpretar fatores de saúde e risco associados à prática das atividades físicas e aplicar regras de higiene e de segurança.",
+          "Relacionar aptidão física e saúde e identificar os fatores associados a um estilo de vida saudável, nomeadamente o desenvolvimento das capacidades motoras, a composição corporal, a alimentação, o repouso, a higiene, a afetividade e a qualidade do meio ambiente.",
+          "Interpretar a dimensão sociocultural dos desportos e da atividade física na atualidade e ao longo dos tempos, identificando fenómenos associados a limitações e possibilidades de prática dos desportos e das atividades físicas, tais como: o sedentarismo, a evolução tecnológica, a poluição, o urbanismo e a industrialização, relacionando‑os com a evolução das sociedades.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Componente teórica escrita (Área dos Conhecimentos): capacidades físicas; adaptações do organismo à atividade física; aptidão física e saúde; regras e princípios das modalidades.",
+    cannotTest: "Execução motora — não avaliável em prova escrita.",
   },
 }
 
@@ -4344,6 +4854,417 @@ const tic: SubjectCurriculum = {
   },
 }
 
+const espanhol: SubjectCurriculum = {
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/espanhol_3c_7a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Compreender intervenções, questões e instruções simples dirigidas de forma pausada e clara.",
+          "Identificar palavras-chave, expressões correntes e frases simples e compreender o sentido geral em mensagens e textos simples e curtos (em presença e em suportes físicos ou digitais diversos), relacionados com o funcionamento da aula, o meio envolvente, situações do quotidiano e experiências pessoais, sempre que sejam articulados de forma muito clara e pausada.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Seguir indicações, normas e instruções escritas de forma concisa e clara.",
+          "Compreender, identificar e selecionar as ideias principais e a informação relevante de mensagens e textos simples e curtos (de géneros e suportes diversos) que descrevam e/ou narrem experiências e interesses pessoais, situações do quotidiano e temas da atualidade, sempre que sejam constituídos por frases simples e vocabulário muito frequente.",
+          "Procurar informações específicas e previsíveis em materiais simples do diaadia, tais como publicidade, prospetos, ementas, inventários, horários, etc.",
+          "Entender sinais e avisos públicos e informações sobre serviços básicos, assim como orientações e instruções bem estruturadas.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir em situações do quotidiano, previamente preparadas e apoiando-se no discurso do interlocutor, nas quais: estabelece contactos sociais (cumprimentos, desculpas e agradecimentos); pede e dá informações elementares (dados pessoais, hábitos, gostos e preferências, lugares, serviços, factos e projetos); pronuncia, geralmente de forma compreensível, um repertório limitado de expressões e de frases simples que mobilizam estruturas gramaticais muito elementares.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Expressar-se de forma muito simples, apoiando-se num texto memorizado ou previamente trabalhado, no qual: fala de si, de outras pessoas, lugares, hábitos, factos e projetos; utiliza um repertório muito limitado de palavras, expressões isoladas e frases curtas; pronuncia geralmente de forma compreensível.",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Completar formulários e questionários simples, em papel e online, com os dados requeridos.",
+          "Trocar mensagens simples e curtas (em papel ou em aplicações digitais), nas quais: pede e dá informações breves, agradece, pede desculpas, felicita e aceita ou recusa convites; utiliza expressões e estruturas frásicas muito simples; respeita as convenções textuais e sociolinguísticas das mensagens.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Escrever textos simples e muito curtos, em papel ou em aplicações digitais, nos quais: se apresenta e apresenta outras pessoas; descreve pessoas, animais, objetos, lugares, etc.; trata de assuntos pessoais e quotidianos, gostos e preferências, acontecimentos, etc.; utiliza vocabulário e expressões muito frequentes e estruturas frásicas muito elementares.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Reconhecer factos, referências culturais, atitudes e comportamentos verbais e não-verbais dos jovens hispano-falantes e relacioná-los com as suas próprias experiências.",
+          "Expressar informações e conhecimentos relativos à língua, à cultura e à sociedade espanhola e hispano-americana através de produtos e experiências verbais e não-verbais (documentos textuais e audiovisuais, desenhos, mapas, cartazes, fotografias, símbolos, esquemas, músicas, jogos, artefactos, etc.).",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Controlar a ansiedade e demonstrar uma atitude positiva e confiante na aprendizagem da língua.",
+          "Valorizar o uso do espanhol como instrumento de comunicação dentro da aula, nomeadamente para solicitar esclarecimentos e ajuda e para colaborar com os colegas na realização de tarefas e na resolução de problemas.",
+          "Usar os seus conhecimentos prévios em língua materna e noutras línguas, a sua experiência pessoal, os indícios contextuais e as semelhanças lexicais e gramaticais para fazer previsões de sentido e comunicar de forma simples, recorrendo, quando necessário, a idiomas conhecidos, gestos, mímica e desenhos.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Espanhol, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 7.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 7.º.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/espanhol_3c_8a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Identificar as ideias principais e a informação relevante explícita em mensagens e textos curtos, de géneros e suportes diversos, sobre experiências pessoais e situações do quotidiano, interesses próprios e temas da atualidade, sempre que sejam constituídos, essencialmente, por frases simples e vocabulário muito frequente e sejam articulados de forma clara e pausada.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Identificar as ideias principais e selecionar informação explícita de sequências descritivas, narrativas, explicativas e argumentativas, em textos curtos e médios de diversos géneros e suportes, sobre pessoas, experiências, produtos, serviços, situações do quotidiano, do mundo do trabalho e do lazer, e sobre temas da atualidade, sempre que as ideias sejam claras e bem estruturadas e predomine vocabulário frequente.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir em conversas curtas, bem estruturadas e ligadas a situações familiares, nas quais: pede e dá informações sobre o meio envolvente, situações do quotidiano e experiências pessoais; apresenta opiniões, gostos e preferências; pronuncia, geralmente de forma compreensível, os recursos linguísticos trabalhados nas aulas.",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Escrever postais, mails e mensagens simples e curtas, em papel ou em aplicações digitais, nos quais: pede e dá informações sobre o meio envolvente, situações do quotidiano e experiências pessoais; exprime opiniões, gostos e preferências; utiliza vocabulário elementar e estruturas frásicas simples; articula as ideias com coerência para gerar uma sequência linear de informações.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Expressar-se de forma simples em monólogos curtos preparados previamente, nos quais: utiliza sequências descritivas (sobre o meio envolvente e situações do quotidiano) e narrativas (sobre experiências pessoais e acontecimentos reais ou imaginários, presentes ou passados); apresenta opiniões, gostos e preferências; usa um léxico elementar e estruturas frásicas simples; pronuncia de forma suficientemente clara para ser entendido.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Escrever textos simples e curtos, em papel ou em aplicações digitais, sobre assuntos trabalhados nas aulas, nos quais: descreve situações do quotidiano; conta experiências pessoais e acontecimentos reais ou imaginários, presentes ou passados; exprime opiniões, gostos e preferências; utiliza vocabulário elementar e estruturas frásicas simples; articula as ideias com coerência para gerar uma sequência linear de informações.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Observar e identificar elementos das tradições e dos comportamentos sociais e sociolinguísticos dos hispano-falantes e relacioná-los com os dos portugueses.",
+          "Expressar informações e conhecimentos relativos à língua, à sociedade e à cultura espanhola e/ou hispano-americana mediante produtos e experiências diversos (documentos digitais e audiovisuais, desenhos, mapas, cartazes, símbolos, esquemas, canções, jogos, artefactos, etc.).",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Reconhecer a importância da competência estratégica no processo de aprendizagem da língua (motivação, contacto com a língua, planificação do trabalho, pesquisa de informação, assimilação e recuperação de conhecimentos e conceptualização).",
+          "Identificar as estratégias mais frequentes e eficazes para controlar os elementos afetivos, desenvolver as competências comunicativas, planificar o trabalho, compreender e assimilar os conteúdos linguísticos, realizar e avaliar atividades e tarefas, individualmente ou em grupo.",
+          "Utilizar diferentes estratégias e suportes técnicos nas fases de planificação e de realização de tarefas comunicativas de compreensão, interação e produção orais e escritas, avaliando a sua eficiência.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Espanhol, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 8.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 8.º.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/espanhol_3c_9a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Identificar as ideias principais e selecionar informação explícita em intervenções e discursos breves, de géneros e suportes diversos, sobre pessoas, experiências, produtos, serviços, situações do quotidiano, do mundo do trabalho e do lazer e sobre temas da atualidade, sempre que as ideias sejam claras e bem estruturadas, predomine um vocabulário frequente e a articulação seja clara.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Selecionar e associar informação relevante de sequências descritivas, explicativas, narrativas e argumentativas, em textos de géneros e suportes diversos, sobre situações do quotidiano, do mundo do trabalho e do lazer e assuntos da atualidade cultural, política e científica, sempre que as ideias sejam claras e bem estruturadas, predomine o vocabulário frequente e contenha expressões idiomáticas muito correntes.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir em conversas curtas, bem estruturadas e ligadas a situações familiares, nas quais: troca ideias, informações, opiniões e desejos sobre situações do quotidiano, experiências e interesses pessoais e temas da atualidade; aconselha e orienta em tarefas e situações diversas; se apoia, quando necessário, no discurso do interlocutor; utiliza vocabulário e expressões idiomáticas muito frequentes e estruturas frásicas elementares; pronuncia de forma suficientemente clara para ser entendido.",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Escrever cartas, mails, notas e mensagens diversas, em papel ou em aplicações digitais (chats, foros, redes sociais, entre outros), nos quais: pede e dá informações sobre o meio envolvente, situações do quotidiano, experiências e interesses pessoais, acontecimentos reais ou imaginários, preferências e opiniões; exprime opiniões, gostos, preferências, conselhos, desejos e hipóteses sobre assuntos do quotidiano e temas da atualidade; aconselha e orienta em tarefas e situações diversas; respeita as convenções textuais e sociolinguísticas das mensagens, adequando-as ao destinatário; utiliza vocabulário e expressões idiomáticas muito frequentes e estruturas frásicas elementares; articula as ideias com recursos elementares de coordenação e subordinação para gerar una sequência lógica de informações.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Exprimir-se, de forma simples, em monólogos curtos preparados previamente, nos quais: descreve o meio envolvente e situações do quotidiano; conta experiências pessoais e acontecimentos reais ou imaginários, presentes ou passados; apresenta opiniões, gostos, preferências, conselhos, desejos e hipóteses sobre assuntos do quotidiano e temas da atualidade; utiliza vocabulário e expressões idiomáticas muito frequentes e estruturas frásicas elementares; pronuncia de forma suficientemente clara para ser entendido.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Escrever textos simples diversos, em papel ou em aplicações digitais, nos quais: descreve o meio envolvente e situações do quotidiano; conta experiências pessoais e acontecimentos reais ou imaginários, presentes ou passados; exprime opiniões, gostos, preferências, conselhos, desejos e hipóteses sobre assuntos do quotidiano e temas da atualidade; utiliza vocabulário e expressões idiomáticas muito frequentes e estruturas frásicas elementares; articula as ideias com recursos elementares de coordenação e subordinação para gerar una sequência lógica de informações; respeita as convenções textuais dos géneros trabalhados previamente nas aulas.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Estabelecer relações entre os elementos do património cultural, das tradições e dos comportamentos sociais dos países hispanofalantes e relacioná-los com os de Portugal.",
+          "Expressar e responder a informações e conhecimentos relativos à língua, às sociedades e ao património cultural e artístico dos países hispanofalantes, usando-os em atividades diversificadas (trabalhos, apresentações, jogos, concursos, exposições, vídeos, artefactos, atividades de palco, etc.).",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Identificar os objetivos das atividades de aprendizagem propostas na aula.",
+          "Identificar as estratégias de comunicação e de aprendizagem que se ajustam ao seu perfil de aprendente, apoiando-se em questionários e outros documentos (Portefólio Europeu das Línguas, entre outros).",
+          "Utilizar recursos de aprendizagem variados (manuais, dicionários, enciclopédias, gramáticas, jornais, revistas, etc.), em suporte papel, digital e outros, em função dos objetivos das atividades propostas na aula.",
+          "Reconhecer os erros como parte integrante do processo de aprendizagem e propor formas de os superar.",
+          "Avaliar os progressos e carências, próprios e alheios, na aquisição da língua.",
+          "Aceder ao sentido de mensagens orais e escritas através de diversos indícios contextuais e textuais, alargar os recursos verbais e não-verbais.",
+          "Mobilizar suportes diversos (papel, digital e outros) nas tarefas de interação e de produção oral e escrita.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Espanhol, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 9.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 9.º.",
+  },
+}
+
+const frances: SubjectCurriculum = {
+  7: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/frances_3c_7a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Identificar um número limitado de palavras e de frases simples em instruções, mensagens e textos simples e curtos (anúncios públicos, publicidade e canções, publicações digitais, entre outros), desde que o discurso seja muito claro, pausado, cuidadosamente articulado e relativo à identificação e caracterização pessoais, hábitos e necessidades do quotidiano.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Identificar palavras e frases simples em instruções, mensagens e textos ilustrados curtos (instruções, mapas, cartazes, horários, publicidade, catálogos, receitas, ementas, postais, mensagens pessoais, banda desenhada, publicações digitais, entre outros), relativos à identificação e caracterização pessoais, hábitos e necessidades do quotidiano.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir em situações do quotidiano com preparação prévia, apoiando-se no discurso do interlocutor, com pronúncia geralmente compreensível e repertório muito limitado, expressões, frases simples e estruturas gramaticais muito elementares para: - estabelecer contactos sociais (cumprimentos, desculpas e agradecimentos); - pedir ou dar informações (dados pessoais, hábitos, gostos e preferências, lugares, serviços, factos e projetos).",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Completar formulários com os dados adequados e escrever mensagens simples e curtas (30-40 palavras), respeitando as convenções textuais e sociolinguísticas das mensagens. Utilizar expressões e frases muito simples com estruturas gramaticais muito elementares para: - pedir e dar informações breves; - agradecer, desculpar-se, felicitar (aniversários e outras celebrações), aceitar ou recusar convites.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Exprimir-se, de forma muito simples, pronunciando de forma geralmente compreensível e apoiando-se num texto memorizado com um repertório muito limitado de palavras, expressões isoladas e frases curtas para: - se apresentar; - apresentar e descrever outras pessoas, hábitos, gostos, preferências, projetos, serviços, lugares e factos.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Escrever textos (30-40 palavras) simples e muito curtos, em suportes variados, utilizando expressões, frases e estruturas gramaticais muito elementares para: - se apresentar; - apresentar e descrever outras pessoas, hábitos, gostos, preferências, projetos, serviços, lugares e factos.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Reconhecer elementos constitutivos da sua própria cultura e da(s) cultura(s) da língua estrangeira no seu meio envolvente e nas práticas de comunicação da vida quotidiana. Observação e recolha de elementos culturais da língua estrangeira; - identificação de traços identitários, de semelhanças e diferenças culturais em situações quotidianas.",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Demonstrar uma atitude positiva e confiante na aprendizagem da língua estrangeira. Valorizar o uso da língua estrangeira como instrumento de comunicação dentro da aula, nomeadamente para solicitar esclarecimentos, ajuda e colaborar com colegas na realização de tarefas e na resolução de problemas. Usar os seus conhecimentos prévios em língua materna e noutras línguas, a sua experiência pessoal, indícios contextuais e semelhanças lexicais e gramaticais para fazer previsões de sentido e comunicar de forma simples, recorrendo, quando necessário, a idiomas conhecidos, gestos, mímica e/ou desenhos. Recolha de informação sobre a motivação e representações da língua; - utilização da língua estrangeira na comunicação da sala de aula; - mobilização de conhecimentos linguísticos, experiências e meios não-verbais para superar as deficiências na receção e na produção.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Francês, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 7.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 7.º.",
+  },
+  8: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/frances_3c_8a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Identificar palavras‑chave e frases simples e inferir o sentido geral em mensagens e textos simples e curtos (anúncios públicos, mensagens telefónicas, publicidade, canções, videoclipes, publicações digitais, entre outros), relacionados com situações do quotidiano e experiências pessoais e articulados de forma clara e pausada.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Identificar palavras‑chave e frases simples e inferir o sentido geral em mensagens e textos simples e curtos (correspondência, folhetos, publicidade, catálogos, receitas, ementas, artigos de jornal, banda desenhada, publicações digitais, entre outros), relacionados com situações do quotidiano e experiências pessoais, constituídos essencialmente por frases com estruturas elementares e vocabulário familiar.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir, sobre situações do quotidiano e experiências pessoais, pronunciando de forma compreensível, em conversas curtas, bem estruturadas e ligadas, tendo em conta o discurso do interlocutor, respeitando os princípios de delicadeza e usando um repertório limitado de expressões e de frases com estruturas gramaticais elementares para: - pedir e dar informações; - descrever, narrar acontecimentos reais ou imaginários, presentes ou passados; - exprimir gostos e preferências.",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Escrever correspondência (50-60 palavras) sobre situações do quotidiano e experiências pessoais em suportes diversos respeitando as convenções textuais, utilizando vocabulário elementar e frases simples e articulando as ideias com conetores básicos de coordenação e subordinação para: - pedir e dar informações; - descrever, narrar acontecimentos reais ou imaginários, presentes ou passados; - exprimir gostos e preferências.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Exprimir‑se sobre situações do quotidiano e experiências pessoais, de forma simples, em monólogos curtos preparados previamente, usando um repertório limitado de expressões e de frases com estruturas gramaticais elementares e pronunciando de forma suficientemente clara para: - descrever e narrar acontecimentos reais ou imaginários, presentes ou passados; - exprimir gostos e preferências.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Escrever, sobre situações do quotidiano e experiências pessoais, textos (50-60 palavras) simples e curtos, em suportes diversos, respeitando as convenções textuais, utilizando vocabulário elementar e frases simples e articulando as ideias com conetores básicos de coordenação e subordinação para: - descrever e narrar acontecimentos reais ou imaginários, presentes ou passados; - exprimir gostos e preferências.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Observar e identificar a diversidade na sua cultura de origem, assim como na(s) cultura(s) da língua estrangeira em referências, hábitos, atitudes e comportamentos inseridos em situações da vida quotidiana.",
+          "Observação, recolha e identificação de traços identitários diversos no universo cultural da língua materna e da língua estrangeira.",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Reconhecer a importância de estratégias no processo de aprendizagem da língua estrangeira (motivação, contacto com a língua, planificação do trabalho, pesquisa de informação, assimilação de conhecimentos) e identificar as mais frequentes e eficazes para realizar tarefas individualmente ou em grupo. Utilizar diferentes estratégias e suportes técnicos nas fases de planificação, de realização de tarefas comunicativas de compreensão, interação oral e produção escrita, avaliando a sua eficiência. Recolha de informação sobre estratégias utilizadas no processo de aprendizagem e avaliação da sua eficácia; autoanálise dos pontos fortes e fracos das suas aprendizagens; descrição de processos e de pensamentos usados durante a realização de tarefas; reorientação do trabalho, individual ou em grupo, a partir de feedback do professor ou dos pares.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Francês, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 8.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 8.º.",
+  },
+  9: {
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/frances_3c_9a_ff.pdf",
+    domains: [
+      {
+        name: "Compreensão oral",
+        topics: [],
+        descriptors: [
+          "Compreender as ideias principais e identificar a informação relevante explícita em documentos curtos (anúncios públicos, mensagens telefónicas, noticiários, reportagens, publicidade, canções, videoclipes, publicações digitais, entre outros), sobre o meio envolvente e situações variadas, constituídos essencialmente por frases simples e vocabulário muito frequente e articulados de forma clara e pausada.",
+        ],
+      },
+      {
+        name: "Compreensão escrita",
+        topics: [],
+        descriptors: [
+          "Compreender as ideias principais e identificar a informação relevante explícita em mensagens e textos simples e curtos (correspondência, folhetos, ementas, horários, avisos, artigos de imprensa, publicações digitais, textos literários, entre outros), sobre o meio envolvente e situações variadas e constituídos essencialmente por frases simples e vocabulário muito frequente.",
+        ],
+      },
+      {
+        name: "Interação oral",
+        topics: [],
+        descriptors: [
+          "Interagir, sobre o meio envolvente e situações variadas, em conversas curtas bem estruturadas, tendo em conta o discurso do interlocutor, respeitando os princípios de delicadeza e usando vocabulário muito frequente e frases com estruturas gramaticais elementares, com pronúncia suficientemente clara, para: - trocar ideias e informações; - descrever situações, narrar experiências pessoais e acontecimentos reais ou imaginários, presentes, passados ou futuros; - exprimir opiniões, gostos e preferências.",
+        ],
+      },
+      {
+        name: "Interação escrita",
+        topics: [],
+        descriptors: [
+          "Escrever correspondência (60-80 palavras) sobre o meio envolvente e situações variadas, respeitando as convenções textuais e sociolinguísticas, utilizando vocabulário muito frequente e frases curtas, articulando as ideias com diferentes conetores de coordenação e subordinação para: - pedir e dar informações; - descrever e narrar experiências e acontecimentos reais ou imaginários, presentes, passados ou futuros; - exprimir opiniões, gostos e preferências.",
+        ],
+      },
+      {
+        name: "Produção oral",
+        topics: [],
+        descriptors: [
+          "Exprimir-se, sobre o meio envolvente e situações variadas, de forma simples, em monólogos curtos preparados previamente, usando vocabulário muito frequente e frases com estruturas gramaticais elementares e pronunciando de forma suficientemente clara para: - descrever situações, narrar experiências pessoais e acontecimentos reais ou imaginários, presentes, passados ou futuros; - exprimir opiniões, gostos e preferências.",
+        ],
+      },
+      {
+        name: "Produção escrita",
+        topics: [],
+        descriptors: [
+          "Redigir textos (60-80 palavras) em suportes diversos sobre o meio envolvente e situações variadas, respeitando as convenções textuais, utilizando vocabulário muito frequente e frases curtas e articulando as ideias com diferentes conetores de coordenação e subordinação para: - descrever e narrar experiências e acontecimentos reais ou imaginários, presentes ou passados ou futuros; - exprimir opiniões, gostos e preferências.",
+        ],
+      },
+      {
+        name: "Competência Intercultural",
+        topics: [],
+        descriptors: [
+          "Estabelecer relações entre as culturas da língua materna e da língua estrangeira, enriquecendo a sua visão do mundo e a interpretação das diferenças e das semelhanças.",
+        ],
+      },
+      {
+        name: "Competência Estratégica",
+        topics: [],
+        descriptors: [
+          "Identificar as estratégias de comunicação e de aprendizagem que se ajustam ao seu perfil de aprendente, apoiando-se em questionários e outros documentos (Portefólio Europeu das Línguas, entre outros). Utilizar recursos de aprendizagem variados (manuais, dicionários, gramáticas em suporte papel, digital e outros) em função dos objetivos das atividades propostas na aula.",
+          "Reconhecer os erros como parte integrante do processo de aprendizagem e propor formas de os superar.",
+          "Aceder ao sentido de mensagens orais e escritas através de diversos indícios contextuais e textuais, alargar os recursos verbais e não-verbais e mobilizar suportes diversos (papel, digital e outros) nas tarefas de interação e de produção oral e escrita.",
+        ],
+      },
+    ],
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita (Francês, LE, níveis iniciais QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 9.º ano.",
+    cannotTest: "Níveis superiores ou conteúdos de outros anos fora do programa do 9.º.",
+  },
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BASE DE DADOS PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4359,8 +5280,8 @@ export const CURRICULUM_DB: CurriculumDB = {
   'Geografia':                          geografia,
   'Físico-Química':                     fisicoQuimica,
   'Inglês':                             ingles,
-  'Espanhol':                           {}, // placeholder — estrutura idêntica ao Inglês com QECR
-  'Francês':                            {}, // placeholder
+  'Espanhol':                           espanhol,
+  'Francês':                            frances,
   'Educação Visual':                    educacaoVisual,
   'Educação Tecnológica':               educacaoTecnologica,
   'Educação Musical':                   educacaoMusical,
