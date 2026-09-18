@@ -1402,23 +1402,290 @@ const fisicoQuimica: SubjectCurriculum = {
 // ─────────────────────────────────────────────────────────────────────────────
 const ingles: SubjectCurriculum = {
   5: {
-    source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/5_ingles.pdf',
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/5_ingles.pdf",
     domains: [
-      { name: 'Comunicação oral e escrita — nível A1/A2', topics: ['Vocabulário: família, escola, rotinas, animais, cores, números, alimentos, vestuário, tempo atmosférico, datas', 'Gramática: present simple, present continuous, verb to be, have got, can/can\'t, there is/are, articles, plurals, adjectives, prepositions of place/time', 'Funções comunicativas: apresentar-se, descrever pessoas/lugares, falar de gostos (like/love/hate + -ing), pedir/dar informações', 'Temáticas culturais: países anglófonos, tradições, festividades (Halloween, Christmas)'] },
+        {
+          name: "Compreensão oral",
+          topics: [],
+          descriptors: [
+          "Identificar palavras e expressões em canções e textos áudio/audiovisuais",
+          "entender pedidos que lhe são dirigidos, perguntas que lhe são feitas e informações que lhe são dadas",
+          "identificar a ideia global de pequenos textos orais",
+          "seguir conversas sobre assuntos que lhe são familiares, articuladas de forma lenta, clara e pausada.",
+          ],
+        },
+        {
+          name: "Compreensão escrita",
+          topics: [],
+          descriptors: [
+          "Seguir instruções elementares",
+          "reconhecer informação que lhe é familiar em anúncios/avisos",
+          "compreender mensagens curtas e simples (postais, mensagens de texto, post/tweets, blogs, emails) sobre assuntos do seu interesse",
+          "desenvolver a literacia, entendendo textos simplificados de leitura extensiva com vocabulário familiar, lendo frases e pequenos textos em voz alta.",
+          ],
+        },
+        {
+          name: "Interação oral",
+          topics: [],
+          descriptors: [
+          "Pedir e dar informações sobre identificação pessoal",
+          "formular perguntas e respostas sobre assuntos que lhe são familiares",
+          "fazer sugestões e convites simples",
+          "interagir de forma simples",
+          "participar numa conversa simples sobre temas básicos e factuais para satisfazer necessidades imediatas.",
+          ],
+        },
+        {
+          name: "Interação escrita",
+          topics: [],
+          descriptors: [
+          "Preencher um formulário (online ou em formato papel) simples com informação pessoal e preferências pessoais básicas",
+          "pedir e dar informação pessoal de forma simples",
+          "pedir e dar informação sobre gostos e preferências de uma forma simples",
+          "responder a um email, chat ou mensagem de forma simples.",
+          ],
+        },
+        {
+          name: "Produção oral",
+          topics: [],
+          descriptors: [
+          "Articular sons da língua inglesa não existentes na língua materna",
+          "pronunciar, com correção, expressões e frases familiares",
+          "exprimir gostos e preferências pessoais, utilizando frases simples",
+          "descrever aspetos simples do seu dia a dia, utilizando frases simples",
+          "fazer descrições simples de um objeto ou imagem, utilizando expressões comuns",
+          "falar/fazer apresentações sobre alguns temas trabalhados previamente.",
+          ],
+        },
+        {
+          name: "Produção escrita",
+          topics: [],
+          descriptors: [
+          "Descrever-se a si e à família",
+          "redigir mensagens e notas pessoais",
+          "redigir postais e convites",
+          "escrever sobre as suas preferências, utilizando expressões e frases simples, justificando-as usando o conector because",
+          "descrever uma imagem usando there is/there are.",
+          ],
+        },
+        {
+          name: "Reconhecer realidades interculturais distintas",
+          topics: [],
+          descriptors: [
+          "Reconhecer elementos constitutivos da sua própria cultura e da(s) cultura(s) de língua estrangeira: diferentes aspetos de si próprio, identificar pessoas, lugares e aspetos que são importantes para si e para a sua cultura",
+          "identificar espaços de realidades culturais diferentes (a comunidade dos outros)",
+          "localizar no mapa alguns países de expressão inglesa",
+          "associar capitais e algumas cidades desses países estudados",
+          "reconhecer aspetos culturais de países de expressão inglesa, tais como bandeiras e símbolos nacionais.",
+          ],
+        },
+        {
+          name: "Comunicar eficazmente em contexto",
+          topics: [],
+          descriptors: [
+          "Valorizar o uso da língua como instrumento de comunicação e de resolução de problemas, dentro e fora da sala de aula",
+          "reformular a sua capacidade de comunicar, usando a linguagem corporal, tais como gestos e mímica, para ajudar a transmitir mensagens ao outro",
+          "preparar, repetir e memorizar uma apresentação oral como forma de ganhar confiança",
+          "apresentar uma atividade Show & Tell à turma ou a outros elementos da comunidade educativa, respondendo a perguntas simples colocadas sobre o tema abordado.",
+          ],
+        },
+        {
+          name: "Trabalhar e colaborar em pares e pequenos grupos",
+          topics: [],
+          descriptors: [
+          "Participar em atividades de pares e grupos, revelando atitudes como, por exemplo, saber esperar a sua vez, ouvir os outros e refletir criticamente sobre o que foi dito, apresentando razões para justificar as suas conclusões",
+          "entender e seguir instruções breves",
+          "fazer sugestões e convites simples",
+          "demonstrar atitudes de inteligência emocional, utilizando expressões para cumprimentar, agradecer e despedir-se",
+          "diferenciar as formas de tratamento a utilizar com os colegas e com o professor",
+          "convidar outros a contribuir para a realização de tarefas elementares, usando expressões curtas e simples",
+          "planear, organizar e apresentar uma tarefa de pares ou um trabalho de grupo.",
+          ],
+        },
+        {
+          name: "Utilizar a literacia tecnológica para comunicar e aceder ao saber em contexto",
+          topics: [],
+          descriptors: [
+          "Comunicar com outros a uma escala local, nacional e internacional, recorrendo a aplicações tecnológicas para produção e comunicação online",
+          "contribuir para projetos e tarefas de grupo interdisciplinares que se apliquem ao contexto, a experiências reais e quotidianas do aluno",
+          "participar num WebQuest e aceder ao saber, recorrendo a aplicações informáticas online.",
+          ],
+        },
+        {
+          name: "Pensar criticamente",
+          topics: [],
+          descriptors: [
+          "Seguir um raciocínio bem estruturado e fundamentado e apresentar o seu próprio raciocínio ao/s outro/s, utilizando factos para justificar as suas opiniões",
+          "refletir criticamente sobre o que foi dito, fazendo ao outro perguntas simples que desenvolvam a curiosidade",
+          "deduzir o significado de palavras e expressões desconhecidas simples acompanhadas de imagens.",
+          ],
+        },
+        {
+          name: "Relacionar conhecimentos de forma a desenvolver a criatividade em contexto",
+          topics: [],
+          descriptors: [
+          "Realizar trabalhos criativos e produzir a linguagem necessária para apresentar os mesmos ao professor/aos colegas",
+          "realizar atividades para desenvolver a literacia, tais como trabalhar a rima, a sinonímia e a antonímia",
+          "desenvolver e participar em projetos e atividades interdisciplinares.",
+          ],
+        },
+        {
+          name: "Desenvolver o aprender a aprender em contexto de sala de aula e aprender a regular o processo de aprendizagem",
+          topics: [],
+          descriptors: [
+          "Discutir e selecionar objetivos de aprendizagem comuns e individuais",
+          "controlar as suas aprendizagens, registando as experiências mais relevantes",
+          "saber procurar palavras por áreas temáticas",
+          "utilizar os seus conhecimentos prévios da língua e a experiência pessoal para fazer previsões de sentido e comunicar de forma simples em Inglês",
+          "participar numa reflexão no final da aula para identificar atividades associadas aos objetivos de aprendizagem e o cumprimento dos mesmos",
+          "realizar atividades simples de auto e heteroavaliação: portefólios, diários e grelhas de progressão de aprendizagem.",
+          ],
+        },
     ],
-    canTest: 'Compreensão de textos simples (A1-A2); produção escrita guiada; vocabulário (família, escola, rotinas, animais, casa, alimentos); present simple e continuous; to be, have got, can; there is/are; preposições; artigos; adjectivos; funções comunicativas (apresentação, gostos, descrição).',
-    cannotTest: 'Past simple (6.º); present perfect (7.º); conditionals (8.º-9.º); ensaio argumentativo.',
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita ao nível A1.1/A1.2 (QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 5.º ano (apresentação, gostos/preferências, rotinas, descrição de pessoas/objetos/imagens); gramática elementar coerente com o nível A1.",
+    cannotTest: "Níveis A2+ e conteúdos do 6.º ano ou do 3.º ciclo; ensaio argumentativo; tempos verbais além do programa do 5.º.",
   },
-
   6: {
-    source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/6_ingles.pdf',
+    source: "https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/2_ciclo/6_ingles.pdf",
     domains: [
-      { name: 'Comunicação oral e escrita — nível A2', topics: ['Vocabulário: viagens e férias, desportos e passatempos, saúde e corpo humano, meio ambiente, tecnologia', 'Gramática: past simple (regular e irregular), future (going to, will), comparatives e superlatives, question words, possessive pronouns, countable/uncountable nouns, some/any/much/many', 'Funções comunicativas: narrar no passado, fazer planos, comparar, dar opiniões, expressar preferências'] },
+        {
+          name: "Compreensão oral",
+          topics: [],
+          descriptors: [
+          "Compreender discursos muito simples articulados de forma clara e pausada",
+          "seguir conversas sobre assuntos que lhe são familiares",
+          "compreender os acontecimentos principais de uma história/notícia, contada de forma clara e pausada",
+          "identificar o contexto do discurso, a ideia principal e informações simples.",
+          ],
+        },
+        {
+          name: "Compreensão escrita",
+          topics: [],
+          descriptors: [
+          "Compreender textos simples com vocabulário limitado",
+          "identificar a ideia principal e a informação essencial em textos diversificados",
+          "desenvolver a literacia, compreendendo textos de leitura extensiva com vocabulário familiar.",
+          ],
+        },
+        {
+          name: "Interação oral",
+          topics: [],
+          descriptors: [
+          "Adequar a forma de tratamento ao interlocutor e ao contexto em situações de role play",
+          "responder a perguntas diretas com apoio",
+          "participar numa conversa curta sobre situações de rotina que lhe são familiares, de necessidade imediata e do seu interesse",
+          "comunicar uma tarefa simples",
+          "trocar opiniões e comparar lugares, objetos e pessoas, usando uma linguagem simples.",
+          ],
+        },
+        {
+          name: "Interação escrita",
+          topics: [],
+          descriptors: [
+          "Preencher um formulário (online) ou em formato papel simples, com informação pessoal e sobre áreas de interesse básicas",
+          "pedir e dar informação sobre gostos e preferências de uma forma simples",
+          "redigir e responder a posts/tweets curtos com frases curtas sobre passatempos, gostos e preferências",
+          "responder a um email, chat ou mensagem de forma simples.",
+          ],
+        },
+        {
+          name: "Produção oral",
+          topics: [],
+          descriptors: [
+          "Falar sobre os temas explorados: lojas, serviços públicos, tempos livres, viagens, família e amigos, rotinas, escola, meios de transporte, tipos de habitação, descrever pessoas, lugares, acontecimentos e atividades com apoio de imagens",
+          "(re)contar uma pequena história, sequenciando os acontecimentos, de forma simples.",
+          ],
+        },
+        {
+          name: "Produção escrita",
+          topics: [],
+          descriptors: [
+          "Escrever um pequeno texto descritivo sobre a sua rotina diária, a escola, acontecimentos, com a ajuda de tópicos ou imagens",
+          "escrever notas e mensagens curtas e simples sobre assuntos de necessidade imediata",
+          "expressar opinião sobre os seus interesses, utilizando expressões e frases simples do dia a dia.",
+          ],
+        },
+        {
+          name: "Reconhecer realidades interculturais distintas",
+          topics: [],
+          descriptors: [
+          "Conhecer o seu meio e o dos outros para identificar a diversidade cultural em universos diferenciados",
+          "descrever diferentes elementos da sua cultura, identidade e língua por oposição à cultura anglo-saxónica e à língua inglesa",
+          "comparar os espaços à sua volta com espaços de realidades culturais diferentes",
+          "identificar exemplos concretos de atitudes de tolerância e respeito intercultural",
+          "reconhecer algumas diferenças entre as relações interculturais.",
+          ],
+        },
+        {
+          name: "Comunicar eficazmente em contexto",
+          topics: [],
+          descriptors: [
+          "Reconhecer diferentes estratégias de comunicação nas fases de planificação, realização e avaliação das atividades comunicativas",
+          "preparar, repetir, memorizar uma apresentação oral",
+          "apresentar uma atividade de Show & Tell, com confiança e segurança, à turma e a outros elementos da comunidade educativa, respondendo a perguntas colocadas sobre o tema abordado.",
+          ],
+        },
+        {
+          name: "Trabalhar e colaborar em pares e pequenos grupos",
+          topics: [],
+          descriptors: [
+          "Participar em atividades de pares e grupos, revelando atitudes como, por exemplo: saber esperar a sua vez, ouvir ativamente os outros e refletir criticamente sobre o que foi dito, dando razões para justificar as suas conclusões",
+          "formular perguntas e dar respostas",
+          "demonstrar atitudes de inteligência emocional, utilizando expressões para exprimir sentimentos de agrado e desagrado e indicar concordância e/ou discordância",
+          "colaborar em tarefas elementares, pedindo e fazendo sugestões simples",
+          "planear, organizar, dar conselhos, utilizando estruturas simples e apresentar uma tarefa de pares ou um trabalho de grupo.",
+          ],
+        },
+        {
+          name: "Utilizar a literacia tecnológica para comunicar e aceder ao saber em contexto",
+          topics: [],
+          descriptors: [
+          "Comunicar com outros a uma escala local, nacional e internacional, recorrendo a aplicações tecnológicas para produção e comunicação online",
+          "contribuir para projetos e tarefas de grupo interdisciplinares que se apliquem ao contexto, a experiências reais e quotidianas do aluno",
+          "participar num WebQuest e aceder ao saber, recorrendo a aplicações informáticas online.",
+          ],
+        },
+        {
+          name: "Pensar criticamente",
+          topics: [],
+          descriptors: [
+          "Reunir e associar informação para realizar tarefas e trabalhos ou aprofundar interesses pessoais",
+          "desenvolver a autonomia intelectual de forma a adotar uma atitude mais independente perante novas aprendizagens.",
+          ],
+        },
+        {
+          name: "Relacionar conhecimentos de forma a desenvolver a criatividade em contexto",
+          topics: [],
+          descriptors: [
+          "Demonstrar uma atitude resiliente e assumir riscos de forma a realizar novos trabalhos criativos, produzindo a linguagem necessária para apresentar os mesmos ao professor/aos colegas, mesmo que isto implique realizar a tarefa em várias tentativas",
+          "cantar, reproduzir rimas e lengalengas",
+          "participar em atividades dramáticas e de role-play",
+          "ler e reproduzir histórias",
+          "realizar atividades para desenvolver a literacia, como trabalhar a rima, a sinonímia e antonímia",
+          "desenvolver e participar em projetos e atividades interdisciplinares.",
+          ],
+        },
+        {
+          name: "Desenvolver o aprender a aprender em contexto de sala de aula e aprender a regular o processo de aprendizagem",
+          topics: [],
+          descriptors: [
+          "Discutir e selecionar objetivos de aprendizagem comuns e individuais",
+          "desenvolver uma atitude ativa, autónoma e perseverante perante a própria aprendizagem",
+          "monitorizar/avaliar progressos e dificuldades na língua inglesa",
+          "selecionar estratégias eficazes para superar dificuldades e consolidar aprendizagens",
+          "utilizar dicionários bilingues simples (online e em papel)",
+          "utilizar os seus conhecimentos prévios da língua e a sua experiência pessoal para fazer previsões pertinentes e comunicar de forma simples em Inglês",
+          "participar numa reflexão e discussão no final da aula para identificar atividades associadas aos objetivos de aprendizagem e ao cumprimento dos mesmos",
+          "reconhecer diferentes estratégias de aprendizagem",
+          "realizar atividades simples de auto e heteroavaliação: portefólios, diários e gráficos de progressão de aprendizagem.",
+          ],
+        },
     ],
-    canTest: 'Past simple (regular e irregular, afirmativo/negativo/interrogativo); going to e will (futuro); comparativos e superlativos; countable/uncountable; some/any/much/many; vocabulário de viagens, desportos, saúde; narração simples no passado; comparação.',
-    cannotTest: 'Present perfect (7.º); reported speech (8.º); conditionals (8.º-9.º).',
+    perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+    canTest: "Compreensão oral e escrita, interação e produção oral e escrita ao nível A2 (QECR); domínio intercultural; competência estratégica. Vocabulário e funções do programa do 6.º ano; narração no passado, comparação e planos futuros coerentes com o nível A2.",
+    cannotTest: "Níveis B1+ e conteúdos do 3.º ciclo; present perfect, reported speech, conditionals; ensaio argumentativo.",
   },
-
   7: {
     source: 'https://www.dge.mec.pt/sites/default/files/Curriculo/Aprendizagens_Essenciais/3_ciclo/ingles_3c_7a_ff.pdf',
     domains: [
