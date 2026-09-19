@@ -759,6 +759,22 @@ PERFIL DO ALUNO (PASEO) — as questões devem mobilizar COMPETÊNCIAS, não ape
 • Saber científico/técnico e linguagens: exige terminologia correcta da disciplina e comunicação clara na resposta esperada.
 • Adequação ao ${yearLevel}.º ano: competências e vocabulário próprios da idade — nem infantilizado, nem de anos seguintes.`
 
+    // Calculadora só faz sentido em disciplinas de cálculo. Nas restantes, as
+    // instruções e as questões NUNCA devem mencionar calculadora.
+    const calcSubjects = ['Matemática', 'Matemática A', 'Físico-Química', 'Física e Química A']
+    const allowsCalc = calcSubjects.includes(subject)
+    const calcRule = allowsCalc
+      ? `8. CALCULADORA: para cada questão, define allowCalculator:true APENAS quando o objectivo é avaliar raciocínio/estratégia com cálculos onde a conta não é o alvo (ex: optimização, geometria analítica, probabilidade composta); false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.`
+      : `8. CALCULADORA: define allowCalculator:false em TODAS as questões — a calculadora não se usa em ${subject}. É PROIBIDO mencionar calculadora (ou "máquina de calcular") nas instruções ou nos enunciados.`
+    // Instrução inicial adaptada à disciplina (sem menções fora de contexto).
+    const isLanguage = ['Inglês', 'Espanhol', 'Francês', 'Alemão'].includes(subject)
+    const exampleInstructions = allowsCalc
+      ? 'Lê atentamente cada questão antes de responder. Apresenta todos os cálculos e justificações. Podes usar calculadora apenas nas questões assinaladas. Não é permitido o uso de corretor — risca e reescreve com clareza.'
+      : isLanguage
+      ? 'Lê atentamente cada questão antes de responder. Responde de forma clara e correcta na língua indicada. Não é permitido o uso de corretor — risca e reescreve com clareza.'
+      : 'Lê atentamente cada questão antes de responder. Responde de forma clara e organizada, justificando sempre que for pedido. Não é permitido o uso de corretor — risca e reescreve com clareza.'
+    const instructionsRule = `INSTRUÇÕES DO TESTE (campo "instructions"): adapta-as à disciplina (${subject}) e ao ${yearLevel}.º ano. NUNCA menciones materiais que não se usam nesta disciplina${allowsCalc ? '' : ' (em especial, nada de calculadora/máquina de calcular)'}. Usa como referência: "${exampleInstructions}"`
+
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e o Perfil dos Alunos à Saída da Escolaridade Obrigatória.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
@@ -790,7 +806,8 @@ ${scoringRule}
    • Filosofia (análise de texto / questão conceptual): "Identificação correcta do conceito/tese/autor (Xpt) + explicação com referência explícita ao pensamento do autor no texto ou no programa (Xpt) + terminologia filosófica adequada (Xpt). ⚑ Proposta de cotação — verificar rigor conceptual na resposta do aluno."
    • Filosofia (desenvolvimento / ensaio filosófico): "Tese/Problematização — posição clara sobre a questão filosófica (Xpt) + Argumentação — mínimo 2 argumentos com conceitos e autores do programa DGE (Xpt) + Adequação conceptual e teórica — terminologia e autores correctamente mobilizados (Xpt) + Comunicação — organização, coesão e clareza do discurso filosófico (Xpt). ⚑ Rubrica orientadora — cotação a ajustar pelo professor; questão de desenvolvimento com avaliação necessariamente holística."
    REGRA ABSOLUTA: A soma dos pontos parciais no markScheme = "points" da questão. Cada Xpt é um número inteiro concreto, nunca um intervalo.
-8. CALCULADORA: Para cada questão, define allowCalculator:true APENAS se o objectivo é avaliar raciocínio/estratégia com cálculos complexos onde o cálculo não é o alvo (ex: problemas de optimização, geometria analítica, probabilidade composta). Define false para memorização, conceitos, ou quando o cálculo simples é parte essencial do que se avalia.
+${calcRule}
+${instructionsRule}
 9. VERIFICAÇÃO ARITMÉTICA E LÓGICA (questões com números/cálculos/optimização): antes de finalizares, refaz o cálculo do zero e confirma que "correctAnswer" e markScheme estão aritmeticamente correctos — nunca assumas um valor sem o calcular explicitamente (ex: se pedes "o maior divisor de 96 menor que 96", calcula realmente os divisores antes de escrever a resposta). Se o enunciado pede um valor "óptimo"/"máximo"/"mínimo" sob uma restrição (ex: "dividir em grupos iguais com o máximo de alunos por grupo"), confirma que o enunciado inclui TODAS as restrições necessárias para uma resposta única e não-trivial — sem isso, a resposta trivial (ex: 1 único grupo) seria tecnicamente válida e a questão estaria mal proposta. Acrescenta a restrição em falta ao enunciado (ex: "...divididos em mais de 2 grupos...", "...sabendo que cada grupo deve ter entre 10 e 30 alunos..."). PROIBIDO ABSOLUTO: gerar uma questão de optimização/divisibilidade/contagem sem este cálculo de verificação prévio.
 
 DISCIPLINA ESPECÍFICA: ${subjectNote}
@@ -812,7 +829,7 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
   "difficulty": "${difficulty}",
   "totalPoints": 100,
   "duration": ${testDuration},
-  "instructions": "Lê atentamente cada questão antes de responder. Apresenta todos os cálculos/justificações. Não é permitido o uso de corretor — risca e reescreve com clareza.",
+  "instructions": "${exampleInstructions}",
   "groups": [
     {
       "label": "Grupo I",
@@ -901,7 +918,7 @@ TESTE ORIGINAL (JSON):
 ${JSON.stringify({ title: forcedTitle ?? '', groups: srcForModel })}
 
 Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`), com a MESMA estrutura do original:
-{"title":"${forcedTitle ?? ''}","subject":"${subject}","yearLevel":${yearLevel},"topic":"${topic}","difficulty":"${difficulty}","totalPoints":100,"duration":${testDuration},"instructions":"<instruções adaptadas ao nível>","groups":[{"label":"...","description":"...","totalPoints":0,"questions":[{"index":1,"type":"...","bloomLevel":"...","text":"...","figure":null,"options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":"...","points":0,"allowCalculator":false,"markScheme":"..."}]}]}`
+{"title":"${forcedTitle ?? ''}","subject":"${subject}","yearLevel":${yearLevel},"topic":"${topic}","difficulty":"${difficulty}","totalPoints":100,"duration":${testDuration},"instructions":"<instruções adaptadas ao nível e à disciplina>","groups":[{"label":"...","description":"...","totalPoints":0,"questions":[{"index":1,"type":"...","bloomLevel":"...","text":"...","figure":null,"options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":"...","points":0,"allowCalculator":false,"markScheme":"..."}]}]}`
     }
   } else if (tool === 'lesson_plan') {
     const { subject, yearLevel, topic, duration, country, methodologies, preferences } = inputs as {
