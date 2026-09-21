@@ -79,6 +79,15 @@ export interface ExamSubmission {
   teacher_notes: string | null
   submitted_at: string
   graded_at: string | null
+  // ── Correção de provas em papel (aditivo) ──
+  source?: 'digital' | 'paper'
+  ocr_details?: Record<string, { text: string; confidence: number; illegible: boolean; notes?: string }> | null
+  writing_analysis?: {
+    errors: Array<{ questionIndex: number; wrong: string; correct: string; type: string }>
+    counts: Record<string, number>
+    total: number
+    summary: string
+  } | null
 }
 
 /** Extrai todas as questões de um TestSnapshot (suporta groups[] e questions[]) */
