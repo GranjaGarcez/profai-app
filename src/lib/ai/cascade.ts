@@ -123,6 +123,60 @@ export async function callOpenAICompat(
   }
 }
 
+// ── Chamada multimodal (visão): envia imagens + prompt de texto ────────────────
+// Usa o formato OpenAI (array de content parts com image_url data-URI). O endpoint
+// OpenAI-compat do Gemini aceita este formato. `images` são data-URIs completos
+// (ex.: "data:image/jpeg;base64,...").
+export async function callVisionCompat(
+  url: string,
+  apiKey: string,
+  model: string,
+  prompt: string,
+  images: string[],
+  opts: {
+    timeoutMs?: number
+    label?: string
+    extraHeaders?: Record<string, string>
+    systemPrompt?: string | null
+    maxTokens?: number
+    extraBody?: Record<string, unknown>
+  } = {}
+): Promise<string | null> {
+  const { timeoutMs = 45_000, label = 'Visão', extraHeaders = {}, systemPrompt = null, maxTokens = 4096, extraBody = {} } = opts
+  try {
+    const userContent: Array<Record<string, unknown>> = [
+      { type: 'text', text: prompt },
+      ...images.map(img => ({ type: 'image_url', image_url: { url: img } })),
+    ]
+    const messages = systemPrompt
+      ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }]
+      : [{ role: 'user', content: userContent }]
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+      body: JSON.stringify({ model, messages, temperature: 0.1, max_tokens: maxTokens, ...extraBody }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    if (!res.ok) {
+      let body = ''
+      try { body = (await res.text()).slice(0, 200) } catch { /* ignore */ }
+      console.warn(`[PROFAI] ${label} falhou: HTTP ${res.status} | ${body}`)
+      return null
+    }
+    const data = await res.json() as { choices: Array<{ message: { content: string } }> }
+    const text = data.choices[0]?.message?.content ?? ''
+    if (text.trim().length > 0) {
+      console.log(`[PROFAI] ${label} OK (${text.length} chars)`)
+      return text
+    }
+    return null
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.warn(`[PROFAI] ${label} erro: ${msg.slice(0, 120)}`)
+    return null
+  }
+}
+
 export interface GenerationResult {
   text: string
   isFallback: boolean
