@@ -12,7 +12,28 @@ interface Props {
 export default function SchoolProfileModal({ current, onSave, onClose }: Props) {
   const [form, setForm] = useState<SchoolProfile>({ ...current })
   const [logoPreview, setLogoPreview] = useState(current.logoDataUrl)
+  const [headerPreview, setHeaderPreview] = useState(current.headerDataUrl)
   const fileRef = useRef<HTMLInputElement>(null)
+  const headerRef = useRef<HTMLInputElement>(null)
+
+  function handleHeaderFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 1_500_000) { alert('Cabeçalho demasiado grande — máximo 1,5 MB. Exporta com menos resolução.'); return }
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const url = ev.target?.result as string
+      setHeaderPreview(url)
+      setForm(f => ({ ...f, headerDataUrl: url }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeHeader() {
+    setHeaderPreview('')
+    setForm(f => ({ ...f, headerDataUrl: '' }))
+    if (headerRef.current) headerRef.current.value = ''
+  }
 
   function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -105,6 +126,36 @@ export default function SchoolProfileModal({ current, onSave, onClose }: Props) 
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={handleLogoFile} />
+          </div>
+
+          {/* Cabeçalho oficial (imagem) */}
+          <div>
+            <label className="block text-xs font-semibold mb-2" style={{ color: '#0D1B2A' }}>
+              Cabeçalho oficial (imagem, máx. 1,5 MB)
+            </label>
+            {headerPreview ? (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={headerPreview} alt="Cabeçalho" className="w-full object-contain rounded border"
+                  style={{ borderColor: '#0D1B2A20', maxHeight: 120 }} />
+                <button onClick={removeHeader}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[10px] flex items-center justify-center"
+                  style={{ background: '#dc2626' }}>✕</button>
+              </div>
+            ) : (
+              <div className="w-full rounded border-2 border-dashed flex items-center justify-center text-xs py-3"
+                style={{ borderColor: '#0D1B2A25', color: '#9CA3AF' }}>sem cabeçalho — usa o texto abaixo</div>
+            )}
+            <button onClick={() => headerRef.current?.click()}
+              className="mt-2 px-3 py-1.5 rounded-lg border text-xs font-medium"
+              style={{ borderColor: '#0D1B2A30', color: '#0D1B2A' }}>
+              {headerPreview ? '↩ Substituir cabeçalho' : '📁 Carregar cabeçalho'}
+            </button>
+            <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>
+              Exporta o cabeçalho oficial do Word como imagem (no Word: <em>Ficheiro → Guardar como → PNG</em>, ou uma captura de ecrã). Aparece no topo dos testes; a disciplina/ano/turma são preenchidas pela app.
+            </p>
+            <input ref={headerRef} type="file" accept="image/*" className="hidden"
+              onChange={handleHeaderFile} />
           </div>
 
           {field('Agrupamento de Escolas', 'agrupamento', 'ex: Agrupamento de Escolas de Ponte de Lima')}

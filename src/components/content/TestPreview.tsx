@@ -1052,8 +1052,16 @@ export default function TestPreview({
             </p>
           )}
 
+          {/* Cabeçalho oficial da escola (imagem), quando configurado */}
+          {profile.headerDataUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.headerDataUrl} alt="Cabeçalho da escola" className="w-full object-contain mb-4"
+              style={{ printColorAdjust: 'exact', maxHeight: 150 } as React.CSSProperties} />
+          )}
+
           {/* Linha topo: escola + classificação */}
           <div className="flex justify-between items-start mb-5">
+            {!profile.headerDataUrl && (
             <div className="flex-1 flex items-start gap-4">
               {profile.logoDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -1094,6 +1102,7 @@ export default function TestPreview({
                 )}
               </div>
             </div>
+            )}
 
             {/* Classificação */}
             <div className="shrink-0 ml-8">

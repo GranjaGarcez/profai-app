@@ -8,6 +8,7 @@ export interface SchoolProfile {
   concelho: string
   anoLetivo: string     // "2025 / 2026"
   logoDataUrl: string   // base64 PNG/JPG — vazio = sem logótipo
+  headerDataUrl: string // base64 do cabeçalho oficial (imagem) — vazio = usar texto
 }
 
 const DEFAULT: SchoolProfile = {
@@ -16,6 +17,7 @@ const DEFAULT: SchoolProfile = {
   concelho: '',
   anoLetivo: '2025 / 2026',
   logoDataUrl: '',
+  headerDataUrl: '',
 }
 
 const KEY = 'profai_school_profile'
