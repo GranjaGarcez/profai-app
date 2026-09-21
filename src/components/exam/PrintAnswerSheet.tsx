@@ -4,6 +4,7 @@
 // resposta estruturadas: bolhas para objetivas, caixas com linhas para escritas.
 // Não altera o print existente do teste.
 import { getAllQuestions, type TestSnapshot, type Question } from '@/lib/exam/types'
+import { useSchoolProfile } from '@/lib/hooks/useSchoolProfile'
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -28,7 +29,11 @@ function answerZone(q: Question): string {
 export default function PrintAnswerSheet({
   title, accessCode, snapshot,
 }: { title: string; accessCode: string; snapshot: TestSnapshot }) {
+  const { profile } = useSchoolProfile()
   function print() {
+    const headerImg = profile.headerDataUrl
+      ? `<img class="schoolhead" src="${profile.headerDataUrl}" alt="Cabeçalho da escola">`
+      : ''
     const qs = getAllQuestions(snapshot)
     const body = qs.map(q => {
       const opts = (q.options?.length && q.type === 'multiple_choice')
@@ -76,7 +81,9 @@ export default function PrintAnswerSheet({
   .lines { margin: 5px 0 0; }
   .ln { border-bottom: 1px solid #999; height: 18px; }
   .foot { margin-top: 10px; font-size: 7.5pt; color: #999; text-align: center; }
+  .schoolhead { display: block; width: 100%; max-height: 40mm; object-fit: contain; margin-bottom: 8px; }
 </style></head><body>
+  ${headerImg}
   <div class="head">
     <div><h1>${esc(title)}</h1><div class="sub">${esc(snapshot.subject)} · ${snapshot.yearLevel}.º ano · ${snapshot.totalPoints} pontos${snapshot.duration ? ` · ${snapshot.duration} min` : ''}</div></div>
     <div class="code"><div class="lbl">CÓDIGO DA PROVA</div><div class="val">${esc(accessCode)}</div></div>
