@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import GradingDashboard from '@/components/exam/GradingDashboard'
+import PaperCorrection from '@/components/exam/PaperCorrection'
 
 interface Props {
   params: Promise<{ sessionId: string }>
@@ -100,6 +101,9 @@ export default async function ExamDetailPage({ params }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Correcção de prova em papel (foto → OCR → revisão → correcção) */}
+      <PaperCorrection sessionId={sessionId} testSnapshot={session.test_snapshot} />
 
       {/* Dashboard de correcção */}
       <GradingDashboard
