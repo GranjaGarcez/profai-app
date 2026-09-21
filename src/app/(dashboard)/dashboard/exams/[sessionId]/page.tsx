@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import GradingDashboard from '@/components/exam/GradingDashboard'
 import PaperCorrection from '@/components/exam/PaperCorrection'
+import PrintAnswerSheet from '@/components/exam/PrintAnswerSheet'
 
 interface Props {
   params: Promise<{ sessionId: string }>
@@ -102,7 +103,8 @@ export default async function ExamDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Correcção de prova em papel (foto → OCR → revisão → correcção) */}
+      {/* Prova em papel: imprimir folha otimizada + corrigir por foto */}
+      <PrintAnswerSheet title={session.title} accessCode={session.access_code} snapshot={session.test_snapshot} />
       <PaperCorrection sessionId={sessionId} testSnapshot={session.test_snapshot} />
 
       {/* Dashboard de correcção */}
