@@ -11,6 +11,7 @@ interface OcrResult {
   student: { name?: string; number?: string; class?: string }
   needsReview: boolean
   flagged: string[]
+  warnings: string[]
 }
 
 const THRESHOLD = 0.85
@@ -163,6 +164,15 @@ export default function PaperCorrection({ sessionId, testSnapshot }: { sessionId
           <div className="text-xs rounded-lg px-3 py-2" style={{ background: '#fffbeb', color: '#92400e' }}>
             ⚠️ Revisão obrigatória: confirma/corrige a transcrição antes de corrigir. As linhas a amarelo têm baixa confiança de reconhecimento.
           </div>
+
+          {ocr.warnings?.length > 0 && (
+            <div className="text-xs rounded-lg px-3 py-2 space-y-1" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+              <p className="font-semibold">🚩 Integridade das páginas — verifica antes de corrigir:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {ocr.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2">
             <input placeholder="Nome do aluno" value={student.name} onChange={e => setStudent(s => ({ ...s, name: e.target.value }))}

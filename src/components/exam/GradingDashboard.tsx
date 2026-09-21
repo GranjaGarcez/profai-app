@@ -18,6 +18,56 @@ interface Submission {
   teacher_notes: string | null
   submitted_at: string
   graded_at: string | null
+  // ── Correção de papel (aditivo) ──
+  source?: string
+  writing_analysis?: {
+    errors: Array<{ questionIndex: number; wrong: string; correct: string; type: string }>
+    counts: Record<string, number>
+    total: number
+    summary: string
+  } | null
+}
+
+// ── Perfil de erros de escrita (não-pontuável) — só provas de papel ────────────
+function WritingProfile({ analysis }: { analysis: NonNullable<Submission['writing_analysis']> }) {
+  const types: Record<string, string> = {
+    ortografia: 'Ortografia', 'acentuação': 'Acentuação', 'pontuação': 'Pontuação',
+    'concordância': 'Concordância', sintaxe: 'Sintaxe', 'vocabulário': 'Vocabulário', outro: 'Outro',
+  }
+  return (
+    <div className="rounded-xl border p-4 mt-4" style={{ borderColor: '#c8a84b40', background: '#fffdf5' }}>
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <h4 className="font-semibold text-sm" style={{ color: '#0D1B2A' }}>
+          ✍️ Perfil de escrita <span className="font-normal" style={{ color: '#9CA3AF' }}>(não afeta a cotação)</span>
+        </h4>
+        <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: '#0D1B2A', color: 'white' }}>
+          {analysis.total} {analysis.total === 1 ? 'erro' : 'erros'}
+        </span>
+      </div>
+      {analysis.summary && <p className="text-xs mb-3" style={{ color: '#6B7280' }}>{analysis.summary}</p>}
+      {analysis.total > 0 && (
+        <>
+          <div className="flex gap-1.5 flex-wrap mb-3">
+            {Object.entries(analysis.counts).map(([t, n]) => (
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#f3e9c6', color: '#7c5e10' }}>
+                {types[t] ?? t}: {n}
+              </span>
+            ))}
+          </div>
+          <ul className="space-y-1">
+            {analysis.errors.map((e, i) => (
+              <li key={i} className="text-xs flex items-center gap-2 flex-wrap" style={{ color: '#374151' }}>
+                <span className="font-mono px-1 rounded" style={{ background: '#fee2e2', color: '#b91c1c', textDecoration: 'line-through' }}>{e.wrong}</span>
+                <span style={{ color: '#9CA3AF' }}>→</span>
+                <span className="font-mono px-1 rounded" style={{ background: '#dcfce7', color: '#166534' }}>{e.correct}</span>
+                <span style={{ color: '#9CA3AF' }}>· {types[e.type] ?? e.type} · Q{e.questionIndex}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
@@ -650,6 +700,9 @@ function SubmissionDetail({
               </div>
             )
           })}
+
+          {/* Perfil de escrita (provas de papel) */}
+          {submission.writing_analysis && <WritingProfile analysis={submission.writing_analysis} />}
 
           {/* Notas do professor */}
           <div className="border rounded-xl p-4 space-y-2" style={{ borderColor: '#0D1B2A10' }}>

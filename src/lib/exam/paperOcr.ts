@@ -21,6 +21,9 @@ export interface OcrResult {
   needsReview: boolean
   /** índices que exigem revisão do professor. */
   flagged: string[]
+  /** avisos de integridade multipágina: caligrafia diferente, códigos/nomes que
+   *  não batem certo (possível troca de folhas), páginas em falta ou fora de ordem. */
+  warnings: string[]
 }
 
 export const OCR_REVIEW_THRESHOLD = 0.85
@@ -49,8 +52,14 @@ REGRAS:
 - Lê também o cabeçalho para o nome/número/turma do aluno, se visíveis.
 - É melhor marcar illegible/confiança baixa do que adivinhar.
 
+INTEGRIDADE MULTIPÁGINA (as fotos podem ser várias páginas de UMA prova, na ordem em que as recebes). No campo "warnings" acrescenta uma frase curta (PT-PT) por cada problema detetado, ou deixa a lista vazia se estiver tudo bem:
+- Se a CALIGRAFIA parecer diferente entre páginas (possível troca de folhas de outro aluno) → avisa, indicando a página.
+- Se o rodapé "Prova <CÓDIGO>" não for o mesmo em todas as páginas, ou o nome/número diferir entre páginas → avisa (possível mistura de provas).
+- Se a numeração "Página X de Y" indicar páginas em FALTA ou fora de ordem → avisa (ex.: "Falta a página 2 de 3").
+- Qualquer outra incongruência (duas respostas para a mesma questão, resposta cortada na foto, etc.) → avisa.
+
 Responde APENAS com JSON válido (sem markdown):
-{"student":{"name":"","number":"","class":""},"answers":{"<índice>":{"text":"","confidence":0.0,"illegible":false,"notes":""}}}`
+{"student":{"name":"","number":"","class":""},"answers":{"<índice>":{"text":"","confidence":0.0,"illegible":false,"notes":""}},"warnings":[]}`
 }
 
 /** Transcreve as respostas de uma prova em papel a partir de fotos (data-URIs). */
@@ -73,6 +82,7 @@ export async function transcribePaper(
     const parsed = text ? parseJsonObject(text) as {
       student?: { name?: string; number?: string; class?: string }
       answers?: Record<string, { text?: string; confidence?: number; illegible?: boolean; notes?: string }>
+      warnings?: unknown
     } | null : null
     if (!parsed?.answers) continue
 
@@ -91,6 +101,9 @@ export async function transcribePaper(
       }
       if (illegible || conf < OCR_REVIEW_THRESHOLD) flagged.push(key)
     }
+    const warnings = Array.isArray(parsed.warnings)
+      ? parsed.warnings.map(w => String(w).trim()).filter(Boolean)
+      : []
     return {
       answers,
       student: {
@@ -98,8 +111,9 @@ export async function transcribePaper(
         number: parsed.student?.number?.trim() || undefined,
         class: parsed.student?.class?.trim() || undefined,
       },
-      needsReview: flagged.length > 0,
+      needsReview: flagged.length > 0 || warnings.length > 0,
       flagged,
+      warnings,
     }
   }
   return null
