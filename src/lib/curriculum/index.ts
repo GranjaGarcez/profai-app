@@ -6021,6 +6021,36 @@ const frances: SubjectCurriculum = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CIDADANIA E DESENVOLVIMENTO (ENEC — Estratégia Nacional de Educação para a
+// Cidadania). Componente transversal: domínios comuns a todos os ciclos, NÃO
+// Aprendizagens Essenciais ano-a-ano. Mesmos domínios em todos os anos.
+// ─────────────────────────────────────────────────────────────────────────────
+const cidadaniaDomains: CurriculumDomain[] = [
+  {
+    name: 'Domínios obrigatórios em todos os ciclos',
+    topics: ['Direitos Humanos', 'Igualdade de Género', 'Interculturalidade', 'Desenvolvimento Sustentável', 'Educação Ambiental', 'Saúde'],
+  },
+  {
+    name: 'Domínios trabalhados em pelo menos dois ciclos',
+    topics: ['Sexualidade', 'Média', 'Instituições e participação democrática', 'Literacia financeira e educação para o consumo', 'Segurança rodoviária', 'Risco'],
+  },
+  {
+    name: 'Domínios opcionais (qualquer ano de escolaridade)',
+    topics: ['Empreendedorismo', 'Mundo do trabalho', 'Segurança, defesa e paz', 'Bem-estar animal', 'Voluntariado', 'Outros (definidos pela escola)'],
+  },
+]
+const cidadaniaEntry: CurriculumEntry = {
+  source: 'https://www.dge.mec.pt/estrategia-nacional-de-educacao-para-cidadania',
+  domains: cidadaniaDomains,
+  perfilAreas: ['Linguagens e textos', 'Informação e comunicação', 'Raciocínio e resolução de problemas', 'Pensamento crítico e pensamento criativo', 'Relacionamento interpessoal', 'Desenvolvimento pessoal e autonomia', 'Bem-estar, saúde e ambiente', 'Sensibilidade estética e artística', 'Saber científico, técnico e tecnológico', 'Consciência e domínio do corpo'],
+  canTest: 'Conhecimento e reflexão crítica sobre os domínios da ENEC (direitos humanos, igualdade de género, interculturalidade, desenvolvimento sustentável, ambiente, saúde, participação democrática, média, literacia financeira, etc.), adequados ao ano: análise de casos/situações, tomada de posição fundamentada, propostas de ação responsável. Componente essencialmente reflexiva e atitudinal.',
+  cannotTest: 'Cidadania e Desenvolvimento é transversal e NÃO tem Aprendizagens Essenciais ano-a-ano; não avalies conteúdos próprios de outras disciplinas (História, Geografia, CN) — foca-te nos domínios da ENEC. É sobretudo avaliação formativa, não sumativa clássica.',
+}
+const cidadania: SubjectCurriculum = Object.fromEntries(
+  Array.from({ length: 12 }, (_, i) => [i + 1, cidadaniaEntry]),
+) as SubjectCurriculum
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BASE DE DADOS PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export const CURRICULUM_DB: CurriculumDB = {
@@ -6042,6 +6072,7 @@ export const CURRICULUM_DB: CurriculumDB = {
   'Educação Musical':                   educacaoMusical,
   'Educação Física':                    educacaoFisica,
   'TIC':                                tic,
+  'Cidadania e Desenvolvimento':        cidadania,
   // Ensino Secundário (disciplinas próprias)
   'Biologia e Geologia':                biologiaGeologia,
   'Física e Química A':                 fisicaQuimicaA,

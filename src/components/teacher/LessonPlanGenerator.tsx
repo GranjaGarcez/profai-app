@@ -9,6 +9,7 @@ const SUBJECTS_PT = [
   'História', 'Geografia', 'Inglês', 'Espanhol', 'Francês',
   'História e Geografia de Portugal', 'Filosofia', 'Educação Visual', 'Educação Tecnológica',
   'Educação Musical', 'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A', 'TIC',
+  'Cidadania e Desenvolvimento',
 ]
 
 const METHODOLOGIES = [
