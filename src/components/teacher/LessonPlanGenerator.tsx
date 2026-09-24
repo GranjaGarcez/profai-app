@@ -3,14 +3,7 @@
 import { useState } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import BrewingLoader from '@/components/shared/BrewingLoader'
-
-const SUBJECTS_PT = [
-  'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
-  'História', 'Geografia', 'Inglês', 'Espanhol', 'Francês',
-  'História e Geografia de Portugal', 'Filosofia', 'Educação Visual', 'Educação Tecnológica',
-  'Educação Musical', 'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A', 'TIC',
-  'Cidadania e Desenvolvimento',
-]
+import { subjectsForYear } from '@/lib/subjectsByCycle'
 
 const METHODOLOGIES = [
   'Madeline Hunter', 'Backward Design', 'Inquiry-Based Learning', 'Project-Based Learning (PBL)',
@@ -131,12 +124,17 @@ export default function LessonPlanGenerator({ onClose, onSave }: LessonPlanGener
                 <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Disciplina</label>
                 <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-sm" style={{ borderColor: '#0D1B2A30' }}>
-                  {SUBJECTS_PT.map(s => <option key={s}>{s}</option>)}
+                  {subjectsForYear(form.yearLevel).map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Ano de escolaridade</label>
-                <select value={form.yearLevel} onChange={e => setForm(f => ({ ...f, yearLevel: Number(e.target.value) }))}
+                <select value={form.yearLevel} onChange={e => setForm(f => {
+                    const yearLevel = Number(e.target.value)
+                    const avail = subjectsForYear(yearLevel)
+                    const subject = avail.includes(f.subject) ? f.subject : avail[0]
+                    return { ...f, yearLevel, subject }
+                  })}
                   className="w-full px-3 py-2 rounded-lg border text-sm" style={{ borderColor: '#0D1B2A30' }}>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                     <option key={n} value={n}>{n}.º ano</option>

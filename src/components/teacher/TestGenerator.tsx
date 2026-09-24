@@ -3,14 +3,7 @@
 import { useState } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import BrewingLoader from '@/components/shared/BrewingLoader'
-
-const SUBJECTS_PT = [
-  'Matemática', 'Português', 'Ciências Naturais', 'Físico-Química',
-  'História', 'Geografia', 'Inglês', 'Espanhol', 'Francês',
-  'História e Geografia de Portugal', 'Filosofia', 'Educação Visual', 'Educação Tecnológica',
-  'Educação Musical', 'Educação Física', 'Biologia e Geologia', 'Matemática A', 'Física e Química A', 'TIC',
-  'Cidadania e Desenvolvimento',
-]
+import { subjectsForYear } from '@/lib/subjectsByCycle'
 
 const QUESTION_TYPES = [
   { id: 'multiple_choice', label: 'Escolha múltipla' },
@@ -192,14 +185,20 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   className="w-full px-3 py-2 rounded-lg border text-sm"
                   style={{ borderColor: '#0D1B2A30' }}
                 >
-                  {SUBJECTS_PT.map(s => <option key={s}>{s}</option>)}
+                  {subjectsForYear(form.yearLevel).map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Ano de escolaridade</label>
                 <select
                   value={form.yearLevel}
-                  onChange={e => setForm(f => ({ ...f, yearLevel: Number(e.target.value) }))}
+                  onChange={e => setForm(f => {
+                    const yearLevel = Number(e.target.value)
+                    const avail = subjectsForYear(yearLevel)
+                    // Se a disciplina atual não existir no novo ciclo, escolhe a primeira válida.
+                    const subject = avail.includes(f.subject) ? f.subject : avail[0]
+                    return { ...f, yearLevel, subject }
+                  })}
                   className="w-full px-3 py-2 rounded-lg border text-sm"
                   style={{ borderColor: '#0D1B2A30' }}
                 >
