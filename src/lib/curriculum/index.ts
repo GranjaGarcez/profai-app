@@ -7452,6 +7452,27 @@ export const CURRICULUM_DB: CurriculumDB = {
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNÇÃO PRINCIPAL — gera restrição curricular para o prompt
 // ─────────────────────────────────────────────────────────────────────────────
+// Estrutura navegável do currículo de um ano (domínios → tópicos + descritores).
+// Usada pelo "modo personalizado" para o professor escolher AE individualmente.
+export interface CurriculumStructure {
+  subject: string
+  yearLevel: number
+  source?: string
+  domains: Array<{ name: string; topics: string[]; descriptors: string[] }>
+}
+export function getCurriculumStructure(subject: string, yearLevel: number): CurriculumStructure | null {
+  const entry = CURRICULUM_DB[subject]?.[yearLevel]
+  if (!entry) return null
+  return {
+    subject, yearLevel, source: entry.source,
+    domains: entry.domains.map(d => ({
+      name: d.name,
+      topics: d.topics ?? [],
+      descriptors: d.descriptors ?? [],
+    })),
+  }
+}
+
 export function getCurriculumConstraint(subject: string, yearLevel: number): string {
   const subjectDB = CURRICULUM_DB[subject]
   if (!subjectDB) return ''

@@ -569,11 +569,37 @@ export interface MatrixMeta { subject: string; yearLevel: number; topic: string 
 //   fora das AE, mesmo que tradicionalmente ensinado. Máxima fidelidade curricular.
 export type AeMode = 'equilibrado' | 'estrito'
 
+// Pesos personalizados da escala de Bloom (percentagens 0-100 por nível). Opcional:
+// quando fornecido, sobrepõe-se ao preset da dificuldade. Níveis omitidos = 0.
+export type BloomWeights = Partial<Record<'Lembrar' | 'Compreender' | 'Aplicar' | 'Analisar' | 'Avaliar' | 'Criar', number>>
+const BLOOM_ORDER: Array<keyof BloomWeights> = ['Lembrar', 'Compreender', 'Aplicar', 'Analisar', 'Avaliar', 'Criar']
+
+// Converte pesos (%) em contagem-alvo de células por nível, somando exactamente numQuestions.
+function bloomTargets(weights: BloomWeights, numQuestions: number): Record<string, number> {
+  const total = BLOOM_ORDER.reduce((s, k) => s + Math.max(0, Number(weights[k]) || 0), 0)
+  if (total <= 0) return {}
+  const raw = BLOOM_ORDER.map(k => ({ k, v: (Math.max(0, Number(weights[k]) || 0) / total) * numQuestions }))
+  const counts: Record<string, number> = {}
+  let acc = 0
+  for (const r of raw) { counts[r.k] = Math.floor(r.v); acc += counts[r.k] }
+  // distribui as células restantes pelos maiores restos decimais
+  const rema = raw.map(r => ({ k: r.k, frac: r.v - Math.floor(r.v) })).sort((a, b) => b.frac - a.frac)
+  let i = 0
+  while (acc < numQuestions && rema.length) { counts[rema[i % rema.length].k]++; acc++; i++ }
+  return counts
+}
+
 export async function buildMatrix(
   basePrompt: string, meta: MatrixMeta, numQuestions: number, types: string[], avoid: string[],
   providers: Provider[], timeoutMs: number, difficulty = 'medium', aeMode: AeMode = 'equilibrado',
+  bloomWeights?: BloomWeights | null,
+  coverage?: string[] | null,
 ): Promise<MatrixCell[] | null> {
-  const bloomRule = difficulty === 'easy'
+  const customTargets = bloomWeights ? bloomTargets(bloomWeights, numQuestions) : {}
+  const hasCustom = Object.keys(customTargets).length > 0
+  const bloomRule = hasCustom
+    ? `DISTRIBUIÇÃO BLOOM PERSONALIZADA (definida pelo professor — OBRIGATÓRIA): usa exactamente estas contagens de células por nível: ${BLOOM_ORDER.map(k => `${k} ${customTargets[k] || 0}`).join(' · ')}. A soma é ${numQuestions}. Respeita estes números o mais fielmente possível; distribui os pontos de forma coerente (níveis superiores tendem a valer mais, mas mantém a soma total = 100).`
+    : difficulty === 'easy'
     ? 'DIFICULDADE FÁCIL: predomina Lembrar/Compreender/Aplicar; no máximo 1 célula de Analisar; nenhuma de Avaliar/Criar.'
     : difficulty === 'hard'
     ? 'DIFICULDADE DIFÍCIL: pelo menos METADE das células em Analisar/Avaliar/Criar; as de ordem superior valem mais pontos.'
@@ -587,6 +613,11 @@ export async function buildMatrix(
   const CURR_CAP = 18_000
   const curriculum = ci >= 0 ? basePrompt.slice(ci, di > ci ? di : ci + CURR_CAP).trim().slice(0, CURR_CAP) : ''
   const typeList = types.length ? types.join(', ') : 'multiple_choice, true_false, short_answer, long_answer'
+  // Cobertura fechada (modo personalizado): lista exacta de descritores a cobrir.
+  const cov = (coverage ?? []).filter(x => typeof x === 'string' && x.trim())
+  const coverageRule = cov.length
+    ? `COBERTURA FECHADA (definida pelo professor — prioridade absoluta): cobre EXACTAMENTE estes descritores das Aprendizagens Essenciais, um por questão, SEM repetir e SEM acrescentar outros fora da lista:\n${cov.map((d, i) => `(${i + 1}) ${d}`).join('\n')}\n• Se ${numQuestions} ≥ ${cov.length} → uma questão por descritor e as restantes aprofundam os mais centrais (Bloom superior), nunca repetindo o mesmo descritor.\n• Se ${numQuestions} < ${cov.length} → escolhe os descritores mais estruturantes desta lista; nunca saias dela.`
+    : `COBERTURA (prioridade máxima): primeiro enumera mentalmente TODOS os sub-aspectos/descritores essenciais de "${meta.topic}" para este ano. Depois:\n• Se ${numQuestions} ≥ nº de sub-aspectos essenciais → cobre-os TODOS (uma faceta por sub-aspecto) e usa as células restantes para APROFUNDAR os mais centrais com Bloom superior — nunca para repetir um sub-aspecto já coberto.\n• Se ${numQuestions} < nº de sub-aspectos essenciais → escolhe os MAIS importantes/estruturantes para maximizar a cobertura (regra do "pelo menos").\nEnquanto houver um sub-aspecto essencial por cobrir, NUNCA gastes duas células no mesmo sub-aspecto.`
   const avoidNote = avoid.length
     ? `\nJÁ EXISTEM no teste estas questões (do banco) — as tuas facetas têm de ser DISTINTAS destas, sem repetir conceito:\n${avoid.slice(0, 15).map((t, i) => `${i + 1}. ${t.slice(0, 110)}`).join('\n')}\n`
     : ''
@@ -600,10 +631,7 @@ ${aeMode === 'estrito'
 Define EXACTAMENTE ${numQuestions} células — uma por questão. Foca-te nos descritores próprios DESTA unidade, não no tema geral do ano.
 ${bloomRule}
 
-COBERTURA (prioridade máxima): primeiro enumera mentalmente TODOS os sub-aspectos/descritores essenciais de "${meta.topic}" para este ano. Depois:
-• Se ${numQuestions} ≥ nº de sub-aspectos essenciais → cobre-os TODOS (uma faceta por sub-aspecto) e usa as células restantes para APROFUNDAR os mais centrais com Bloom superior — nunca para repetir um sub-aspecto já coberto.
-• Se ${numQuestions} < nº de sub-aspectos essenciais → escolhe os MAIS importantes/estruturantes para maximizar a cobertura (regra do "pelo menos").
-Enquanto houver um sub-aspecto essencial por cobrir, NUNCA gastes duas células no mesmo sub-aspecto.
+${coverageRule}
 Cada célula tem:
 • "grupo": "Grupo I" (escolha múltipla / objectivas), "Grupo II" (resposta curta justificada) ou "Grupo III" (resolução de problemas / desenvolvimento) — por exigência cognitiva crescente.
 • "tipo": um de: ${typeList}.
@@ -662,7 +690,7 @@ export async function generateChunked(
   prompt: string,
   numQuestions: number,
   opts: { budgetMs?: number; chunkSize?: number; env?: NodeJS.ProcessEnv; personal?: Provider
-          meta?: MatrixMeta; types?: string[]; avoid?: string[]; difficulty?: string; aeMode?: AeMode } = {}
+          meta?: MatrixMeta; types?: string[]; avoid?: string[]; difficulty?: string; aeMode?: AeMode; bloomWeights?: BloomWeights | null; coverage?: string[] | null } = {}
 ): Promise<ChunkedResult> {
   const budgetMs = opts.budgetMs ?? 58_000
   const deadline = Date.now() + budgetMs
@@ -680,7 +708,7 @@ export async function generateChunked(
   // modo genérico (plano + corte por semelhança). Só quando há meta (geração de teste).
   const matrix = opts.meta
     ? await buildMatrix(prompt, opts.meta, numQuestions, opts.types ?? [], opts.avoid ?? [],
-        [personal, ...tier1, ...tier2].filter((p): p is Provider => !!p), 10_000, opts.difficulty ?? 'medium', opts.aeMode ?? 'equilibrado')
+        [personal, ...tier1, ...tier2].filter((p): p is Provider => !!p), 10_000, opts.difficulty ?? 'medium', opts.aeMode ?? 'equilibrado', opts.bloomWeights ?? null, opts.coverage ?? null)
     : null
   if (matrix) console.log(`[PROFAI] Matriz: ${matrix.length} células`)
 

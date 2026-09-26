@@ -1,9 +1,44 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MathFigure from '@/components/math/MathFigure'
 import BrewingLoader from '@/components/shared/BrewingLoader'
 import { subjectsForYear } from '@/lib/subjectsByCycle'
+
+const BLOOM_LEVELS = ['Lembrar', 'Compreender', 'Aplicar', 'Analisar', 'Avaliar', 'Criar'] as const
+// % mínima recomendada de ordem superior (Analisar+Avaliar+Criar) por ciclo.
+function minHigherOrder(year: number): number {
+  if (year <= 4) return 15
+  if (year <= 6) return 40
+  if (year <= 9) return 55
+  return 70
+}
+function higherOrderShare(bw: Record<string, number>): number {
+  const sum = BLOOM_LEVELS.reduce((s, k) => s + (Number(bw[k]) || 0), 0)
+  if (sum <= 0) return 0
+  return Math.round(((Number(bw.Analisar) || 0) + (Number(bw.Avaliar) || 0) + (Number(bw.Criar) || 0)) / sum * 100)
+}
+
+// Estimativa de tempo (minutos) que um aluno médio leva a resolver a prova.
+// Heurística: custo-base por tipo × factor de Bloom (ordem superior demora mais)
+// + margem de leitura/revisão. É uma estimativa orientadora, não uma garantia.
+const TYPE_MINUTES: Record<string, number> = {
+  multiple_choice: 1.2, true_false: 1.0, fill_blank: 2, short_answer: 3, long_answer: 8,
+}
+function estimateMinutes(f: {
+  questionTypes: string[]; numQuestions: number; customBloom: boolean
+  bloomWeights: Record<string, number>; difficulty: string; yearLevel: number
+}): number {
+  const types = f.questionTypes.length ? f.questionTypes : ['multiple_choice']
+  const avgType = types.reduce((s, t) => s + (TYPE_MINUTES[t] ?? 3), 0) / types.length
+  const bloomFactor = f.customBloom
+    ? 1 + (higherOrderShare(f.bloomWeights) / 100) * 0.6
+    : f.difficulty === 'easy' ? 0.9 : f.difficulty === 'hard' ? 1.35 : 1.05
+  // alunos mais novos escrevem/lêem mais devagar
+  const ageFactor = f.yearLevel <= 4 ? 1.25 : f.yearLevel <= 6 ? 1.1 : 1
+  const overhead = 5 // leitura inicial + revisão final
+  return Math.round(f.numQuestions * avgType * bloomFactor * ageFactor + overhead)
+}
 
 const QUESTION_TYPES = [
   { id: 'multiple_choice', label: 'Escolha múltipla' },
@@ -93,7 +128,50 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     questionTypes: ['multiple_choice'],
     country: 'PT',
     aeMode: 'equilibrado' as 'equilibrado' | 'estrito',
+    customBloom: false,
+    bloomWeights: { Lembrar: 15, Compreender: 25, Aplicar: 20, Analisar: 20, Avaliar: 10, Criar: 10 } as Record<string, number>,
   })
+
+  // ── Modo personalizado: escolher AE individualmente (opt-in) ──
+  const [personalMode, setPersonalMode] = useState(false)
+  const [aeDomains, setAeDomains] = useState<Array<{ name: string; descriptors: string[] }> | null>(null)
+  const [aeSelected, setAeSelected] = useState<string[]>([])
+  const [aeLoading, setAeLoading] = useState(false)
+  const [aeMatching, setAeMatching] = useState(false)
+  const [aeNote, setAeNote] = useState('')
+
+  // Carrega a estrutura do currículo quando o modo está ligado (e ao mudar disciplina/ano).
+  useEffect(() => {
+    if (!personalMode) return
+    let cancel = false
+    setAeLoading(true); setAeNote('')
+    fetch(`/api/curriculum/structure?subject=${encodeURIComponent(form.subject)}&year=${form.yearLevel}`)
+      .then(r => r.json())
+      .then(d => { if (!cancel) { setAeDomains(d.available ? d.domains.filter((x: { descriptors: string[] }) => x.descriptors.length) : []); setAeSelected([]) } })
+      .catch(() => { if (!cancel) setAeDomains([]) })
+      .finally(() => { if (!cancel) setAeLoading(false) })
+    return () => { cancel = true }
+  }, [personalMode, form.subject, form.yearLevel])
+
+  function toggleAE(text: string) {
+    setAeSelected(s => s.includes(text) ? s.filter(t => t !== text) : [...s, text])
+  }
+  async function suggestAE() {
+    if (!form.topic.trim()) { setAeNote('Escreve primeiro o tópico.'); return }
+    setAeMatching(true); setAeNote('')
+    try {
+      const res = await fetch('/api/ai/match-ae', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: form.subject, yearLevel: form.yearLevel, topic: form.topic }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha ao emparelhar.')
+      const matched: string[] = (d.matched ?? []).map((m: { text: string }) => m.text)
+      setAeSelected(matched)
+      setAeNote(matched.length ? `${matched.length} descritor(es) sugerido(s) para "${form.topic}".${d.nota ? ' ' + d.nota : ''}` : 'Nenhum descritor encontrado para este tópico — escolhe manualmente.')
+    } catch (e) { setAeNote(e instanceof Error ? e.message : 'Erro.') }
+    finally { setAeMatching(false) }
+  }
 
   function toggleType(id: string) {
     setForm(f => ({
@@ -108,7 +186,7 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     const res = await fetch('/api/ai/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool: 'test', inputs: { ...form, numQuestions, avoidTexts } }),
+      body: JSON.stringify({ tool: 'test', inputs: { ...form, numQuestions, avoidTexts, bloomWeights: form.customBloom ? form.bloomWeights : null, coverage: personalMode && aeSelected.length ? aeSelected : null } }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
@@ -223,8 +301,10 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Dificuldade</label>
-                <div className="flex gap-2">
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>
+                  Dificuldade {form.customBloom && <span className="font-normal" style={{ color: '#9CA3AF' }}>(desativada — Bloom personalizado)</span>}
+                </label>
+                <div className="flex gap-2" style={{ opacity: form.customBloom ? 0.4 : 1 }}>
                   {[
                     { id: 'easy', label: 'Fácil' },
                     { id: 'medium', label: 'Média' },
@@ -232,8 +312,9 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   ].map(d => (
                     <button
                       key={d.id}
+                      disabled={form.customBloom}
                       onClick={() => setForm(f => ({ ...f, difficulty: d.id }))}
-                      className="flex-1 py-2 rounded-lg text-xs font-medium border transition-colors"
+                      className="flex-1 py-2 rounded-lg text-xs font-medium border transition-colors disabled:cursor-not-allowed"
                       style={{
                         background: form.difficulty === d.id ? '#0D1B2A' : 'white',
                         color: form.difficulty === d.id ? '#F7F3EE' : '#6B7280',
@@ -293,6 +374,52 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
               </p>
             </div>
 
+            {/* Personalização avançada dos níveis de Bloom (opcional) */}
+            <div className="rounded-lg border" style={{ borderColor: form.customBloom ? '#c8a84b' : '#0D1B2A20' }}>
+              <label className="flex items-center gap-2 px-3 py-2 cursor-pointer">
+                <input type="checkbox" checked={form.customBloom}
+                  onChange={e => setForm(f => ({ ...f, customBloom: e.target.checked }))} />
+                <span className="text-sm font-medium" style={{ color: '#0D1B2A' }}>Personalizar níveis de Bloom (avançado)</span>
+              </label>
+              {form.customBloom && (() => {
+                const bw = form.bloomWeights
+                const sum = BLOOM_LEVELS.reduce((s, k) => s + (Number(bw[k]) || 0), 0)
+                const higher = higherOrderShare(bw)
+                const minH = minHigherOrder(form.yearLevel)
+                const risk = higher < minH
+                return (
+                  <div className="px-3 pb-3 space-y-2">
+                    <p className="text-xs" style={{ color: '#6B7280' }}>
+                      Define o peso (%) de cada nível. Os valores são normalizados para 100%. Sobrepõe-se ao nível de dificuldade.
+                    </p>
+                    {BLOOM_LEVELS.map(k => (
+                      <div key={k} className="flex items-center gap-2">
+                        <span className="text-xs w-28" style={{ color: '#0D1B2A' }}>{k}</span>
+                        <input type="range" min={0} max={100} value={Number(bw[k]) || 0}
+                          onChange={e => setForm(f => ({ ...f, bloomWeights: { ...f.bloomWeights, [k]: Number(e.target.value) } }))}
+                          className="flex-1" />
+                        <span className="text-xs w-10 text-right font-mono" style={{ color: '#6B7280' }}>{Number(bw[k]) || 0}%</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-xs pt-1" style={{ color: '#6B7280' }}>
+                      <span>Soma: {sum}% (normalizada)</span>
+                      <span>Ordem superior: <strong style={{ color: risk ? '#b45309' : '#166534' }}>{higher}%</strong></span>
+                    </div>
+                    {sum === 0 && (
+                      <p className="text-xs rounded px-2 py-1.5" style={{ background: '#fef2f2', color: '#b91c1c' }}>
+                        Todos os pesos a zero — define pelo menos um nível, senão volta ao preset da dificuldade.
+                      </p>
+                    )}
+                    {risk && sum > 0 && (
+                      <p className="text-xs rounded px-2 py-1.5" style={{ background: '#fffbeb', color: '#92400e' }}>
+                        ⚠️ Ordem superior ({higher}%) abaixo do recomendado para o {form.yearLevel}.º ano (~{minH}%). O teste fica menos exigente do que as Aprendizagens Essenciais pedem e o revisor crítico pode assinalá-lo. Usa conscientemente.
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>Duração da prova</label>
               <div className="flex gap-2">
@@ -311,6 +438,24 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   </button>
                 ))}
               </div>
+              {(() => {
+                const est = estimateMinutes(form)
+                const over = est > form.duration
+                const under = est < form.duration * 0.55
+                return (
+                  <div className="mt-1.5 text-xs flex items-center justify-between gap-2 flex-wrap">
+                    <span style={{ color: '#6B7280' }}>
+                      Tempo estimado para um aluno médio: <strong style={{ color: over ? '#b45309' : '#166534' }}>≈ {est} min</strong>
+                    </span>
+                    {over && (
+                      <span style={{ color: '#92400e' }}>⚠️ excede os {form.duration} min — reduz o nº de questões, simplifica os tipos, ou aumenta a duração.</span>
+                    )}
+                    {!over && under && (
+                      <span style={{ color: '#9CA3AF' }}>bastante folga face aos {form.duration} min — podes acrescentar questões ou aprofundar.</span>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
 
             <div>
@@ -331,6 +476,58 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Modo personalizado — escolher Aprendizagens Essenciais do tema */}
+            <div className="rounded-lg border" style={{ borderColor: personalMode ? '#00B4D8' : '#0D1B2A20' }}>
+              <label className="flex items-center gap-2 px-3 py-2 cursor-pointer">
+                <input type="checkbox" checked={personalMode} onChange={e => setPersonalMode(e.target.checked)} />
+                <span className="text-sm font-medium" style={{ color: '#0D1B2A' }}>Modo personalizado — escolher Aprendizagens Essenciais</span>
+              </label>
+              {personalMode && (
+                <div className="px-3 pb-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button onClick={suggestAE} disabled={aeMatching || !form.topic.trim()}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                      style={{ background: '#00B4D8' }}>
+                      {aeMatching ? 'A emparelhar…' : '🎯 Sugerir a partir do meu tópico'}
+                    </button>
+                    {aeSelected.length > 0 && (
+                      <button onClick={() => setAeSelected([])} className="text-xs" style={{ color: '#9CA3AF' }}>limpar seleção ({aeSelected.length})</button>
+                    )}
+                  </div>
+                  {aeNote && <p className="text-xs" style={{ color: '#6B7280' }}>{aeNote}</p>}
+                  {aeLoading && <p className="text-xs" style={{ color: '#9CA3AF' }}>A carregar Aprendizagens Essenciais…</p>}
+                  {aeDomains && aeDomains.length === 0 && !aeLoading && (
+                    <p className="text-xs rounded px-2 py-1.5" style={{ background: '#fffbeb', color: '#92400e' }}>
+                      Ainda não há descritores AE curados para {form.subject} do {form.yearLevel}.º ano — o modo normal continua a funcionar.
+                    </p>
+                  )}
+                  {aeDomains && aeDomains.length > 0 && (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {aeDomains.map(dom => (
+                        <div key={dom.name}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: '#0D1B2A' }}>{dom.name}</p>
+                          <div className="space-y-1">
+                            {dom.descriptors.map(desc => (
+                              <label key={desc} className="flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1"
+                                style={{ background: aeSelected.includes(desc) ? '#e0f7fc' : 'transparent', color: '#374151' }}>
+                                <input type="checkbox" className="mt-0.5" checked={aeSelected.includes(desc)} onChange={() => toggleAE(desc)} />
+                                <span>{desc}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs" style={{ color: '#9CA3AF' }}>
+                    {aeSelected.length > 0
+                      ? `${aeSelected.length} descritor(es) selecionado(s) — a geração cobre exactamente estes, sem sobreposição.`
+                      : 'Sem seleção, o modo personalizado não se aplica (a geração corre normalmente).'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {error && (

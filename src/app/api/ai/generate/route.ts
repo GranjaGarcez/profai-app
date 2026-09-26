@@ -502,11 +502,15 @@ export async function POST(request: NextRequest) {
   let adaptFromSource = false
 
   if (isTestLike) {
-    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle, sourceTest } =
+    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle, sourceTest, bloomWeights } =
       inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
         questionTypes: string[]; numQuestions: number; duration?: number; country: string
         avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string
+        bloomWeights?: Record<string, number> | null
         sourceTest?: { title?: string; instructions?: string; groups?: Array<{ label?: string; description?: string; questions?: Array<Record<string, unknown>> }> } }
+    // Modo Bloom personalizado activo? (sobrepõe-se ao nível de dificuldade)
+    const customBloom = !!bloomWeights && typeof bloomWeights === 'object'
+      && Object.values(bloomWeights).some(v => Number(v) > 0)
     const countryLabel = country === 'PT' ? 'Portugal (Aprendizagens Essenciais DGE)' : country
     const isMath = ['Matemática', 'Matemática A'].includes(subject)
     // Disciplinas cuja estrutura pede explicitamente gráficos no campo "figure"
@@ -734,7 +738,8 @@ MEDIDA SELECTIVA (MS) — DL 54/2018, Adaptação Curricular Não Significativa 
 
     // Directrizes CONCRETAS de dificuldade — sem isto, "Fácil"/"Difícil" era só uma etiqueta
     // e o teste saía igual. Calibra Bloom, complexidade dos dados, scaffolding e distratores.
-    const difficultyNote = difficulty === 'easy' ? `
+    const difficultyNote = customBloom ? `
+DISTRIBUIÇÃO DE BLOOM PERSONALIZADA (definida pelo professor) — esta calibração SOBREPÕE-SE ao nível de dificuldade (ignora "Fácil/Média/Difícil"). A matriz de especificação já fixa quantas questões cabem a cada nível de Bloom; segue-a. AVISO PEDAGÓGICO: uma distribuição enviesada para níveis baixos torna o teste menos exigente do que as Aprendizagens Essenciais do ${yearLevel}.º ano preveem — mantém, ainda assim, rigor científico, enunciados claros e correção impecável; a personalização altera a exigência cognitiva, nunca a qualidade.` : difficulty === 'easy' ? `
 CALIBRAÇÃO DE DIFICULDADE — FÁCIL (consolidação do essencial):
 • Bloom predominante: Lembrar, Compreender e Aplicar directo. No máximo 1 questão de análise simples; nada de Avaliar/Criar.
 • Dados simples e explícitos; contextos directos do quotidiano; UM só passo de raciocínio por questão.
@@ -750,6 +755,15 @@ CALIBRAÇÃO DE DIFICULDADE — MÉDIA (sumativa típica do ano):
 • Distribuição equilibrada de Bloom, com ~30–40% de ordem superior (Analisar/Avaliar/Criar).
 • Mistura de aplicação directa e de situações com algum raciocínio (um a dois passos).
 • Scaffolding mínimo; distratores plausíveis. Meta: avaliação sumativa representativa.`
+
+    // Tempo como condicionante real: calibra a EXTENSÃO/profundidade de cada questão
+    // para que um aluno médio do ano complete a prova dentro da duração indicada.
+    const perQ = testDuration / Math.max(1, numQuestions)
+    const durationNote = `
+TEMPO DISPONÍVEL — condicionante real (${testDuration} min para ${numQuestions} questões ≈ ${perQ.toFixed(1)} min/questão em média):
+• Dimensiona o trabalho pedido em CADA questão para caber no tempo total, para um aluno médio do ${yearLevel}.º ano (inclui ler, pensar e escrever) — as objectivas e de resposta curta consomem pouco tempo; resolução de problemas e resposta longa consomem bastante mais, e devem valer mais pontos e ter mais tempo implícito.
+• Se ${numQuestions} questões com a profundidade pedida não couberem confortavelmente em ${testDuration} min, encurta o enunciado e o que se exige em cada uma (menos passos, dados mais organizados) — NUNCA cortes o rigor nem o alinhamento curricular, só a extensão.
+• A soma dos tempos implícitos das questões deve aproximar-se de ${testDuration} min, deixando margem para leitura inicial e revisão final.`
 
     // Perfil dos Alunos à Saída da Escolaridade Obrigatória (PASEO) — as AE operacionalizam
     // estas competências; a avaliação deve mobilizá-las, não só memória de conteúdos.
@@ -779,8 +793,9 @@ PERFIL DO ALUNO (PASEO) — as questões devem mobilizar COMPETÊNCIAS, não ape
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e o Perfil dos Alunos à Saída da Escolaridade Obrigatória.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
-Duração: ${testDuration} minutos | Dificuldade: ${diffLabel} | Total: ${numQuestions} questões | 100 pontos
+Duração: ${testDuration} minutos | ${customBloom ? 'Bloom personalizado' : `Dificuldade: ${diffLabel}`} | Total: ${numQuestions} questões | 100 pontos
 ${difficultyNote}
+${durationNote}
 ${paseoNote}
 
 ${structureNote}
@@ -1106,6 +1121,8 @@ Responde APENAS com este JSON:
           types: Array.isArray(ti.questionTypes) ? ti.questionTypes as string[] : [],
           difficulty: String(ti.difficulty ?? 'medium'),
           aeMode: ti.aeMode === 'estrito' ? 'estrito' : 'equilibrado',
+          bloomWeights: (ti.bloomWeights && typeof ti.bloomWeights === 'object') ? ti.bloomWeights as Record<string, number> : null,
+          coverage: Array.isArray(ti.coverage) ? (ti.coverage as unknown[]).map(String).filter(Boolean) : null,
           avoid: bankHits.map(b => String((b as { text?: unknown }).text ?? '')).filter(Boolean).slice(0, 20),
         })
       : await generateWithFallback(prompt, 58_000, personal ?? undefined)
