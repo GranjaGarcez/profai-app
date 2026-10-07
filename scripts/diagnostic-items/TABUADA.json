@@ -1,0 +1,152 @@
+[
+  {
+    "node_code": "TABUADA",
+    "stem": "7 × 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em 7 × 4 + 7 × 4.",
+      "Sete vezes oito é cinquenta e seis."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 4000,
+    "response_type": "open_numeric",
+    "answer": "56",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "9 × 6 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em 10 × 6 - 6.",
+      "Nove vezes seis é cinquenta e quatro."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 3800,
+    "response_type": "open_numeric",
+    "answer": "54",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "8 × 7 = ?",
+    "figure": null,
+    "hints": [
+      "Lembra-te que 8 × 7 é o mesmo que 7 × 8.",
+      "Oito vezes sete é cinquenta e seis."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 4200,
+    "response_type": "open_numeric",
+    "answer": "56",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "6 × 9 = ?",
+    "figure": null,
+    "hints": [
+      "Pensa em 6 × 10 e tira 6.",
+      "Seis vezes nove é cinquenta e quatro."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 3900,
+    "response_type": "open_numeric",
+    "answer": "54",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "7 × 9 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em 7 × 10 - 7.",
+      "Sete vezes nove é sessenta e três."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 4100,
+    "response_type": "open_numeric",
+    "answer": "63",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "8 × 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar no dobro de 8 × 4.",
+      "Oito vezes oito é sessenta e quatro."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 3700,
+    "response_type": "open_numeric",
+    "answer": "64",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "6 × 7 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em 6 × 5 + 6 × 2.",
+      "Seis vezes sete é quarenta e dois."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3500,
+    "response_type": "open_numeric",
+    "answer": "42",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "9 × 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em 10 × 8 - 8.",
+      "Nove vezes oito é setenta e dois."
+    ],
+    "difficulty": "medium",
+    "is_fluency": true,
+    "target_latency_ms": 4300,
+    "response_type": "open_numeric",
+    "answer": "72",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "6 × 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar no dobro de 6 × 4.",
+      "Seis vezes oito é quarenta e oito."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3600,
+    "response_type": "open_numeric",
+    "answer": "48",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "7 × 6 = ?",
+    "figure": null,
+    "hints": [
+      "Lembra-te que 7 × 6 é o mesmo que 6 × 7.",
+      "Sete vezes seis é quarenta e dois."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3400,
+    "response_type": "open_numeric",
+    "answer": "42",
+    "wrong_answers": {}
+  }
+]

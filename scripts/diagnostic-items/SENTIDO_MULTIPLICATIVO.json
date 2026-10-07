@@ -1,0 +1,172 @@
+[
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Quanto é 4 vezes 7?",
+    "figure": null,
+    "hints": [
+      "Pensar em '4 vezes 7' é o mesmo que somar o número 7, quatro vezes.",
+      "Calcula 7 + 7 + 7 + 7 ou 4 x 7."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "28",
+    "wrong_answers": {
+      "11": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Um florista vendeu 5 ramos de flores. Cada ramo tinha 3 flores. Quantas flores vendeu ao todo?",
+    "figure": null,
+    "hints": [
+      "Para saber o total de flores, precisas de juntar as flores de cada ramo. Como os ramos têm o mesmo número de flores, que operação podes usar?",
+      "Calcula 5 x 3 ou 3 + 3 + 3 + 3 + 3."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {
+      "8": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Numa caixa de bombons, há 3 filas com 4 bombons em cada fila. Quantos bombons há na caixa?",
+    "figure": null,
+    "hints": [
+      "Imagina as filas de bombons. Para saberes o total, podes juntar os bombons de cada fila.",
+      "Calcula 3 x 4 ou 4 + 4 + 4."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "12",
+    "wrong_answers": {
+      "7": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Quantos quadrados há num tabuleiro que tem 5 linhas e 2 colunas?",
+    "figure": null,
+    "hints": [
+      "Podes imaginar o tabuleiro e contar os quadrados em cada linha ou coluna, e depois juntar.",
+      "Multiplica o número de linhas pelo número de colunas: 5 x 2."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "10",
+    "wrong_answers": {
+      "7": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "A Joana tem 2 calças e 4 camisolas. De quantas maneiras diferentes se pode vestir, usando uma calça e uma camisola?",
+    "figure": null,
+    "hints": [
+      "Para cada calça que a Joana escolhe, ela pode combinar com qualquer uma das camisolas. Pensa em quantas opções de camisola há para cada calça.",
+      "Multiplica o número de calças pelo número de camisolas: 2 x 4."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "8",
+    "wrong_answers": {
+      "6": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Numa pastelaria, há 3 tipos de pão e 3 tipos de recheio. Quantas combinações diferentes de pão com recheio se podem fazer?",
+    "figure": null,
+    "hints": [
+      "Para cada tipo de pão, podes escolher um dos recheios. Quantas opções de recheio tens para cada pão?",
+      "Multiplica o número de tipos de pão pelo número de tipos de recheio: 3 x 3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "9",
+    "wrong_answers": {
+      "6": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Se cada caixa de lápis tem 6 lápis, quantos lápis há em 4 caixas?",
+    "figure": null,
+    "hints": [
+      "Tens 4 caixas, e cada uma tem a mesma quantidade de lápis. Que operação te permite encontrar o total rapidamente?",
+      "Calcula 4 x 6 ou 6 + 6 + 6 + 6."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "24",
+    "wrong_answers": {
+      "10": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "O pai do Pedro comprou 6 pacotes de iogurtes. Cada pacote tinha 4 iogurtes. Quantos iogurtes comprou ao todo?",
+    "figure": null,
+    "hints": [
+      "Para saber o total de iogurtes, precisas de juntar os iogurtes de cada pacote. Como todos os pacotes têm o mesmo número de iogurtes, que operação podes usar?",
+      "Calcula 6 x 4 ou 4 + 4 + 4 + 4 + 4 + 4."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "24",
+    "wrong_answers": {
+      "10": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Numa plantação de morangos, há 7 filas com 5 plantas em cada fila. Quantas plantas de morango há no total?",
+    "figure": null,
+    "hints": [
+      "Imagina as filas de plantas. Para saberes o total, podes juntar as plantas de cada fila.",
+      "Calcula 7 x 5 ou 5 + 5 + 5 + 5 + 5 + 5 + 5."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "35",
+    "wrong_answers": {
+      "12": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "A professora distribuiu 3 livros a cada um dos 9 alunos. Quantos livros distribuiu a professora?",
+    "figure": null,
+    "hints": [
+      "Cada aluno recebeu a mesma quantidade de livros. Para saber o total, podes juntar os livros de todos os alunos.",
+      "Calcula 9 x 3 ou 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "27",
+    "wrong_answers": {
+      "12": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  }
+]

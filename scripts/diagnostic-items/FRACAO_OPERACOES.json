@@ -1,0 +1,158 @@
+[
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 1/5 + 2/5",
+    "figure": null,
+    "hints": [
+      "Quando as frações têm o mesmo denominador, podes somar diretamente os numeradores.",
+      "Mantém o denominador e soma os numeradores: 1 + 2 = 3. O resultado é 3/5."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "3/5",
+    "wrong_answers": {
+      "3/10": "FRAC.SOMA_NUM_E_DEN"
+    }
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 4/7 - 1/7",
+    "figure": null,
+    "hints": [
+      "Para subtrair frações com o mesmo denominador, subtrai apenas os numeradores.",
+      "Mantém o denominador e subtrai os numeradores: 4 - 1 = 3. O resultado é 3/7."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "3/7",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 1/2 + 1/4",
+    "figure": null,
+    "hints": [
+      "Para somar frações com denominadores diferentes, primeiro tens de encontrar um denominador comum.",
+      "O denominador comum de 2 e 4 é 4. Converte 1/2 para 2/4 e depois soma: 2/4 + 1/4 = 3/4."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "3/4",
+    "wrong_answers": {
+      "2/6": "FRAC.SOMA_NUM_E_DEN"
+    }
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 1/3 + 2/5",
+    "figure": null,
+    "hints": [
+      "Para somar estas frações, primeiro encontra o mínimo múltiplo comum dos denominadores.",
+      "O MMC de 3 e 5 é 15. Converte as frações para terem denominador 15: 1/3 = 5/15 e 2/5 = 6/15. Depois soma: 5/15 + 6/15 = 11/15."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "11/15",
+    "wrong_answers": {
+      "3/8": "FRAC.SOMA_NUM_E_DEN"
+    }
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 3/4 - 1/2",
+    "figure": null,
+    "hints": [
+      "Primeiro, torna os denominadores iguais para poderes subtrair as frações.",
+      "Converte 1/2 para 2/4. Agora subtrai: 3/4 - 2/4 = 1/4."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "1/4",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 5/6 - 1/4",
+    "figure": null,
+    "hints": [
+      "Encontra o mínimo múltiplo comum dos denominadores para subtrair estas frações.",
+      "O MMC de 6 e 4 é 12. Converte as frações: 5/6 = 10/12 e 1/4 = 3/12. Agora subtrai: 10/12 - 3/12 = 7/12."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "7/12",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 1/2 × 3/4",
+    "figure": null,
+    "hints": [
+      "Para multiplicar frações, multiplica os numeradores entre si e os denominadores entre si.",
+      "Numeradores: 1 × 3 = 3. Denominadores: 2 × 4 = 8. O resultado é 3/8."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "3/8",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 2/3 × 5",
+    "figure": null,
+    "hints": [
+      "Podes pensar no número inteiro 5 como uma fração 5/1.",
+      "Multiplica o numerador da fração pelo número inteiro: 2 × 5 = 10. Mantém o denominador. O resultado é 10/3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "10/3",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 1/3 de 2/5",
+    "figure": null,
+    "hints": [
+      "A expressão 'de' entre frações significa multiplicação.",
+      "Multiplica os numeradores (1 × 2 = 2) e os denominadores (3 × 5 = 15). O resultado é 2/15."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "2/15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FRACAO_OPERACOES",
+    "stem": "Calcula: 2/3 de 4",
+    "figure": null,
+    "hints": [
+      "A expressão 'de' significa multiplicação. Podes pensar no 4 como 4/1.",
+      "Multiplica o numerador da fração pelo número inteiro: 2 × 4 = 8. Mantém o denominador. O resultado é 8/3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_fraction",
+    "answer": "8/3",
+    "wrong_answers": {}
+  }
+]

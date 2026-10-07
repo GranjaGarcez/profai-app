@@ -1,0 +1,158 @@
+[
+  {
+    "node_code": "DIVISAO",
+    "stem": "Distribuem-se 84 rebuçados igualmente por 6 sacos. Quantos rebuçados fica cada saco?",
+    "figure": null,
+    "hints": [
+      "Podes pensar em como dividir 8 dezenas e 4 unidades por 6.",
+      "Primeiro, divide 8 por 6, o que dá 1 e sobram 2. Junta o 2 ao 4, formando 24. Depois, divide 24 por 6, o que dá 4. A resposta é 14."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "14",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "A Maria tem 75 cromos e quer colocá-los em cadernetas, cabendo 5 cromos em cada página. Quantas páginas vai preencher?",
+    "figure": null,
+    "hints": [
+      "Pensa em quantos grupos de 5 consegues fazer com 75 cromos.",
+      "Divide 75 por 5. Primeiro, 7 a dividir por 5 dá 1 e sobram 2. Junta o 2 ao 5, fica 25. 25 a dividir por 5 dá 5. O resultado é 15."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "O Tiago tem 50 bolachas e distribui-as igualmente por 4 amigos, dando o máximo possível a cada um. Quantas bolachas sobram?",
+    "figure": null,
+    "hints": [
+      "Faz a divisão de 50 por 4. O que te interessa é o resto.",
+      "Ao dividir 50 por 4, cada amigo recebe 12 bolachas (4 × 12 = 48). Sobram 50 − 48 = 2 bolachas."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "2",
+    "wrong_answers": {
+      "0": "DIV.RESTO_IGNORADO"
+    }
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Numa aula de Educação Física, há 38 alunos. O professor quer formar equipas de 5 alunos. Quantas equipas completas consegue formar?",
+    "figure": null,
+    "hints": [
+      "Pensa em quantos grupos de 5 alunos cabem em 38 alunos. O que sobra não forma uma equipa completa.",
+      "Divide 38 por 5. O quociente é o número de equipas completas. 38 a dividir por 5 dá 7, com resto 3. Portanto, formam-se 7 equipas completas."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "7",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Calcula o resultado da divisão: 618 a dividir por 3.",
+    "figure": null,
+    "hints": [
+      "Quando divides o 1 por 3, o que acontece? Lembra-te de colocar o zero no quociente se for necessário.",
+      "Divide 6 por 3 (dá 2). Depois, divide 1 por 3 (dá 0 e sobra 1). Junta o 1 ao 8, fica 18. Divide 18 por 3 (dá 6). O resultado é 206."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "206",
+    "wrong_answers": {
+      "26": "DIV.ZERO_NO_QUOCIENTE"
+    }
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Um número foi dividido por 7 e o resultado foi 15. Que número foi dividido?",
+    "figure": null,
+    "hints": [
+      "Para encontrar o número original, pensa na operação inversa da divisão.",
+      "A operação inversa da divisão é a multiplicação. Multiplica o quociente (15) pelo divisor (7). 15 x 7 = 105."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "105",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "A avó da Rita fez 125 queques e quer distribuí-los igualmente por 8 netos. Quantos queques recebe cada neto?",
+    "figure": null,
+    "hints": [
+      "Faz a divisão de 125 por 8. O que te interessa é o número de queques que cada neto recebe, ou seja, o quociente.",
+      "Divide 125 por 8. Primeiro, 12 por 8 dá 1 e sobram 4. Junta o 4 ao 5, fica 45. 45 por 8 dá 5 e sobram 5. Cada neto recebe 15 queques."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Para fazer um colar, a Joana precisa de 9 missangas. Se ela tem 140 missangas, quantos colares consegue fazer?",
+    "figure": null,
+    "hints": [
+      "Divide o número total de missangas pelo número de missangas necessárias para cada colar. O resto não forma um colar completo.",
+      "Divide 140 por 9. 14 por 9 dá 1 e sobram 5. Junta o 5 ao 0, fica 50. 50 por 9 dá 5 e sobram 5. Consegue fazer 15 colares."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Uma fábrica produziu 456 brinquedos e quer embalá-los em caixas, cabendo 4 brinquedos em cada caixa. Quantas caixas serão necessárias?",
+    "figure": null,
+    "hints": [
+      "Divide o número total de brinquedos pelo número de brinquedos que cabem em cada caixa.",
+      "Divide 456 por 4. Primeiro, 4 por 4 dá 1. Depois, 5 por 4 dá 1 e sobra 1. Junta o 1 ao 6, fica 16. 16 por 4 dá 4. O resultado é 114."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "114",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DIVISAO",
+    "stem": "Um autocarro tem capacidade para 35 passageiros. Se 212 pessoas querem viajar, quantos autocarros são necessários para levar *todas* as pessoas?",
+    "figure": null,
+    "hints": [
+      "Divide o número total de pessoas pela capacidade de um autocarro. Se sobrar alguma pessoa, mesmo que pouca, precisas de mais um autocarro.",
+      "Divide 212 por 35. Dá 6 com resto 2. Isso significa que 6 autocarros levam 210 pessoas, mas ainda sobram 2 pessoas. Para levar *todas* as pessoas, é preciso um 7º autocarro."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "7",
+    "wrong_answers": {
+      "6": "DIV.RESTO_IGNORADO"
+    }
+  }
+]

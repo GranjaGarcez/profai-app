@@ -1,0 +1,209 @@
+{
+  "title": "As Abelhas e a Polinização",
+  "year_level": 6,
+  "genre": "informativo",
+  "source": "original",
+  "body": "As abelhas são insetos fascinantes e muito importantes para a natureza e para a nossa alimentação. Vivem em colónias organizadas, onde cada abelha tem uma função específica. Algumas cuidam das larvas e da rainha, outras produzem o mel e a cera dentro da colmeia, e há as que saem para procurar alimento.\n\nQuando as abelhas visitam as flores, elas recolhem néctar e pólen. Ao pousarem numa flor, os pequenos grãos de pólen ficam presos aos seus pelos. Depois, quando voam para outra flor, transportam esses grãos sem querer. Este processo chama-se polinização. A polinização é essencial para que muitas plantas produzam frutos e sementes, garantindo a sua reprodução.\n\nSem as abelhas, muitas das frutas, legumes e sementes que comemos não existiriam. É por isso que devemos proteger as abelhas e os seus habitats, evitando o uso de produtos químicos que lhes fazem mal. A sua contribuição para a vida no nosso planeta é inestimável. Cuidar das abelhas é cuidar do nosso próprio futuro.",
+  "items": [
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "O que recolhem as abelhas quando visitam as flores?",
+      "options": ["Néctar e pólen.", "Frutos e sementes.", "Larvas e cera.", "Produtos químicos."],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Volta a ler o segundo parágrafo do texto. O que é que as abelhas procuram nas flores?",
+        "O texto diz: «Quando as abelhas visitam as flores, elas recolhem néctar e pólen.»"
+      ],
+      "difficulty": "easy",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Como se chama o processo em que o pólen é transportado de uma flor para outra?",
+      "options": ["Reprodução.", "Polinização.", "Alimentação.", "Colónia."],
+      "correct_index": 1,
+      "option_misconceptions": {},
+      "hints": [
+        "Procura no segundo parágrafo a palavra que descreve o transporte de pólen entre flores.",
+        "O texto explica: «Este processo chama-se polinização.»"
+      ],
+      "difficulty": "easy",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Além de procurar alimento, que outras funções têm algumas abelhas dentro da colmeia?",
+      "options": [
+        "Cuidar das larvas e da rainha, e produzir mel e cera.",
+        "Transportar pólen entre as flores.",
+        "Evitar o uso de produtos químicos.",
+        "Garantir a reprodução das plantas."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Lê novamente o primeiro parágrafo. Que tarefas são mencionadas para as abelhas que ficam na colmeia?",
+        "O texto afirma: «Algumas cuidam das larvas e da rainha, outras produzem o mel e a cera dentro da colmeia...»"
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Segundo o texto, para que é essencial a polinização?",
+      "options": [
+        "Para que muitas plantas produzam frutos e sementes.",
+        "Para as abelhas encontrarem alimento.",
+        "Para as abelhas produzirem mel e cera.",
+        "Para afastar os produtos químicos das flores."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "No segundo parágrafo, o texto diz diretamente para que serve a polinização.",
+        "O texto afirma: «A polinização é essencial para que muitas plantas produzam frutos e sementes.»"
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Segundo o texto, o que devemos evitar para proteger as abelhas?",
+      "options": [
+        "O uso de produtos químicos que lhes fazem mal.",
+        "A produção de mel e de cera.",
+        "A visita das abelhas às flores.",
+        "A existência de colónias organizadas."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Lê o terceiro parágrafo, onde o texto fala em proteger as abelhas e os seus habitats.",
+        "O texto diz: «...devemos proteger as abelhas e os seus habitats, evitando o uso de produtos químicos que lhes fazem mal.»"
+      ],
+      "difficulty": "easy",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "No segundo parágrafo, quando o texto diz que as abelhas transportam os grãos de pólen «sem querer», significa que elas:",
+      "options": [
+        "Fazem-no de propósito para ajudar as plantas.",
+        "Não têm intenção de os transportar.",
+        "Esquecem-se de os deixar na flor.",
+        "Fazem-no para se alimentarem."
+      ],
+      "correct_index": 1,
+      "option_misconceptions": {
+        "0": "COMP.IGNORA_CONECTOR",
+        "2": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "3": "COMP.INFERENCIA_NAO_SUSTENTADA"
+      },
+      "hints": [
+        "Pensa no significado da expressão «sem querer» no dia a dia. O que significa fazer algo sem ter a intenção?",
+        "«Sem querer» significa que a abelha não tem a intenção de transportar o pólen; isso acontece de forma acidental, enquanto ela procura alimento."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "Pela leitura do texto, qual é a ligação entre as abelhas e os alimentos que comemos?",
+      "options": [
+        "As abelhas produzem diretamente as frutas e os legumes nas colmeias.",
+        "As abelhas comem as frutas e os legumes e deixam as sementes.",
+        "Ao polinizarem as flores, as abelhas permitem que muitas plantas deem os frutos e legumes que comemos.",
+        "As abelhas protegem as frutas e os legumes dos produtos químicos."
+      ],
+      "correct_index": 2,
+      "option_misconceptions": {
+        "0": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "1": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "3": "COMP.INFERENCIA_NAO_SUSTENTADA"
+      },
+      "hints": [
+        "O texto não diz isto numa só frase — liga duas ideias: o que as abelhas fazem às flores e o que isso permite às plantas.",
+        "As abelhas polinizam as flores e o texto diz que «sem as abelhas, muitas das frutas, legumes e sementes que comemos não existiriam». Logo, é a polinização que torna possíveis esses alimentos."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "O texto diz que, na colónia, «cada abelha tem uma função específica». O que é que isto nos permite concluir sobre a forma como vivem?",
+      "options": [
+        "Que vivem em conjunto e repartem as tarefas, de forma organizada.",
+        "Que cada abelha vive sozinha e faz tudo por si.",
+        "Que só a rainha é que trabalha na colmeia.",
+        "Que todas as abelhas fazem exatamente a mesma coisa."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "2": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "3": "COMP.INFERENCIA_NAO_SUSTENTADA"
+      },
+      "hints": [
+        "A expressão-chave é «função específica» — se cada uma tem a sua função, o que é que isso diz sobre trabalharem juntas?",
+        "Se umas cuidam das larvas, outras fazem mel e outras procuram alimento, então dividem o trabalho e cooperam — vivem de forma organizada."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "stem": "Qual destas frases exprime uma OPINIÃO ou juízo de valor do autor, e não um facto?",
+      "options": [
+        "As abelhas vivem em colónias organizadas.",
+        "A polinização é essencial para que as plantas produzam frutos e sementes.",
+        "Cuidar das abelhas é cuidar do nosso próprio futuro.",
+        "As abelhas recolhem néctar e pólen das flores."
+      ],
+      "correct_index": 2,
+      "option_misconceptions": {
+        "0": "COMP.FACTO_OPINIAO",
+        "1": "COMP.FACTO_OPINIAO",
+        "3": "COMP.FACTO_OPINIAO"
+      },
+      "hints": [
+        "Um facto pode ser provado ou observado; uma opinião é um juízo ou um apelo de quem escreve. Procura a frase que faz uma apreciação ou um apelo.",
+        "«Cuidar das abelhas é cuidar do nosso próprio futuro» é um apelo e uma interpretação do autor; as outras três são factos descritos no texto."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "stem": "Qual é a ideia principal que o texto quer transmitir?",
+      "options": [
+        "As abelhas vivem em colónias muito organizadas.",
+        "As abelhas produzem mel e cera para a colmeia.",
+        "As abelhas são essenciais para a natureza e para a nossa alimentação, e por isso devemos protegê-las.",
+        "Os produtos químicos são perigosos para as abelhas."
+      ],
+      "correct_index": 2,
+      "option_misconceptions": {
+        "0": "COMP.SUPERFICIE",
+        "1": "COMP.SUPERFICIE",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Pensa em todo o texto. Qual é a mensagem mais importante que o autor quer que retenhas?",
+        "O texto fala da importância das abelhas, explica o seu papel na polinização e termina com um apelo à sua proteção — a ideia central junta tudo isso."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    }
+  ]
+}

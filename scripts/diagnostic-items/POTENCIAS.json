@@ -1,0 +1,172 @@
+[
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Calcula: 3²",
+    "figure": null,
+    "hints": [
+      "Uma potência indica um produto de fatores iguais. O expoente indica o número de vezes que a base se repete como fator.",
+      "3² significa 3 multiplicado por 3. Ou seja, 3 × 3 = 9."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "9",
+    "wrong_answers": {
+      "6": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Determina o valor de 2³.",
+    "figure": null,
+    "hints": [
+      "Lembra-te que o expoente indica quantas vezes a base é usada como fator. Neste caso, a base é 2 e o expoente é 3.",
+      "2³ significa 2 multiplicado por 2, e o resultado novamente multiplicado por 2. Ou seja, 2 × 2 × 2 = 8."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "8",
+    "wrong_answers": {
+      "6": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Qual é o resultado de 5²?",
+    "figure": null,
+    "hints": [
+      "Pensa na definição de potência. O expoente 2 indica que a base é multiplicada por si mesma duas vezes.",
+      "5² é o mesmo que 5 × 5. O resultado é 25."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "25",
+    "wrong_answers": {
+      "10": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Calcula o valor de 4³.",
+    "figure": null,
+    "hints": [
+      "O expoente 3 indica que a base 4 deve ser usada como fator três vezes.",
+      "4³ significa 4 × 4 × 4. Primeiro, 4 × 4 = 16. Depois, 16 × 4 = 64."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "64",
+    "wrong_answers": {
+      "12": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Calcula: 6²",
+    "figure": null,
+    "hints": [
+      "Um quadrado de um número significa que o número é multiplicado por si mesmo.",
+      "6² é 6 multiplicado por 6. 6 × 6 = 36."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "36",
+    "wrong_answers": {
+      "12": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Determina o valor de 10³.",
+    "figure": null,
+    "hints": [
+      "Quando a base é 10, o expoente indica o número de zeros que se seguem ao 1.",
+      "10³ é 10 × 10 × 10. 10 × 10 = 100, e 100 × 10 = 1000."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "1000",
+    "wrong_answers": {
+      "30": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Qual é o valor de 7²?",
+    "figure": null,
+    "hints": [
+      "Não confundas a potência com a multiplicação da base pelo expoente.",
+      "7² significa 7 × 7. O resultado é 49."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "49",
+    "wrong_answers": {
+      "14": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Calcula: 1³.",
+    "figure": null,
+    "hints": [
+      "Qualquer que seja o expoente, se a base for 1, o resultado será sempre o mesmo.",
+      "1³ significa 1 × 1 × 1. O resultado é 1."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "1",
+    "wrong_answers": {
+      "3": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Qual é o resultado de 2⁵?",
+    "figure": null,
+    "hints": [
+      "O expoente indica quantas vezes a base é usada como fator. Neste caso, a base 2 é usada 5 vezes.",
+      "2⁵ é 2 × 2 × 2 × 2 × 2. 2×2=4, 4×2=8, 8×2=16, 16×2=32."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "32",
+    "wrong_answers": {
+      "10": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  },
+  {
+    "node_code": "POTENCIAS",
+    "stem": "Calcula: 8².",
+    "figure": null,
+    "hints": [
+      "Lembra-te que o expoente 2 significa que a base é multiplicada por si mesma.",
+      "8² é o mesmo que 8 × 8. O resultado é 64."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "64",
+    "wrong_answers": {
+      "16": "POT.MULTIPLICA_BASE_EXPOENTE"
+    }
+  }
+]

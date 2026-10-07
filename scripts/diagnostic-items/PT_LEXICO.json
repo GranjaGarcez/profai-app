@@ -1,0 +1,103 @@
+[
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "Fui ao «banco» levantar dinheiro para comprar os livros. O que significa 'banco' nesta frase?",
+    "options": [
+      "instituição financeira",
+      "assento para sentar",
+      "um cardume de peixes",
+      "um tipo de jardim"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "LEX.SENTIDO_FIXO"
+    },
+    "hints": [
+      "Onde é que costumamos levantar dinheiro? É num banco de jardim ou noutro tipo de banco?",
+      "Nesta frase, 'banco' refere-se à instituição financeira onde se guarda e levanta dinheiro."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "O João ficou «perplexo» com a notícia inesperada. O que significa 'perplexo'?",
+    "options": [
+      "confuso e admirado",
+      "triste e desiludido",
+      "zangado e irritado",
+      "feliz e contente"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Se a notícia foi inesperada, como é que o João se sentiria? Será que ele ficou a perceber tudo ou ficou com dúvidas?",
+      "Ficar perplexo significa ficar muito admirado, confuso ou surpreendido com algo."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "A Maria comeu uma «manga» deliciosa ao lanche. O que significa 'manga' nesta frase?",
+    "options": [
+      "fruto tropical",
+      "parte da camisa",
+      "tipo de ferramenta",
+      "uma parte do rio"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "LEX.SENTIDO_FIXO"
+    },
+    "hints": [
+      "Se a Maria comeu uma manga e achou-a deliciosa, o que será? Uma parte da roupa ou algo que se come?",
+      "Nesta frase, 'manga' refere-se a um fruto tropical, doce e saboroso."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "A professora pediu uma «descrição» detalhada do animal. O que significa 'descrição'?",
+    "options": [
+      "apresentação das características",
+      "comportamento discreto",
+      "discussão sobre o animal",
+      "desenho do animal"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "LEX.SEMELHANCA_GRAFICA"
+    },
+    "hints": [
+      "Se a professora quer algo detalhado do animal, será que quer que o descrevam ou que se comportem de forma discreta?",
+      "Uma descrição é a apresentação das características de algo ou alguém, explicando como é."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "«Subitamente», a luz apagou-se e ficámos no escuro. O que significa 'subitamente'?",
+    "options": [
+      "de repente, inesperadamente",
+      "lentamente, com calma",
+      "com muita força",
+      "com muito barulho"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Se a luz 'apagou-se e ficámos no escuro', como é que isso aconteceu? Foi devagar ou de forma rápida e surpreendente?",
+      "Subitamente significa que algo aconteceu de forma rápida, inesperada e repentina."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

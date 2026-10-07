@@ -1,0 +1,180 @@
+[
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Um bolo foi dividido em 8 fatias iguais e comeram-se 3. Que fração do bolo se comeu?",
+    "figure": null,
+    "options": ["3/8", "8/3", "3/5", "5/8"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "2": "FRAC.PARTE_TODO_MAL",
+      "3": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Imagina o bolo dividido. Quantas fatias no total? Quantas foram comidas? A fração é (partes comidas) / (partes totais).",
+      "O bolo tem 8 fatias no total (denominador). Foram comidas 3 fatias (numerador). A fração é 3/8."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Numa caixa com 10 lápis, 4 são azuis. Que fração dos lápis são azuis?",
+    "figure": null,
+    "options": ["4/10", "10/4", "4/6", "6/10"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "2": "FRAC.PARTE_TODO_MAL",
+      "3": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Pensa no total de lápis na caixa. Quantos são azuis? A fração é (lápis azuis) / (total de lápis).",
+      "O total de lápis é 10 (denominador). Os lápis azuis são 4 (numerador). A fração é 4/10."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Como se lê a fração 5/9?",
+    "figure": null,
+    "options": ["Cinco nonos", "Cinco sobre nove", "Nove quintos"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "2": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Lembra-te que o número de cima se lê normalmente e o de baixo tem uma leitura especial (meios, terços, quartos, quintos, sextos, sétimos, oitavos, nonos, décimos, avos).",
+      "O número 5 lê-se 'cinco'. O número 9, quando é denominador, lê-se 'nonos'. Juntando, temos 'cinco nonos'."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Qual é a representação numérica da fração \"dois terços\"?",
+    "figure": null,
+    "options": ["2/3", "3/2", "2.3"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "A primeira palavra indica o numerador e a segunda palavra (terços) indica o denominador.",
+      "'Dois' é o numerador, 'terços' indica que o denominador é 3. A fração é 2/3."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "A avó da Ana dividiu 1 maçã igualmente por 3 netos. Que fração da maçã recebeu cada neto?",
+    "figure": null,
+    "options": ["1/3", "3/1", "1/2", "3/3"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "3": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Imagina a maçã dividida em partes iguais para os 3 netos. Quantas partes iguais terias? Quantas dessas partes recebe cada um?",
+      "A maçã é o todo (1). Foi dividida por 3 netos. Cada neto recebe uma das 3 partes, ou seja, 1/3 da maçã."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "O João e a Maria vão dividir uma pizza em 4 fatias iguais. Se cada um comer uma fatia, que fração da pizza comeu cada um?",
+    "figure": null,
+    "options": ["1/4", "2/4", "4/1", "1/2"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "2": "FRAC.PARTE_TODO_MAL",
+      "3": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Pensa na pizza como um todo. Em quantas partes iguais foi dividida? Quantas partes comeu o João? E a Maria?",
+      "A pizza foi dividida em 4 fatias (denominador). Cada um comeu 1 fatia (numerador). Portanto, cada um comeu 1/4 da pizza."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Qual destas frações é a maior: 2/5 ou 4/5?",
+    "figure": null,
+    "options": ["4/5", "2/5", "São iguais"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Imagina dois bolos do mesmo tamanho, ambos cortados em 5 fatias iguais. Num bolo, comeste 2 fatias. No outro, comeste 4 fatias. Onde comeste mais?",
+      "Quando as frações têm o mesmo denominador, a maior fração é aquela que tem o maior numerador. Como 4 é maior que 2, 4/5 é maior que 2/5."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Qual destas frações é a maior: 3/7 ou 3/4?",
+    "figure": null,
+    "options": ["3/4", "3/7", "São iguais"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.MAIOR_DEN_MAIOR_FRACAO"
+    },
+    "hints": [
+      "Imagina 3 pizzas do mesmo tamanho. Uma dividiste em 7 fatias iguais e comeste 3. Outra dividiste em 4 fatias iguais e comeste 3. Onde comeste fatias maiores?",
+      "Quando as frações têm o mesmo numerador, a maior fração é aquela que tem o menor denominador, porque as partes são maiores. Como 4 é menor que 7, as fatias de 1/4 são maiores que as de 1/7. Portanto, 3/4 é maior que 3/7."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Qual destas situações representa a fração 1/4?",
+    "figure": null,
+    "options": ["Dividir um bolo em 4 partes iguais e comer 1", "Dividir um bolo em 1 parte e comer 4", "Dividir um bolo em 4 partes e comer todas"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "2": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Lembra-te que o denominador (o número de baixo) indica o número total de partes iguais em que o todo foi dividido. O numerador (o número de cima) indica quantas dessas partes foram consideradas.",
+      "Na fração 1/4, o '4' significa que o todo foi dividido em 4 partes iguais, e o '1' significa que se considerou 1 dessas partes. A situação correta é dividir em 4 e comer 1."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "FRACAO_CONCEITO",
+    "stem": "Numa turma de 20 alunos, 12 são raparigas. Que fração dos alunos são raparigas?",
+    "figure": null,
+    "options": ["12/20", "20/12", "8/20", "12/8"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.PARTE_TODO_MAL",
+      "2": "FRAC.PARTE_TODO_MAL",
+      "3": "FRAC.PARTE_TODO_MAL"
+    },
+    "hints": [
+      "Qual é o número total de alunos na turma? Quantas raparigas há? A fração é (número de raparigas) / (total de alunos).",
+      "O total de alunos é 20 (denominador). O número de raparigas é 12 (numerador). A fração é 12/20."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

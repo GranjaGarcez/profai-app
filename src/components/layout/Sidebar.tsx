@@ -8,6 +8,7 @@ const nav = [
   { href: '/dashboard/content', label: 'Conteúdos', icon: '📄' },
   { href: '/dashboard/classes', label: 'Turmas', icon: '👥' },
   { href: '/dashboard/exams', label: 'Exames', icon: '✏️' },
+  { href: '/dashboard/diagnostico', label: 'Diagnóstico', icon: '🧭' },
   { href: '/dashboard/analytics', label: 'Resultados', icon: '📊' },
 ]
 

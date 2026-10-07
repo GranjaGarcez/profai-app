@@ -1,0 +1,57 @@
+[
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "No texto, «encharcado» quer dizer…",
+    "options": ["muito molhado", "com muito frio", "muito zangado", "muito cansado"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": ["Pensa na situação: estava à chuva, junto ao carrinho. O que acontece a quem está à chuva?", "«Encharcado» é estar ensopado, muito molhado."],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "A Matilde «hesitou um instante». «Hesitar» significa…",
+    "options": ["ficar indeciso por um momento", "correr muito depressa", "recusar com firmeza", "ficar muito contente"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": ["Ela parou, olhou para o guarda-chuva e para o céu antes de decidir. Que estado é esse?", "Hesitar é ficar indeciso, sem saber logo o que fazer."],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "«Uma tempestade iminente» é uma tempestade que…",
+    "options": ["está prestes a acontecer", "é muito importante", "já passou há pouco", "nunca vai acontecer"],
+    "correct_index": 0,
+    "option_misconceptions": { "1": "LEX.SEMELHANCA_GRAFICA" },
+    "hints": ["Cuidado: «iminente» parece-se com «eminente», mas não é o mesmo. Pensa em algo que está quase a chegar.", "«Iminente» = que está prestes a acontecer. «Eminente» (parecida) é que significa importante."],
+    "difficulty": "hard",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "«O avô sentou-se no banco do jardim.» Aqui, «banco» quer dizer…",
+    "options": ["um assento para sentar", "um lugar onde se guarda dinheiro", "um cardume de peixes", "uma bancada de trabalho"],
+    "correct_index": 0,
+    "option_misconceptions": { "1": "LEX.SENTIDO_FIXO" },
+    "hints": ["A mesma palavra pode ter sentidos diferentes. Qual faz sentido «no jardim»?", "No jardim, «banco» é um assento. O sentido de «guardar dinheiro» não encaixa aqui."],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PT.LEXICO",
+    "stem": "Uma pessoa «generosa» é uma pessoa que…",
+    "options": ["gosta de dar e partilhar", "pensa só em si", "tem muito medo", "é muito forte"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": ["Pensa no que a Matilde fez com o guarda-chuva. Como se chama esse feitio?", "Generosa é quem gosta de dar e partilhar com os outros."],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

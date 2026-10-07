@@ -1,0 +1,170 @@
+[
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 3 + 4 × 2",
+    "figure": null,
+    "hints": [
+      "Lembra-te que a multiplicação tem prioridade sobre a adição.",
+      "Primeiro, calcula 4 × 2, que dá 8. Depois, adiciona 3 ao resultado: 3 + 8 = 11."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "11",
+    "wrong_answers": {
+      "14": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 10 - 6 ÷ 2",
+    "figure": null,
+    "hints": [
+      "Recorda que a divisão deve ser feita antes da subtração.",
+      "Primeiro, calcula 6 ÷ 2, que dá 3. Depois, subtrai esse valor a 10: 10 - 3 = 7."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "7",
+    "wrong_answers": {
+      "2": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 15 - 3 × 4",
+    "figure": null,
+    "hints": [
+      "Não te esqueças de que a multiplicação tem prioridade sobre a subtração.",
+      "Primeiro, calcula 3 × 4, que dá 12. Depois, subtrai 12 a 15: 15 - 12 = 3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "3",
+    "wrong_answers": {
+      "48": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 12 + 8 ÷ 4",
+    "figure": null,
+    "hints": [
+      "Lembra-te da ordem das operações: divisão antes da adição.",
+      "Primeiro, calcula 8 ÷ 4, que dá 2. Depois, adiciona 12 ao resultado: 12 + 2 = 14."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "14",
+    "wrong_answers": {
+      "5": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: (7 + 3) × 5",
+    "figure": null,
+    "hints": [
+      "Não te esqueças que as operações dentro de parênteses são sempre as primeiras a ser calculadas.",
+      "Primeiro, calcula a operação dentro dos parênteses: 7 + 3 = 10. Depois, multiplica o resultado por 5: 10 × 5 = 50."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "50",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 30 - (5 × 2)",
+    "figure": null,
+    "hints": [
+      "Lembra-te de que as operações dentro de parênteses têm prioridade.",
+      "Primeiro, calcula a operação dentro dos parênteses: 5 × 2 = 10. Depois, subtrai esse valor a 30: 30 - 10 = 20."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "20",
+    "wrong_answers": {
+      "50": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 6 × 3 + 10 ÷ 2",
+    "figure": null,
+    "hints": [
+      "Recorda que a multiplicação e a divisão têm prioridade sobre a adição, e devem ser calculadas da esquerda para a direita.",
+      "Primeiro, 6 × 3 = 18. Depois, 10 ÷ 2 = 5. Por fim, adiciona os resultados: 18 + 5 = 23."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "23",
+    "wrong_answers": {
+      "14": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 4 + 3²",
+    "figure": null,
+    "hints": [
+      "Lembra-te que as potências têm prioridade sobre a adição.",
+      "Primeiro, calcula 3², que é 3 × 3 = 9. Depois, adiciona 4 ao resultado: 4 + 9 = 13."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "13",
+    "wrong_answers": {
+      "49": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 2 × (3 + 4) - 5",
+    "figure": null,
+    "hints": [
+      "Começa sempre pelas operações dentro dos parênteses, depois multiplicações/divisões e, por fim, adições/subtrações, da esquerda para a direita.",
+      "Primeiro, calcula (3 + 4) = 7. Depois, 2 × 7 = 14. Por fim, 14 - 5 = 9."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "9",
+    "wrong_answers": {
+      "5": "EXPR.ORDEM_IGNORADA"
+    }
+  },
+  {
+    "node_code": "EXPRESSOES",
+    "stem": "Calcula: 18 ÷ 3 + (2 × 5 - 4)",
+    "figure": null,
+    "hints": [
+      "Lembra-te de seguir a ordem das operações: parênteses, potências, multiplicação/divisão (da esquerda para a direita), adição/subtração (da esquerda para a direita).",
+      "Primeiro, resolve os parênteses: (2 × 5 - 4) = (10 - 4) = 6. A expressão fica: 18 ÷ 3 + 6. Depois, 18 ÷ 3 = 6. Por fim, 6 + 6 = 12."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "12",
+    "wrong_answers": {
+      "36": "EXPR.ORDEM_IGNORADA"
+    }
+  }
+]

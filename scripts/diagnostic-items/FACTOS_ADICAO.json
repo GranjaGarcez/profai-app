@@ -1,0 +1,152 @@
+[
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "8 + 7 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 8 + 2 = 10 e depois 10 + 5 = 15.",
+      "O resultado de 8 + 7 é 15."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "9 + 6 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 9 + 1 = 10 e depois 10 + 5 = 15.",
+      "O resultado de 9 + 6 é 15."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "7 + 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 7 + 3 = 10 e depois 10 + 5 = 15.",
+      "O resultado de 7 + 8 é 15."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "9 + 4 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 9 + 1 = 10 e depois 10 + 3 = 13.",
+      "O resultado de 9 + 4 é 13."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "13",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "6 + 9 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 6 + 4 = 10 e depois 10 + 5 = 15.",
+      "O resultado de 6 + 9 é 15."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "15",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "5 + 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 5 + 5 = 10 e depois 10 + 3 = 13.",
+      "O resultado de 5 + 8 é 13."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "13",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "7 + 9 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 7 + 3 = 10 e depois 10 + 6 = 16.",
+      "O resultado de 7 + 9 é 16."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "16",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "8 + 5 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 8 + 2 = 10 e depois 10 + 3 = 13.",
+      "O resultado de 8 + 5 é 13."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "13",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "9 + 8 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 9 + 1 = 10 e depois 10 + 7 = 17.",
+      "O resultado de 9 + 8 é 17."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "17",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "FACTOS_ADICAO",
+    "stem": "6 + 7 = ?",
+    "figure": null,
+    "hints": [
+      "Podes pensar: 6 + 4 = 10 e depois 10 + 3 = 13.",
+      "O resultado de 6 + 7 é 13."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 3000,
+    "response_type": "open_numeric",
+    "answer": "13",
+    "wrong_answers": {}
+  }
+]

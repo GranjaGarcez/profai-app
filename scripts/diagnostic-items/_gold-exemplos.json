@@ -1,0 +1,96 @@
+[
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 52 − 27",
+    "figure": null,
+    "hints": [
+      "Nas unidades não dá para tirar 7 de 2 — precisas de pedir emprestado à dezena.",
+      "Troca 1 dezena por 10 unidades: 12 − 7 = 5; ficam 4 dezenas − 2 dezenas = 2. Resultado: 25."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "25",
+    "wrong_answers": {
+      "35": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "TABUADA",
+    "stem": "7 × 8 = ?",
+    "figure": null,
+    "hints": [
+      "Se souberes 7 × 4 = 28, então 7 × 8 é o dobro.",
+      "7 × 8 = 56."
+    ],
+    "difficulty": "easy",
+    "is_fluency": true,
+    "target_latency_ms": 4000,
+    "response_type": "open_numeric",
+    "answer": "56",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "SENTIDO_MULTIPLICATIVO",
+    "stem": "Numa sala há 4 filas com 6 cadeiras cada. Quantas cadeiras há ao todo?",
+    "figure": null,
+    "hints": [
+      "«4 filas de 6» quer dizer 6 repetido 4 vezes.",
+      "6 + 6 + 6 + 6 = 24, que é o mesmo que 4 × 6 = 24."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "24",
+    "wrong_answers": {
+      "10": "MULT.ADICAO_REPETIDA_MAL"
+    }
+  },
+  {
+    "node_code": "FRACAO_EQUIVALENCIA",
+    "stem": "Qual das frações é maior?",
+    "figure": null,
+    "options": [
+      "1/4",
+      "1/8",
+      "São iguais",
+      "1/8, porque 8 é maior que 4"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "FRAC.MAIOR_DEN_MAIOR_FRACAO",
+      "3": "FRAC.MAIOR_DEN_MAIOR_FRACAO"
+    },
+    "hints": [
+      "Imagina o mesmo bolo partido em 4 fatias ou em 8 fatias. Em qual são maiores as fatias?",
+      "Quanto mais partes, menor é cada uma. Logo 1/4 > 1/8."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "DECIMAL_CONCEITO",
+    "stem": "Qual é o maior número: 0,3 ou 0,25?",
+    "figure": null,
+    "options": [
+      "0,3",
+      "0,25",
+      "0,03",
+      "São iguais"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "DEC.MAIS_ALGARISMOS_MAIOR"
+    },
+    "hints": [
+      "Escreve os dois com o mesmo número de casas decimais.",
+      "0,3 = 0,30; e 0,30 é maior que 0,25."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

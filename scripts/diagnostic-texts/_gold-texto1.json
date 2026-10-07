@@ -1,0 +1,376 @@
+{
+  "title": "O guarda-chuva vermelho",
+  "year_level": 5,
+  "genre": "narrativo",
+  "source": "original",
+  "body": "A Matilde saía da escola quando a chuva começou, forte e sem aviso. Abriu o seu guarda-chuva vermelho e apressou o passo. Ao virar a esquina, viu o senhor Armando, o vendedor de castanhas, encharcado junto ao carrinho apagado. As mãos tremiam-lhe de frio.\n\nA Matilde parou. Olhou para o guarda-chuva, depois para o céu escuro, e hesitou um instante. Faltava-lhe ainda um longo caminho até casa.\n\n— Fique com ele — disse, estendendo-lhe o guarda-chuva. — Eu corro.\n\nE desatou a correr, saltando as poças, com a mochila a servir de telhado. Chegou a casa ensopada, com os sapatos a fazer chape-chape e o cabelo colado à cara.\n\nA mãe, ao vê-la, levou as mãos à cabeça. Mas a Matilde sorria, como se trouxesse sol por dentro.\n\n— Valeu a pena? — perguntou a mãe, a enxugar-lhe o cabelo.\n\nA Matilde pensou no senhor Armando, agora mais quente, e no guarda-chuva vermelho a brilhar na chuva cinzenta.\n\n— Valeu — disse só.",
+  "items": [
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "O que é que a Matilde deu ao senhor Armando?",
+      "options": [
+        "O seu guarda-chuva vermelho",
+        "Umas castanhas quentes",
+        "A sua mochila",
+        "Um par de sapatos"
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Procura no texto o momento em que ela estende alguma coisa ao senhor Armando.",
+        "Ela diz «Fique com ele» e estende-lhe o guarda-chuva vermelho."
+      ],
+      "difficulty": "easy",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Como é que a Matilde chegou a casa?",
+      "options": [
+        "Ensopada, toda molhada",
+        "Seca e bem quente",
+        "Protegida pelo guarda-chuva",
+        "De carro, com a mãe"
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Repara no que o texto diz sobre os sapatos e o cabelo dela ao chegar.",
+        "«Chegou a casa ensopada», com os sapatos a fazer chape-chape e o cabelo colado à cara."
+      ],
+      "difficulty": "easy",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "Porque é que a Matilde hesitou antes de dar o guarda-chuva?",
+      "options": [
+        "Porque ainda tinha um longo caminho até casa e ia ficar molhada",
+        "Porque não gostava do senhor Armando",
+        "Porque o guarda-chuva era novo e caro",
+        "Porque a chuva já estava a parar"
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "2": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Relê o momento em que ela parou e olhou para o céu. O que é que ela ainda tinha pela frente?",
+        "Ela hesitou porque «faltava-lhe ainda um longo caminho até casa» — dar o guarda-chuva significava molhar-se."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "Quando o texto diz que a Matilde «trazia sol por dentro», quer dizer que ela estava…",
+      "options": [
+        "contente por ter ajudado alguém",
+        "cheia de calor do sol",
+        "a ficar com febre",
+        "à espera que o sol aparecesse"
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.SUPERFICIE",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "«Sol por dentro» não é o sol do céu — é uma imagem de um sentimento. Que sentimento combina com ter acabado de ajudar?",
+        "Apesar de molhada, sorria: sentia-se bem, contente por ter ajudado o senhor Armando."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "stem": "Qual destas frases é uma OPINIÃO sobre a história, e não um facto contado no texto?",
+      "options": [
+        "A Matilde foi muito corajosa e generosa",
+        "A Matilde deu o guarda-chuva ao senhor Armando",
+        "A Matilde chegou a casa ensopada",
+        "O senhor Armando vendia castanhas"
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.FACTO_OPINIAO",
+        "2": "COMP.FACTO_OPINIAO",
+        "3": "COMP.FACTO_OPINIAO"
+      },
+      "hints": [
+        "Um facto pode verificar-se no texto; uma opinião é um juízo de quem lê. Qual delas é um juízo?",
+        "«Foi muito corajosa e generosa» é um juízo (opinião); as outras três estão contadas no texto (factos)."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "O que é que a Matilde abriu quando a chuva começou, forte e sem aviso?",
+      "options": [
+        "O seu guarda-chuva vermelho.",
+        "A porta da escola.",
+        "A sua mochila.",
+        "Um livro."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Relê o início do texto. O que é que a Matilde fez logo que a chuva começou?",
+        "No segundo parágrafo, o texto diz: «Abriu o seu guarda-chuva vermelho e apressou o passo.»"
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "Quem é que a Matilde viu ao virar a esquina?",
+      "options": [
+        "O senhor Armando, o vendedor de castanhas.",
+        "A sua mãe.",
+        "Um colega da escola.",
+        "Um cão vadio."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {},
+      "hints": [
+        "Procura no texto a parte em que a Matilde vira a esquina. Quem é que ela encontra?",
+        "O texto refere: «Ao virar a esquina, viu o senhor Armando, o vendedor de castanhas...»"
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "Porque é que a mãe da Matilde «levou as mãos à cabeça» quando a viu?",
+      "options": [
+        "Porque a Matilde estava completamente molhada e suja.",
+        "Porque a Matilde tinha chegado tarde a casa.",
+        "Porque a Matilde tinha perdido o guarda-chuva.",
+        "Porque a Matilde estava a sorrir."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "2": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Pensa no estado em que a Matilde chegou a casa. Que reação seria natural para uma mãe ver a filha assim?",
+        "O texto diz que a Matilde «chegou a casa ensopada, com os sapatos a fazer chape-chape e o cabelo colado à cara». A mãe «levou as mãos à cabeça» por causa do estado em que a filha se encontrava."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_LITERAL",
+      "stem": "O que nos faz pensar que o senhor Armando estava a sentir muito frio?",
+      "options": [
+        "Estava encharcado e as mãos tremiam-lhe de frio.",
+        "O seu carrinho de castanhas estava apagado.",
+        "Estava junto à esquina da rua.",
+        "A Matilde parou para o observar."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.SUPERFICIE",
+        "2": "COMP.SUPERFICIE",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Procura no texto as descrições do senhor Armando. Que pormenores indicam que ele estava com frio?",
+        "O texto descreve o senhor Armando como «encharcado junto ao carrinho apagado» e que «As mãos tremiam-lhe de frio». Estes detalhes mostram o seu desconforto e o frio intenso que sentia."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_INFERENCIAL",
+      "stem": "Que qualidade da Matilde se destaca mais na história?",
+      "options": [
+        "A sua generosidade e empatia.",
+        "A sua rapidez a correr.",
+        "A sua capacidade de se proteger da chuva.",
+        "A sua preocupação com o tempo."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.SUPERFICIE",
+        "2": "COMP.SUPERFICIE",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Pensa na decisão que a Matilde tomou e no motivo pelo qual o fez. Que tipo de pessoa ela é por agir assim?",
+        "A Matilde, mesmo sabendo que ia ficar molhada e que tinha um longo caminho, deu o seu guarda-chuva a alguém que precisava mais. Isso mostra a sua generosidade e a sua capacidade de se colocar no lugar do outro (empatia)."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "stem": "Qual é a principal mensagem ou lição que esta história nos transmite?",
+      "options": [
+        "A importância de ser generoso e de ajudar o próximo, mesmo com sacrifício pessoal.",
+        "Que devemos ter sempre um guarda-chuva connosco quando chove.",
+        "Que é perigoso correr à chuva.",
+        "Que os vendedores de castanhas precisam de ajuda."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.SUPERFICIE",
+        "2": "COMP.SUPERFICIE",
+        "3": "COMP.SUPERFICIE"
+      },
+      "hints": [
+        "Pensa no que a Matilde fez e como se sentiu no final. O que é que a história nos ensina sobre as ações e as suas consequências emocionais?",
+        "A história mostra que, apesar do desconforto físico, a Matilde sentiu uma grande alegria e satisfação interior por ter ajudado o senhor Armando. A lição é que a bondade e a generosidade trazem uma recompensa emocional maior do que o sacrifício material."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "stem": "A pergunta da mãe, «Valeu a pena?», é uma afirmação de um facto ou uma expressão de opinião? Justifica.",
+      "options": [
+        "É uma expressão de opinião, pois a mãe está a questionar o valor da ação da Matilde, sem ser um facto objetivo.",
+        "É uma afirmação de um facto, pois ela quer saber se a Matilde realmente gostou de ajudar.",
+        "É uma pergunta retórica, sem esperar resposta.",
+        "É uma crítica à atitude da Matilde."
+      ],
+      "correct_index": 0,
+      "option_misconceptions": {
+        "1": "COMP.FACTO_OPINIAO",
+        "2": "COMP.INFERENCIA_NAO_SUSTENTADA",
+        "3": "COMP.INFERENCIA_NAO_SUSTENTADA"
+      },
+      "hints": [
+        "Pensa na diferença entre um facto (algo que pode ser provado) e uma opinião (um ponto de vista ou julgamento). A mãe está a constatar algo ou a pedir uma avaliação?",
+        "A mãe está a pedir à Matilde que avalie o significado da sua ação, que expresse o seu sentimento sobre o ocorrido. Não é algo que se possa provar como verdadeiro ou falso, mas sim um julgamento pessoal sobre o valor da experiência. Portanto, é uma expressão de opinião."
+      ],
+      "difficulty": "medium",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "response_type": "open_text",
+      "stem": "«A Matilde foi corajosa.» Isto é um facto contado no texto ou uma opinião? Escreve a tua resposta e explica porquê.",
+      "answer": "É uma opinião: «corajosa» é um juízo de quem lê, uma avaliação, e não um facto que se possa verificar no texto.",
+      "anchors": {
+        "groups": [
+          [
+            "opini"
+          ],
+          [
+            "juiz",
+            "julga",
+            "aval",
+            "valor",
+            "acha",
+            "pens",
+            "sent",
+            "parec",
+            "ponto de vista",
+            "nao se prova",
+            "nao se pode provar",
+            "nao e um facto",
+            "verific",
+            "depende",
+            "cada um"
+          ]
+        ],
+        "min": 2
+      },
+      "hints": [
+        "Pergunta-te: isto está escrito no texto como algo que aconteceu, ou é um juízo de quem lê? Diz qual e explica porquê.",
+        "É uma opinião. O texto conta o que a Matilde fez (factos); chamar-lhe «corajosa» é uma avaliação nossa, um juízo que não se prova no texto."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "response_type": "open_text",
+      "stem": "Achas que a Matilde tomou uma boa decisão ao dar o guarda-chuva? Não há resposta certa — justifica a tua opinião com algo do texto.",
+      "answer": "Qualquer posição é aceitável desde que justificada com o texto: por exemplo, foi boa porque ajudou o senhor Armando, que estava encharcado e com frio, mesmo sabendo que ela própria ia ficar molhada.",
+      "anchors": {
+        "groups": [
+          [
+            "ajud",
+            "generos",
+            "armando",
+            "frio",
+            "encharcad",
+            "molhad",
+            "ensopad",
+            "precis",
+            "caminho",
+            "sol por dentro",
+            "feliz",
+            "content",
+            "valeu"
+          ]
+        ],
+        "min": 1
+      },
+      "hints": [
+        "Podes dizer que sim ou que não — o que conta é a razão. Procura no texto um pormenor que apoie a tua opinião.",
+        "Por exemplo: foi boa decisão porque o senhor Armando estava encharcado e com frio e ela ajudou-o; ou podes pensar no custo, porque ela ficou ensopada. O essencial é justificares com a história."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    },
+    {
+      "node_code": "PT.COMP_CRITICA",
+      "response_type": "open_text",
+      "stem": "No fim, a Matilde responde só «Valeu». Explica o que ela quis dizer com isso e porquê, com base na história.",
+      "answer": "Quis dizer que valeu a pena: apesar de ter ficado ensopada, ajudou o senhor Armando e sentiu-se feliz por dentro — a satisfação de ajudar compensou o incómodo.",
+      "anchors": {
+        "groups": [
+          [
+            "valeu",
+            "valeu a pena",
+            "compens",
+            "feliz",
+            "content",
+            "satisf",
+            "bem",
+            "alegr",
+            "sol por dentro"
+          ],
+          [
+            "ajud",
+            "armando",
+            "generos",
+            "molhad",
+            "ensopad",
+            "frio",
+            "apesar",
+            "mesmo"
+          ]
+        ],
+        "min": 2
+      },
+      "hints": [
+        "Pensa no que a Matilde sentia apesar de estar toda molhada. Porque é que, para ela, «valeu»?",
+        "Para ela valeu a pena porque, apesar de ter ficado ensopada, ajudou o senhor Armando e sentiu-se feliz por dentro — a alegria de ajudar compensou o desconforto."
+      ],
+      "difficulty": "hard",
+      "is_fluency": false,
+      "target_latency_ms": null
+    }
+  ]
+}

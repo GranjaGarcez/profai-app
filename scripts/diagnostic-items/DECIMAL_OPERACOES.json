@@ -1,0 +1,166 @@
+[
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Calcula: 3,4 + 2,15",
+    "figure": null,
+    "hints": [
+      "Alinha as casas decimais antes de somar.",
+      "3,40 + 2,15 = 5,55."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "5,55",
+    "wrong_answers": {
+      "5,49": "DEC.VIRGULA_IGNORADA"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Subtrai: 7,85 – 3,2",
+    "figure": null,
+    "hints": [
+      "Coloca a vírgula na mesma posição em ambos os números.",
+      "7,85 – 3,20 = 4,65."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "4,65",
+    "wrong_answers": {
+      "4,55": "DEC.VIRGULA_IGNORADA"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Multiplica: 4,5 × 3",
+    "figure": null,
+    "hints": [
+      "Multiplica como inteiros e depois coloca a vírgula.",
+      "4,5 × 3 = 13,5."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "13,5",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Multiplica: 2,3 × 1,4",
+    "figure": null,
+    "hints": [
+      "Conta o número total de casas decimais (2) e coloca a vírgula.",
+      "2,3 × 1,4 = 3,22."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "3,22",
+    "wrong_answers": {
+      "3,42": "DEC.CASAS_MULTIPLICACAO"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Divide: 9,6 ÷ 4",
+    "figure": null,
+    "hints": [
+      "Primeiro divide como inteiros e depois ajusta a vírgula.",
+      "9,6 ÷ 4 = 2,4."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "2,4",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Um saco de arroz custa 2,75 €, quantos euros pagas por 3 sacos?",
+    "figure": null,
+    "hints": [
+      "Multiplica o preço unitário por 3, alinhando as casas decimais.",
+      "2,75 € × 3 = 8,25 €."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "8,25",
+    "wrong_answers": {
+      "8,30": "DEC.VIRGULA_IGNORADA"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Calcula: 0,75 – 0,5",
+    "figure": null,
+    "hints": [
+      "Alinha as casas decimais antes de subtrair.",
+      "0,75 – 0,50 = 0,25."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "0,25",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Multiplica: 0,6 × 0,3",
+    "figure": null,
+    "hints": [
+      "O produto tem duas casas decimais (1+1).",
+      "0,6 × 0,3 = 0,18."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "0,18",
+    "wrong_answers": {
+      "0,2": "DEC.CASAS_MULTIPLICACAO"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Um percurso mede 2,35 km. Quantos metros são 4 percursos?",
+    "figure": null,
+    "hints": [
+      "Converte km para metros (1 km = 1 000 m) e depois multiplica.",
+      "2,35 km = 2 350 m; 2 350 m × 4 = 9 400 m."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "9400",
+    "wrong_answers": {
+      "940": "DEC.VIRGULA_IGNORADA"
+    }
+  },
+  {
+    "node_code": "DECIMAL_OPERACOES",
+    "stem": "Divide: 5,00 ÷ 2,5",
+    "figure": null,
+    "hints": [
+      "Alinha as casas decimais e efetua a divisão.",
+      "5,00 ÷ 2,5 = 2,0."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "2,0",
+    "wrong_answers": {
+      "2,2": "DEC.CASAS_MULTIPLICACAO"
+    }
+  }
+]

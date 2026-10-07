@@ -1,0 +1,172 @@
+[
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Se 3 cadernos custam 6 euros, quanto custam 5 cadernos ao mesmo preço?",
+    "figure": null,
+    "hints": [
+      "Primeiro, calcula o preço de um caderno.",
+      "Se 3 cadernos custam 6 euros, cada caderno custa 6 ÷ 3 = 2 euros. Então, 5 cadernos custam 5 × 2 = 10 euros."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "10",
+    "wrong_answers": {
+      "8": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Para fazer 4 bolos, são necessários 200 gramas de farinha. Quantos gramas de farinha são necessários para fazer 6 bolos?",
+    "figure": null,
+    "hints": [
+      "Descobre a quantidade de farinha necessária para um bolo.",
+      "Para 4 bolos, 200g de farinha, logo para 1 bolo são 200 ÷ 4 = 50g. Para 6 bolos, são 6 × 50 = 300g."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "300",
+    "wrong_answers": {
+      "202": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Um carro percorre 120 km em 2 horas. Mantendo a mesma velocidade, quantos quilómetros percorre em 3 horas?",
+    "figure": null,
+    "hints": [
+      "Calcula quantos quilómetros o carro percorre em 1 hora.",
+      "Se em 2 horas percorre 120 km, em 1 hora percorre 120 ÷ 2 = 60 km. Em 3 horas, percorre 3 × 60 = 180 km."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "180",
+    "wrong_answers": {
+      "121": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Se a razão entre o número de maçãs e o número de peras é 2 para 3, e há 8 maçãs, quantas peras há?",
+    "figure": null,
+    "hints": [
+      "Pensa em qual fator multiplicou o número de maçãs.",
+      "A razão é 2:3. Se 2 maçãs correspondem a 3 peras, e temos 8 maçãs (que é 2 × 4), então teremos 3 × 4 = 12 peras."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "12",
+    "wrong_answers": {
+      "9": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Uma caixa com 8 lápis custa 4 euros. Quanto custaria uma caixa com 12 lápis, ao mesmo preço por lápis?",
+    "figure": null,
+    "hints": [
+      "Determina o preço de cada lápis.",
+      "Se 8 lápis custam 4 euros, cada lápis custa 4 ÷ 8 = 0,50 euros. Então, 12 lápis custam 12 × 0,50 = 6 euros."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "6",
+    "wrong_answers": {
+      "8": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Para pintar 5 paredes, um pintor demora 10 horas. Quantas horas demorará a pintar 7 paredes, trabalhando ao mesmo ritmo?",
+    "figure": null,
+    "hints": [
+      "Calcula o tempo que o pintor demora a pintar uma parede.",
+      "Se 5 paredes demoram 10 horas, cada parede demora 10 ÷ 5 = 2 horas. Para 7 paredes, o pintor demorará 7 × 2 = 14 horas."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "14",
+    "wrong_answers": {
+      "12": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Sabe-se que 1 euro vale 100 cêntimos. Quantos cêntimos valem 3,5 euros?",
+    "figure": null,
+    "hints": [
+      "Qual é a relação de multiplicação entre euros e cêntimos?",
+      "Se 1 euro = 100 cêntimos, então para converter euros em cêntimos, multiplicamos por 100. Logo, 3,5 euros = 3,5 × 100 = 350 cêntimos."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "350",
+    "wrong_answers": {
+      "103.5": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Para fazer uma limonada para 4 pessoas, são necessários 8 limões. Quantos limões são necessários para fazer limonada para 6 pessoas?",
+    "figure": null,
+    "hints": [
+      "Descobre quantos limões são necessários por pessoa.",
+      "Se para 4 pessoas são 8 limões, então para 1 pessoa são 8 ÷ 4 = 2 limões. Para 6 pessoas, são 6 × 2 = 12 limões."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "12",
+    "wrong_answers": {
+      "10": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Numa relação de proporcionalidade direta, se a quantidade A é 3 e a quantidade B é 15, qual é a constante de proporcionalidade? (Considera B = k × A)",
+    "figure": null,
+    "hints": [
+      "Lembra-te que a constante de proporcionalidade (k) é a razão entre as duas grandezas.",
+      "Se B = k × A, então k = B ÷ A. Neste caso, k = 15 ÷ 3 = 5."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "5",
+    "wrong_answers": {
+      "12": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  },
+  {
+    "node_code": "PROPORCIONALIDADE",
+    "stem": "Se a constante de proporcionalidade entre duas grandezas é 4, e uma das grandezas tem o valor 7, qual é o valor da outra grandeza? (Considera Y = k × X, onde X é 7)",
+    "figure": null,
+    "hints": [
+      "Usa a fórmula da proporcionalidade direta: Y = k × X.",
+      "Se a constante de proporcionalidade (k) é 4 e uma das grandezas (X) é 7, então a outra grandeza (Y) é 4 × 7 = 28."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "28",
+    "wrong_answers": {
+      "11": "PROP.ADITIVO_NAO_MULTIPLICATIVO"
+    }
+  }
+]

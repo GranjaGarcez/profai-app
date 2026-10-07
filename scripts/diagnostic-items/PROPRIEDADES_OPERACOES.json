@@ -1,0 +1,152 @@
+[
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Qual é a forma mais fácil de calcular 7 × 12 de cabeça?",
+    "figure": null,
+    "options": ["7 × 10 + 7 × 2", "7 × 10 + 2", "7 + 10 + 2", "7 × 1 + 7 × 2"],
+    "correct_index": 0,
+    "option_misconceptions": { "1": "PROP.DISTRIBUTIVA_INCOMPLETA" },
+    "hints": [
+      "Pensa em como podes decompor o número 12 em parcelas mais fáceis de multiplicar por 7.",
+      "A propriedade distributiva permite-nos multiplicar 7 por cada uma das parcelas da decomposição de 12. Assim, 7 × (10 + 2) é igual a 7 × 10 + 7 × 2."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Qual das seguintes igualdades mostra a propriedade comutativa da adição?",
+    "figure": null,
+    "options": ["5 + 3 = 3 + 5", "(2 + 4) + 1 = 2 + (4 + 1)", "6 + 0 = 6", "7 + 1 = 8"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "A propriedade comutativa diz-nos que a ordem dos números não altera o resultado da operação.",
+      "Na adição, 5 + 3 tem o mesmo resultado que 3 + 5. A ordem das parcelas não altera a soma."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "A igualdade 4 × 9 = 9 × 4 é um exemplo de qual propriedade?",
+    "figure": null,
+    "options": ["Propriedade comutativa", "Propriedade associativa", "Propriedade distributiva", "Propriedade do elemento neutro"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Observa o que acontece com a ordem dos fatores nesta igualdade.",
+      "Quando a ordem dos fatores numa multiplicação não altera o produto, estamos perante a propriedade comutativa."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Completa a igualdade para mostrar a propriedade associativa da adição: (8 + 2) + 5 = 8 + (___ + 5)",
+    "figure": null,
+    "options": ["2", "8", "5", "10"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "A propriedade associativa permite-nos agrupar os números de diferentes formas sem alterar o resultado.",
+      "A igualdade mostra que (8 + 2) + 5 é o mesmo que 8 + (2 + 5). O número que falta para manter o agrupamento é o 2."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Qual das seguintes expressões é igual a (3 × 5) × 2, usando a propriedade associativa?",
+    "figure": null,
+    "options": ["3 × (5 × 2)", "3 + (5 × 2)", "(3 × 5) + 2", "3 × 5 + 2"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "A propriedade associativa na multiplicação permite mudar a forma como os fatores são agrupados.",
+      "Para aplicar a propriedade associativa, os fatores permanecem os mesmos, mas a forma como são agrupados (com parênteses) é alterada. Assim, (3 × 5) × 2 é igual a 3 × (5 × 2)."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Para calcular 6 × 13 de forma mais fácil, qual das decomposições seguintes podes usar?",
+    "figure": null,
+    "options": ["6 × 10 + 6 × 3", "6 × 10 + 3", "6 + 10 + 3", "6 × 1 + 6 × 3"],
+    "correct_index": 0,
+    "option_misconceptions": { "1": "PROP.DISTRIBUTIVA_INCOMPLETA" },
+    "hints": [
+      "Pensa em como podes decompor o número 13 em parcelas que são fáceis de multiplicar por 6.",
+      "Decompõe 13 em 10 + 3. Depois, usa a propriedade distributiva para multiplicar 6 por cada uma dessas parcelas: 6 × 10 + 6 × 3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Qual destas igualdades é FALSA?",
+    "figure": null,
+    "options": ["10 - 5 = 5 - 10", "7 + 3 = 3 + 7", "4 × 6 = 6 × 4", "(2 + 3) + 1 = 2 + (3 + 1)"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Verifica o resultado de cada lado das igualdades. Lembra-te que nem todas as operações são comutativas.",
+      "A propriedade comutativa aplica-se à adição e à multiplicação, mas não à subtração. 10 - 5 = 5, enquanto 5 - 10 = -5. Logo, 10 - 5 não é igual a 5 - 10."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Completa a igualdade: 5 × (4 + 3) = 5 × 4 + 5 × ___",
+    "figure": null,
+    "options": ["3", "4", "5", "7"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Esta igualdade representa a propriedade distributiva. O número fora do parêntese multiplica cada um dos números dentro do parêntese.",
+      "Na propriedade distributiva, o 5 multiplica o 4 e também multiplica o 3. O número que falta é o 3."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Ao calcular 8 × 15 como 8 × 10 + 8 × 5, que propriedade estás a usar?",
+    "figure": null,
+    "options": ["Propriedade distributiva", "Propriedade comutativa", "Propriedade associativa", "Propriedade do elemento neutro"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Observa como o número 8 foi 'distribuído' pelas parcelas da decomposição do 15.",
+      "Esta forma de cálculo, onde um fator é multiplicado pela soma de outros fatores (8 × (10 + 5) = 8 × 10 + 8 × 5), é a propriedade distributiva da multiplicação em relação à adição."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "PROPRIEDADES_OPERACOES",
+    "stem": "Qual é a forma mais ágil de calcular 25 + 17 de cabeça, decompondo um dos números?",
+    "figure": null,
+    "options": ["25 + 10 + 7", "20 + 5 + 10 + 7", "25 + 17"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Para facilitar o cálculo mental, tenta decompor um dos números em dezenas e unidades e adicioná-los progressivamente.",
+      "Decompondo o 17 em 10 + 7, podemos somar 25 + 10 = 35 e depois 35 + 7 = 42. Esta é uma forma ágil de calcular mentalmente."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

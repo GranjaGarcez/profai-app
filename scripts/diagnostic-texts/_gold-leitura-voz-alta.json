@@ -1,0 +1,16 @@
+{
+  "title": "A manhã de neve",
+  "body": "O Tomás acordou cedo e correu à janela. Lá fora, a neve cobria tudo como um lençol branco. Nunca tinha visto nada assim! Vestiu-se à pressa, calçou as botas e desceu as escadas a saltar. — Mãe, posso ir lá fora? — perguntou, já com a mão na porta. A mãe sorriu e acenou que sim. O frio mordia-lhe as orelhas, mas o Tomás não queria saber: tinha um dia inteiro de neve à sua espera.",
+  "year_level": 5,
+  "genre": "leitura em voz alta",
+  "source": "original",
+  "items": [
+    {
+      "node_code": "PT.FLUENCIA_LEITORA",
+      "stem": "Lê este texto em voz alta, do princípio ao fim, com calma e com expressão. Quando terminares, para a gravação.",
+      "response_type": "audio_reading",
+      "is_fluency": false,
+      "difficulty": "easy"
+    }
+  ]
+}

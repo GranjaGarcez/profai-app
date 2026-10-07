@@ -1,0 +1,170 @@
+[
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Quanto vale o algarismo 7 no número 374?",
+    "figure": null,
+    "options": ["70", "7", "700", "74"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Pensa na posição do algarismo 7 dentro do número.",
+      "O algarismo 7 está na casa das dezenas. Uma dezena vale 10, então 7 dezenas valem 7 vezes 10, que é 70."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Qual é o valor posicional do algarismo 5 no número 528?",
+    "figure": null,
+    "options": ["500", "50", "5", "52"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "2": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Observa em que ordem o algarismo 5 se encontra.",
+      "O algarismo 5 está na ordem das centenas. Uma centena vale 100, logo 5 centenas valem 5 vezes 100, que é 500."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Qual das seguintes opções representa a decomposição do número 189?",
+    "figure": null,
+    "options": ["100 + 80 + 9", "1 + 8 + 9", "10 + 80 + 9", "18 + 9"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Pensa no valor de cada algarismo de acordo com a sua posição.",
+      "O número 189 tem 1 centena (100), 8 dezenas (80) e 9 unidades (9). A sua decomposição é 100 + 80 + 9."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Que número se forma com 2 centenas, 3 dezenas e 1 unidade?",
+    "figure": null,
+    "options": ["231", "213", "321", "123"],
+    "correct_index": 0,
+    "option_misconceptions": {},
+    "hints": [
+      "Coloca os algarismos nas suas respetivas ordens: centenas, dezenas, unidades.",
+      "2 centenas é o algarismo das centenas (2), 3 dezenas é o algarismo das dezenas (3) e 1 unidade é o algarismo das unidades (1). O número é 231."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Qual é o número que se lê 'trezentos e cinquenta e dois'?",
+    "figure": null,
+    "options": ["352", "325", "532", "3502"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "3": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Pensa em cada parte do nome do número e no seu valor.",
+      "'Trezentos' significa 3 centenas, 'cinquenta' significa 5 dezenas e 'dois' significa 2 unidades. Juntando tudo, temos o número 352."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "No número 463, qual é o valor do algarismo 3?",
+    "figure": null,
+    "options": ["3", "30", "300", "36"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Verifica a posição do algarismo 3 no número.",
+      "O algarismo 3 está na ordem das unidades. O valor de 3 unidades é simplesmente 3."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Que número se forma com 4 centenas e 7 unidades?",
+    "figure": null,
+    "options": ["407", "470", "47", "704"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "2": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Lembra-te que, se não há dezenas, devemos usar um zero para marcar essa posição.",
+      "Temos 4 centenas (4 no lugar das centenas) e 7 unidades (7 no lugar das unidades). Como não há dezenas, colocamos um zero nessa posição. O número é 407."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Como se decompõe o número 503?",
+    "figure": null,
+    "options": ["500 + 3", "50 + 3", "500 + 30", "5 + 0 + 3"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "2": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Pensa no valor de cada algarismo, mesmo que seja zero.",
+      "O número 503 tem 5 centenas (500), 0 dezenas (0) e 3 unidades (3). A sua decomposição é 500 + 0 + 3, ou simplesmente 500 + 3."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Qual é o algarismo das dezenas no número 681?",
+    "figure": null,
+    "options": ["8", "6", "1", "80"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "3": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Identifica a posição das unidades, dezenas e centenas.",
+      "No número 681, o 1 é o algarismo das unidades, o 8 é o algarismo das dezenas e o 6 é o algarismo das centenas. Portanto, o algarismo das dezenas é o 8."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "VALOR_POSICIONAL",
+    "stem": "Que número resulta da soma 700 + 5?",
+    "figure": null,
+    "options": ["705", "75", "750", "507"],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "VP.ZERO_INTERMEDIO"
+    },
+    "hints": [
+      "Pensa no valor de cada parcela e na posição que ocupam no número final.",
+      "700 representa 7 centenas. 5 representa 5 unidades. Como não há dezenas, a posição das dezenas é preenchida com um zero. O número é 705."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

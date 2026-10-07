@@ -1,0 +1,122 @@
+[
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Qual é o número que vem logo a seguir a 29?",
+    "figure": null,
+    "hints": [
+      "Pensa na sequência numérica. O que vem depois do 29?",
+      "Se contares, 28, 29, ... qual é o próximo número?"
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "30",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Qual é o número que vem logo antes de 15?",
+    "figure": null,
+    "hints": [
+      "Pensa na sequência numérica, mas para trás. O que vem antes do 15?",
+      "Se contares para trás, 16, 15, ... qual é o número anterior?"
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "14",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Qual destes números é o maior: 17, 7, 21?",
+    "figure": null,
+    "hints": [
+      "Pensa em qual número tem mais 'coisas'.",
+      "Compara as dezenas e depois as unidades. O 21 tem 2 dezenas, o 17 tem 1 dezena e o 7 não tem dezenas. Qual é o maior?"
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "21",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Qual destes números é o menor: 35, 25, 5?",
+    "figure": null,
+    "hints": [
+      "Pensa em qual número tem menos 'coisas'.",
+      "Compara as dezenas e depois as unidades. O 5 não tem dezenas, o 25 tem 2 dezenas e o 35 tem 3 dezenas. Qual é o menor?"
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "5",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Quantas dezenas tem o número 34?",
+    "figure": null,
+    "hints": [
+      "Lembra-te que uma dezena são 10 unidades. O número 34 é o mesmo que 3 dezenas e 4 unidades.",
+      "O primeiro algarismo do número 34, que é o 3, representa as dezenas."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "3",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Quantas unidades tem o número 27?",
+    "figure": null,
+    "hints": [
+      "Lembra-te que o número 27 é feito de 2 dezenas e algumas unidades.",
+      "O último algarismo do número 27, que é o 7, representa as unidades."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "7",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Qual é o número que tem 1 dezena e 8 unidades?",
+    "figure": null,
+    "hints": [
+      "Uma dezena é 10. Se juntares 10 com 8 unidades, que número fazes?",
+      "O número das dezenas é o primeiro algarismo e o das unidades é o segundo. 1 dezena e 8 unidades forma o número 18."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "18",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "CONTAGEM",
+    "stem": "Continua a contagem de 10 em 10: 10, 20, __?",
+    "figure": null,
+    "hints": [
+      "Pensa em adicionar 10 ao último número.",
+      "Se tens 20 e queres contar mais 10, ficas com 30."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "30",
+    "wrong_answers": {}
+  }
+]

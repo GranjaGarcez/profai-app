@@ -1,0 +1,228 @@
+[
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é o número decimal igual à fração 1/4?",
+    "figure": null,
+    "options": [
+      "0,25",
+      "0,4",
+      "1,4",
+      "0,14"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Lembra-te que uma fração pode ser vista como uma divisão. Como podes calcular 1 a dividir por 4?",
+      "Para converter a fração 1/4 num número decimal, deves dividir o numerador (1) pelo denominador (4). 1 ÷ 4 = 0,25."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é a percentagem equivalente a 0,5?",
+    "figure": null,
+    "options": [
+      "5%",
+      "50%",
+      "0,5%",
+      "500%"
+    ],
+    "correct_index": 1,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Para converter um número decimal em percentagem, deves multiplicá-lo por 100.",
+      "O número decimal 0,5 é igual a 0,5 x 100 = 50. Portanto, 0,5 corresponde a 50%."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é a fração irredutível que representa 25%?",
+    "figure": null,
+    "options": [
+      "1/4",
+      "25/100",
+      "1/25",
+      "1/2"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Uma percentagem significa 'por cada 100'. Como podes escrever 25% como uma fração com denominador 100?",
+      "25% significa 25 por 100, ou seja, a fração 25/100. Para a tornar irredutível, deves dividir o numerador e o denominador pelo seu máximo divisor comum, que é 25. Assim, 25 ÷ 25 = 1 e 100 ÷ 25 = 4. A fração irredutível é 1/4."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é a percentagem que corresponde à fração 3/4?",
+    "figure": null,
+    "options": [
+      "34%",
+      "75%",
+      "0,75%",
+      "7,5%"
+    ],
+    "correct_index": 1,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Primeiro, converte a fração num número decimal. Depois, converte o número decimal em percentagem.",
+      "Para converter 3/4 em decimal, divide 3 por 4, o que dá 0,75. Para converter 0,75 em percentagem, multiplica por 100: 0,75 x 100 = 75%. Portanto, 3/4 corresponde a 75%."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é a fração irredutível que representa o número decimal 0,2?",
+    "figure": null,
+    "options": [
+      "2/10",
+      "1/5",
+      "2/1",
+      "1/2"
+    ],
+    "correct_index": 1,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "O número 0,2 pode ser lido como 'dois décimos'. Como se escreve 'dois décimos' em fração?",
+      "O número decimal 0,2 significa 2 décimos, o que se escreve como a fração 2/10. Para a tornar irredutível, deves dividir o numerador e o denominador pelo seu máximo divisor comum, que é 2. Assim, 2 ÷ 2 = 1 e 10 ÷ 2 = 5. A fração irredutível é 1/5."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual dos seguintes números é o maior: 1/2 ou 0,4?",
+    "figure": null,
+    "options": [
+      "1/2",
+      "0,4",
+      "São iguais",
+      "Não é possível comparar"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "1": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Para comparar, é mais fácil ter ambos os números na mesma representação, por exemplo, em decimal.",
+      "A fração 1/2 é igual a 0,5. Agora compara 0,5 com 0,4. Como 0,5 é maior que 0,4, então 1/2 é o maior número."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual das seguintes afirmações é verdadeira?",
+    "figure": null,
+    "options": [
+      "0,75 > 75%",
+      "0,75 < 75%",
+      "0,75 = 75%",
+      "0,75 é 750%"
+    ],
+    "correct_index": 2,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "3": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Converte a percentagem num número decimal para facilitar a comparação.",
+      "Para converter 75% em decimal, deves dividir por 100. Assim, 75% = 75 ÷ 100 = 0,75. Portanto, 0,75 = 75% é a afirmação verdadeira."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é a ordem crescente dos seguintes números: 0,1; 1/5; 30%?",
+    "figure": null,
+    "options": [
+      "0,1; 1/5; 30%",
+      "30%; 1/5; 0,1",
+      "1/5; 0,1; 30%",
+      "0,1; 30%; 1/5"
+    ],
+    "correct_index": 0,
+    "option_misconceptions": {
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Converte todos para a mesma forma. Em decimal: 1/5 = 0,2 e 30% = 0,3.",
+      "Em decimal fica 0,1 < 0,2 < 0,3, ou seja 0,1; 1/5; 30%."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é o número decimal equivalente à fração 3/5?",
+    "figure": null,
+    "options": [
+      "0,35",
+      "0,6",
+      "3,5",
+      "0,06"
+    ],
+    "correct_index": 1,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Lembra-te que podes converter uma fração num número decimal dividindo o numerador pelo denominador.",
+      "Para converter 3/5 em decimal, deves dividir 3 por 5. 3 ÷ 5 = 0,6."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  },
+  {
+    "node_code": "RACIONAL_RELACOES",
+    "stem": "Qual é o número decimal que representa 75%?",
+    "figure": null,
+    "options": [
+      "7,5",
+      "0,75",
+      "75",
+      "0,075"
+    ],
+    "correct_index": 1,
+    "option_misconceptions": {
+      "0": "RAC.CONVERSAO_FRACAO_DECIMAL",
+      "2": "RAC.CONVERSAO_FRACAO_DECIMAL"
+    },
+    "hints": [
+      "Para converter uma percentagem num número decimal, deves dividir a percentagem por 100.",
+      "75% significa 75 por 100. Para converter em decimal, divide 75 por 100, o que resulta em 0,75."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null
+  }
+]

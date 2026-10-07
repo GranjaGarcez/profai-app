@@ -1,0 +1,162 @@
+[
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 52 − 27",
+    "figure": null,
+    "hints": [
+      "Lembra-te que não podes tirar 7 a 2. Vais precisar de pedir emprestado à dezena.",
+      "Unidades: 2 não tira 7, pede 1 dezena ao 5. Fica 12 − 7 = 5. Dezenas: O 5 ficou 4. 4 − 2 = 2. Resultado: 25."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "25",
+    "wrong_answers": {
+      "35": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 38 + 15",
+    "figure": null,
+    "hints": [
+      "Começa por somar as unidades. Se o resultado for igual ou maior que 10, tens de transportar uma dezena.",
+      "Unidades: 8 + 5 = 13. Escreve 3 e transporta 1 dezena. Dezenas: 3 + 1 (transportado) + 1 = 5. Resultado: 53."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "53",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 143 − 68",
+    "figure": null,
+    "hints": [
+      "Começa pelas unidades. Se precisares de 'pedir emprestado', lembra-te de diminuir a ordem seguinte.",
+      "Unidades: 3 não tira 8, pede 1 dezena ao 4. Fica 13 − 8 = 5. Dezenas: O 4 ficou 3. 3 não tira 6, pede 1 centena ao 1. Fica 13 − 6 = 7. Centenas: O 1 ficou 0. Resultado: 75."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "75",
+    "wrong_answers": {
+      "125": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 254 + 179",
+    "figure": null,
+    "hints": [
+      "Não te esqueças de transportar as dezenas e as centenas quando a soma for superior a 9.",
+      "Unidades: 4 + 9 = 13. Escreve 3 e transporta 1. Dezenas: 5 + 7 + 1 (transportado) = 13. Escreve 3 e transporta 1. Centenas: 2 + 1 + 1 (transportado) = 4. Resultado: 433."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "433",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 305 − 128",
+    "figure": null,
+    "hints": [
+      "Quando precisas de 'pedir emprestado' e a ordem seguinte é zero, tens de 'pedir emprestado' à ordem a seguir ao zero primeiro.",
+      "Unidades: 5 não tira 8, pede 1 dezena ao 0. O 0 não tem, pede ao 3. O 3 fica 2, o 0 fica 10. Agora o 0 (10) empresta 1 ao 5. O 5 fica 15, o 0 (10) fica 9. 15 − 8 = 7. Dezenas: O 0 ficou 9. 9 − 2 = 7. Centenas: O 3 ficou 2. 2 − 1 = 1. Resultado: 177."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "177",
+    "wrong_answers": {
+      "223": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Numa quinta há 46 galinhas e 27 patos. Quantas aves há ao todo na quinta?",
+    "figure": null,
+    "hints": [
+      "Para saber o total, deves juntar os dois grupos de aves. Lembra-te de transportar se a soma das unidades for maior que 9.",
+      "Soma as unidades: 6 + 7 = 13. Escreve 3 e transporta 1. Soma as dezenas: 4 + 2 + 1 (transportado) = 7. Há 73 aves."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "73",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "A Maria tinha 65 cromos e deu 18 ao seu irmão. Quantos cromos tem a Maria agora?",
+    "figure": null,
+    "hints": [
+      "Se a Maria deu cromos, o número de cromos dela diminuiu. Vais precisar de subtrair. Não te esqueças de 'pedir emprestado' se for necessário.",
+      "Unidades: 5 não tira 8, pede 1 dezena ao 6. Fica 15 − 8 = 7. Dezenas: O 6 ficou 5. 5 − 1 = 4. A Maria tem agora 47 cromos."
+    ],
+    "difficulty": "easy",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "47",
+    "wrong_answers": {
+      "53": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 487 + 365",
+    "figure": null,
+    "hints": [
+      "Soma as unidades, depois as dezenas e por fim as centenas. Em cada passo, verifica se precisas de transportar para a ordem seguinte.",
+      "Unidades: 7 + 5 = 12. Escreve 2 e transporta 1. Dezenas: 8 + 6 + 1 (transportado) = 15. Escreve 5 e transporta 1. Centenas: 4 + 3 + 1 (transportado) = 8. Resultado: 852."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "852",
+    "wrong_answers": {}
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Calcula: 721 − 356",
+    "figure": null,
+    "hints": [
+      "Começa pelas unidades. Lembra-te que, ao 'pedir emprestado', a ordem de onde pediste diminui em 1.",
+      "Unidades: 1 não tira 6, pede 1 dezena ao 2. Fica 11 − 6 = 5. Dezenas: O 2 ficou 1. 1 não tira 5, pede 1 centena ao 7. Fica 11 − 5 = 6. Centenas: O 7 ficou 6. 6 − 3 = 3. Resultado: 365."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "365",
+    "wrong_answers": {
+      "435": "SUB.MENOR_DO_MAIOR"
+    }
+  },
+  {
+    "node_code": "ADICAO_SUBTRACAO",
+    "stem": "Um autocarro fez duas viagens. Na primeira levou 138 passageiros e na segunda levou 165. Quantos passageiros levou o autocarro nas duas viagens?",
+    "figure": null,
+    "hints": [
+      "Para saber o total de passageiros, tens de somar os passageiros de ambas as viagens. Presta atenção aos transportes.",
+      "Soma as unidades: 8 + 5 = 13. Escreve 3 e transporta 1. Soma as dezenas: 3 + 6 + 1 (transportado) = 10. Escreve 0 e transporta 1. Soma as centenas: 1 + 1 + 1 (transportado) = 3. O autocarro levou 303 passageiros."
+    ],
+    "difficulty": "medium",
+    "is_fluency": false,
+    "target_latency_ms": null,
+    "response_type": "open_numeric",
+    "answer": "303",
+    "wrong_answers": {}
+  }
+]
