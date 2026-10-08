@@ -30,8 +30,11 @@ interface Assessment {
   created_at: string;
   retest_after_days: number;
   domain: string | null;
+  class_id: string | null;
+  classes: { name: string; year_level: number } | null;
   diag_sessions: Session[];
 }
+interface ClassOpt { id: string; name: string; year_level: number; member_count: number }
 
 const DOMAIN_LABEL: Record<string, string> = {
   matematica: "Matemática · Números e Operações",
@@ -49,10 +52,15 @@ export default function DiagnosticoLauncher() {
   const [screening, setScreening] = useState(false);
   const [weeks, setWeeks] = useState(6);
   const [domain, setDomain] = useState<"matematica" | "portugues">("matematica");
+  const [classes, setClasses] = useState<ClassOpt[]>([]);
+  const [classId, setClassId] = useState("");
   const [err, setErr] = useState("");
   const [origin, setOrigin] = useState("");
 
   useEffect(() => setOrigin(window.location.origin), []);
+  useEffect(() => {
+    fetch("/api/classes").then((r) => r.json()).then((d) => setClasses(d.classes ?? [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,7 +84,7 @@ export default function DiagnosticoLauncher() {
     setCreating(true);
     setErr("");
     try {
-      const r = await fetch("/api/diag/launch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ includeScreening: screening, retestAfterDays: weeks * 7, domain, title: DOMAIN_TITLE[domain] }) });
+      const r = await fetch("/api/diag/launch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ includeScreening: screening, retestAfterDays: weeks * 7, domain, title: DOMAIN_TITLE[domain], classId: classId || null }) });
       const d = await r.json();
       if (!r.ok) setErr(d.error ?? "Erro ao criar.");
       else await load();
@@ -85,7 +93,7 @@ export default function DiagnosticoLauncher() {
     } finally {
       setCreating(false);
     }
-  }, [load, screening, weeks, domain]);
+  }, [load, screening, weeks, domain, classId]);
 
   const dueCount = list.reduce((acc, a) => {
     const retested = new Set(a.diag_sessions.filter((s) => s.is_retest_of).map((s) => s.is_retest_of));
@@ -112,6 +120,15 @@ export default function DiagnosticoLauncher() {
             </select>
           </label>
           <label className="flex items-center gap-1 text-xs" style={{ color: NAVY, opacity: 0.7 }}>
+            turma
+            <select value={classId} onChange={(e) => setClassId(e.target.value)} className="rounded px-1 py-0.5" style={{ color: NAVY, border: `1px solid ${NAVY}22` }}>
+              <option value="">sem turma</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.year_level}.º · {c.member_count})</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-1 text-xs" style={{ color: NAVY, opacity: 0.7 }}>
             reavaliar após
             <select value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="rounded px-1 py-0.5" style={{ color: NAVY, border: `1px solid ${NAVY}22` }}>
               <option value={4}>4 sem.</option>
@@ -134,7 +151,8 @@ export default function DiagnosticoLauncher() {
         </div>
       </div>
       <p className="text-sm mb-6" style={{ color: NAVY, opacity: 0.6 }}>
-        {DOMAIN_LABEL[domain]}. O aluno entra com o código e explora ao seu ritmo; tu lês o retrato.
+        {DOMAIN_LABEL[domain]}. {classId ? "O aluno escolhe-se da lista da turma" : "O aluno entra com o código e escreve o nome"}; tu lês o retrato.{" "}
+        <a href="/dashboard/classes" style={{ color: BLUE }} className="underline">gerir turmas</a>
       </p>
 
       {dueCount > 0 && (
@@ -170,6 +188,11 @@ export default function DiagnosticoLauncher() {
                     <span className="rounded px-1.5 py-0.5" style={{ background: a.domain === "portugues" ? "#e7d9f5" : "#d8eef6", color: NAVY, fontSize: 11, opacity: 0.9 }}>
                       {a.domain === "portugues" ? "Português" : "Matemática"}
                     </span>
+                    {a.classes && (
+                      <span className="rounded px-1.5 py-0.5" style={{ background: "#eadfc0", color: NAVY, fontSize: 11, opacity: 0.9 }}>
+                        {a.classes.name} · {a.classes.year_level}.º
+                      </span>
+                    )}
                   </p>
                   <p className="text-2xl font-mono font-bold tracking-widest" style={{ color: NAVY }}>{a.access_code}</p>
                 </div>

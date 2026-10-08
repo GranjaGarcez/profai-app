@@ -210,6 +210,14 @@ Decisão do Tiago: **Storage privado + reter** (comparação pré/pós).
 - ⏳ Após migração 7: reseed + aprovar os 3 itens + testar ao vivo (resposta escrita → pontuação por âncora → texto no relatório).
 - ⏳ Melhoria futura possível: override do professor no open_text (como no áudio), se a âncora falhar num caso real.
 
+## Turmas: seletor + escolha do aluno da lista ✅ (2026-10-08)
+Objetivo: identificação limpa (sem colisões de nomes) e pré/pós fiável. Reusa as tabelas existentes `classes(id,teacher_id,name,year_level)` e `class_members(id,class_id,name,email)` — **sem migração** (FKs `diag_assessments.class_id` e `diag_sessions.class_member_id` já existiam).
+- Gestão de turmas: `/dashboard/classes` (link do sidebar já existia, estava morto) — criar turma, adicionar alunos (um nome por linha), remover, apagar. Rotas `api/classes` (GET/POST), `api/classes/[id]` (GET/DELETE), `api/classes/[id]/members` (POST/DELETE) — autenticadas, admin client com `teacher_id` do próprio.
+- Launcher: seletor de **turma** («sem turma» por omissão); POST valida que a turma é do professor; cartões mostram a turma.
+- Player: `api/diag/roster?code=` (público) devolve os alunos; se houver turma, o aluno **escolhe o nome da lista** (senão escreve, como antes).
+- `/start` aceita `classMemberId` → `student_label`=nome real + `class_member_id`; **ano vem da turma** (corrige o 6.º por omissão); pré/pós liga por `class_member_id` quando existe, senão pelo nome.
+- ✅ Verificado E2E (local): roster lista a turma; start com aluno cria sessão (ano certo) com nome real + id; tsc limpo; build de produção OK.
+
 ## Revisão pedagógica do conteúdo PT (como docente de PT) + verificação do open_text ✅ (2026-10-03)
 Parecer (resumo): esqueleto excelente (literal→inferencial→crítica, Visão Simples, mediação). Achados:
 - **Léxico**: 5 palavras acima do 2.º ciclo (perspicaz, zeloso, eminente, refutar, efémera) → efeito de chão. `perplexo`/`subitamente` passam. Redundância iminente/eminente.

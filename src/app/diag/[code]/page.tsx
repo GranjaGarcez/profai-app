@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Calculator from "@/components/exam/Calculator";
 import Screening from "@/components/diagnostic/Screening";
@@ -40,6 +40,8 @@ export default function DiagPlayer() {
   const { code } = useParams<{ code: string }>();
   const [phase, setPhase] = useState<Phase>("identify");
   const [label, setLabel] = useState("");
+  const [roster, setRoster] = useState<{ hasClass: boolean; members: { id: string; name: string }[] }>({ hasClass: false, members: [] });
+  const [memberId, setMemberId] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [domain, setDomain] = useState<string>("matematica");
   const [item, setItem] = useState<ClientItem | null>(null);
@@ -70,6 +72,15 @@ export default function DiagPlayer() {
   const calcTrail = useRef<CalcEntry[]>([]);
   const shownAt = useRef(0);
   const includeScreeningRef = useRef(false);
+
+  // Se o diagnóstico estiver ligado a uma turma, carrega a lista de alunos para escolher.
+  useEffect(() => {
+    if (!code) return;
+    fetch(`/api/diag/roster?code=${encodeURIComponent(code)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.hasClass) setRoster({ hasClass: true, members: d.members ?? [] }); })
+      .catch(() => {});
+  }, [code]);
 
   const graph = useMemo(() => getDomainGraph(domain), [domain]);
   const mapOrder = useMemo(() => graph.topologicalOrder(), [graph]);
@@ -143,14 +154,15 @@ export default function DiagPlayer() {
   }, []);
 
   const start = useCallback(async () => {
-    if (!label.trim()) return;
+    // Com turma: é preciso escolher o aluno da lista. Sem turma: escrever o nome.
+    if (roster.hasClass ? !memberId : !label.trim()) return;
     setBusy(true);
     setErr("");
     try {
       const r = await fetch("/api/diag/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, label: label.trim() }),
+        body: JSON.stringify(roster.hasClass ? { code, classMemberId: memberId } : { code, label: label.trim() }),
       });
       const data = await r.json();
       if (!r.ok) {
@@ -169,7 +181,7 @@ export default function DiagPlayer() {
     } finally {
       setBusy(false);
     }
-  }, [code, label, applyStep]);
+  }, [code, label, roster.hasClass, memberId, applyStep]);
 
   const currentGiven = (): string | null => {
     if (!item) return null;
@@ -262,17 +274,42 @@ export default function DiagPlayer() {
           Não há tempo a contar nem respostas erradas — cada resposta revela um pedaço de território.
           Responde com calma, ao teu ritmo.
         </p>
-        <input
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && start()}
-          placeholder="O teu nome"
-          className="w-full rounded-xl px-4 py-3 mb-4 text-center outline-none"
-          style={{ background: "#12263a", color: CHALK, border: `1px solid ${BLUE}44` }}
-        />
+        {roster.hasClass ? (
+          <div className="mb-4">
+            <p className="opacity-70 text-xs mb-3">Escolhe o teu nome na lista:</p>
+            <div className="grid gap-2 max-h-[46vh] overflow-y-auto pr-1">
+              {roster.members.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setMemberId(m.id)}
+                  className="rounded-xl px-4 py-3 text-center transition-all"
+                  style={{
+                    background: memberId === m.id ? BLUE : "#12263a",
+                    color: memberId === m.id ? NAVY : CHALK,
+                    border: `1px solid ${memberId === m.id ? BLUE : BLUE + "33"}`,
+                  }}
+                >
+                  {m.name}
+                </button>
+              ))}
+              {roster.members.length === 0 && (
+                <p className="opacity-60 text-sm">Esta turma ainda não tem alunos. Avisa o teu professor.</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && start()}
+            placeholder="O teu nome"
+            className="w-full rounded-xl px-4 py-3 mb-4 text-center outline-none"
+            style={{ background: "#12263a", color: CHALK, border: `1px solid ${BLUE}44` }}
+          />
+        )}
         <button
           onClick={start}
-          disabled={busy || !label.trim()}
+          disabled={busy || (roster.hasClass ? !memberId : !label.trim())}
           className="w-full rounded-xl px-4 py-3 font-semibold transition-opacity disabled:opacity-40"
           style={{ background: BLUE, color: NAVY }}
         >

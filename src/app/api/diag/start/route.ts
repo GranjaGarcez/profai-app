@@ -6,9 +6,9 @@ import { getDomainGraph } from "@/lib/diagnostic/domains";
 
 // POST público — o aluno arranca o diagnóstico com o código e um rótulo (pseudónimo).
 export async function POST(req: NextRequest) {
-  const { code, label } = await req.json().catch(() => ({}));
-  if (!code || !label) {
-    return NextResponse.json({ error: "Código e nome em falta." }, { status: 400 });
+  const { code, label, classMemberId } = await req.json().catch(() => ({}));
+  if (!code || (!label && !classMemberId)) {
+    return NextResponse.json({ error: "Código e identificação em falta." }, { status: 400 });
   }
   const sb = createAdminClient();
 
@@ -31,25 +31,38 @@ export async function POST(req: NextRequest) {
     if (cls?.year_level) year = cls.year_level;
   }
 
-  const label80 = String(label).slice(0, 80);
+  // Identificação: aluno escolhido da turma (nome real + id) OU nome escrito à mão.
+  let memberId: string | null = null;
+  let label80 = String(label ?? "").slice(0, 80);
+  if (classMemberId && assessment.class_id) {
+    const { data: member } = await sb
+      .from("class_members")
+      .select("id, name")
+      .eq("id", classMemberId)
+      .eq("class_id", assessment.class_id)
+      .single();
+    if (!member) return NextResponse.json({ error: "Aluno não encontrado nesta turma." }, { status: 400 });
+    memberId = member.id;
+    label80 = String(member.name).slice(0, 80);
+  }
+  if (!label80) return NextResponse.json({ error: "Identificação em falta." }, { status: 400 });
 
-  // Reavaliação (RTI): se já houve uma sessão concluída com o mesmo nome neste
-  // diagnóstico, liga esta à anterior (pré → pós) para comparação no relatório.
-  const { data: prior } = await sb
+  // Reavaliação (RTI): liga esta sessão à anterior concluída do MESMO aluno
+  // (pelo id do aluno da turma quando existe; senão pelo nome escrito).
+  let priorQuery = sb
     .from("diag_sessions")
     .select("id")
     .eq("assessment_id", assessment.id)
-    .eq("student_label", label80)
-    .eq("status", "finished")
-    .order("finished_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .eq("status", "finished");
+  priorQuery = memberId ? priorQuery.eq("class_member_id", memberId) : priorQuery.eq("student_label", label80);
+  const { data: prior } = await priorQuery.order("finished_at", { ascending: false }).limit(1).maybeSingle();
 
   const { data: session, error: sErr } = await sb
     .from("diag_sessions")
     .insert({
       assessment_id: assessment.id,
       student_label: label80,
+      class_member_id: memberId,
       status: "active",
       started_at: new Date().toISOString(),
       is_retest_of: prior?.id ?? null,

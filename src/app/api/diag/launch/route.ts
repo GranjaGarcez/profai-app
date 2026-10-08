@@ -17,7 +17,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("diag_assessments")
-    .select("id, access_code, title, status, created_at, retest_after_days, domain, diag_sessions(id, student_label, status, finished_at, is_retest_of)")
+    .select("id, access_code, title, status, created_at, retest_after_days, domain, class_id, classes(name, year_level), diag_sessions(id, student_label, status, finished_at, is_retest_of)")
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -35,7 +35,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const title: string = (body.title ?? "Diagnóstico de Matemática").toString().slice(0, 120);
   const includeScreening = !!body.includeScreening;
-  const classId: string | null = body.classId ?? null;
+  let classId: string | null = body.classId ?? null;
+  // A turma, se indicada, tem de ser do próprio professor.
+  if (classId) {
+    const { data: cls } = await supabase.from("classes").select("id").eq("id", classId).eq("teacher_id", user.id).maybeSingle();
+    if (!cls) classId = null;
+  }
   // Janela de reavaliação (dias); limitada a 14–120 para evitar valores absurdos.
   const retestAfterDays = Math.min(120, Math.max(14, Number(body.retestAfterDays) || 42));
   const domain = body.domain === "portugues" ? "portugues" : "matematica";
