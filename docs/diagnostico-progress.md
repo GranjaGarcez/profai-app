@@ -210,6 +210,14 @@ Decisão do Tiago: **Storage privado + reter** (comparação pré/pós).
 - ⏳ Após migração 7: reseed + aprovar os 3 itens + testar ao vivo (resposta escrita → pontuação por âncora → texto no relatório).
 - ⏳ Melhoria futura possível: override do professor no open_text (como no áudio), se a âncora falhar num caso real.
 
+## BUG CRÍTICO corrigido: fluência arrastava o nível real ✅ (2026-10-09)
+- Sintoma: aluno acerta quase tudo (frações/decimais/proporcionalidade todos `mastered`) mas o relatório diz «nível real ~2.º ano, fronteira em Factos da adição».
+- Causa: nó de fluência respondido CERTO mas devagar (latência ~4,6s) → `maybeResolve` marcava-o «fragile» → `mastery=frontier` → como é nó da base, puxava o frontierYear para 2.º. Agravado por a UI dizer «não há tempo a contar» e a latência ser ruidosa (um item teve 5,5 min — separador aberto).
+- Correção (`engine.ts` maybeResolve): precisão e automatização são sinais SEPARADOS — resposta certa = conteúdo `mastered` sempre; a lentidão só aparece em `fluency_level` (secção Fluência), nunca define a fronteira. Removido o estado «fragile».
+- Verificado (replay do Joe): passa a «dominou todos os nós — sem fronteira»; fluência continua a assinalar factos/tabuada lentos à parte.
+- Recalculadas as 16 sessões concluídas (preservando descodificação do áudio) → relatórios ao vivo corrigidos sem migração.
+- ⚠️ A SEGUIR (decisão do Tiago): os `target_latency_ms` parecem apertados para esta UI sem cronómetro (acertar em 4-5s marca «em construção»). Calibrar ou tornar a fluência conservadora, para não dar falsos positivos.
+
 ## Turmas: seletor + escolha do aluno da lista ✅ (2026-10-08)
 Objetivo: identificação limpa (sem colisões de nomes) e pré/pós fiável. Reusa as tabelas existentes `classes(id,teacher_id,name,year_level)` e `class_members(id,class_id,name,email)` — **sem migração** (FKs `diag_assessments.class_id` e `diag_sessions.class_member_id` já existiam).
 - Gestão de turmas: `/dashboard/classes` (link do sidebar já existia, estava morto) — criar turma, adicionar alunos (um nome por linha), remover, apagar. Rotas `api/classes` (GET/POST), `api/classes/[id]` (GET/DELETE), `api/classes/[id]/members` (POST/DELETE) — autenticadas, admin client com `teacher_id` do próprio.

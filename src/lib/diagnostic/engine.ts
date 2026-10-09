@@ -200,18 +200,16 @@ function maybeResolve(s: Session, node: string) {
   const st = stat(s, node);
   if (st.resolved) return;
   const need = probesNeeded(node, s);
-  const items = s.pool.get(node) ?? [];
-  const fluency = items.some((it) => it.is_fluency);
   const noMore = !unusedItem(s, node);
   if (st.attempts < need && !noMore) return;
 
   const acc = st.attempts ? st.correct / st.attempts : 0;
-  const target = items.find((it) => it.target_latency_ms)?.target_latency_ms ?? null;
-  const avgLat = st.latencies.length ? st.latencies.reduce((a, b) => a + b, 0) / st.latencies.length : 0;
 
   if (acc >= 0.5) {
-    if (fluency && target && avgLat > target * 1.5) st.resolved = "fragile";
-    else st.resolved = "mastered";
+    // Precisão e automatização são sinais SEPARADOS: uma resposta certa domina o
+    // conteúdo, independentemente da velocidade. A lentidão (mesmo em nós de fluência)
+    // não define a fronteira — é reportada à parte como fluency_level no finalize.
+    st.resolved = "mastered";
     for (const dep of s.graph.dependentsOf(node)) enqueueBack(s, dep);
   } else {
     st.resolved = "deficit";
