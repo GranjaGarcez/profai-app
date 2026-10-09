@@ -56,6 +56,10 @@ export interface NodeEstimate {
 const PROBES_FLUENCY = 1;
 const PROBES_DEFAULT = 2;
 const DEFAULT_MAX_ITEMS = 24;
+// Fluência (UI sem cronómetro): margem para ler o enunciado, escolher/escrever e clicar.
+const FLU_OVERHEAD_MS = 3000;
+// Latência acima disto = distração (separador aberto), não conta para a fluência.
+const FLU_LAT_CAP_MS = 60000;
 
 export interface Session {
   graph: DomainGraph;
@@ -253,8 +257,15 @@ export function finalize(s: Session): NodeEstimate[] {
     const target = items.find((it) => it.target_latency_ms)?.target_latency_ms ?? null;
     let fluency_level: NodeEstimate["fluency_level"] = null;
     if (target && st.latencies.length) {
-      const avg = st.latencies.reduce((a, b) => a + b, 0) / st.latencies.length;
-      fluency_level = avg <= target ? "automatizado" : avg <= target * 2 ? "em_construcao" : "nao_automatizado";
+      // Conservador: a UI não tem cronómetro, por isso descontamos o tempo de
+      // leitura/escolha/clique (FLU_OVERHEAD) e ignoramos latências absurdas
+      // (distração/separador aberto). Só se assinala quando é CLARAMENTE lento —
+      // sem banda intermédia «em construção», que dava falsos positivos.
+      const valid = st.latencies.filter((l) => l > 0 && l <= FLU_LAT_CAP_MS);
+      if (valid.length) {
+        const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+        fluency_level = avg > target * 2 + FLU_OVERHEAD_MS ? "nao_automatizado" : "automatizado";
+      }
     }
 
     const misc = Object.entries(st.misconceptions).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
