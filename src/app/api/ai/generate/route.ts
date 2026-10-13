@@ -93,6 +93,41 @@ function normalizeBloom(raw: string | undefined): BloomLevel | undefined {
   return BLOOM_LEVELS.find(l => s.toLowerCase().startsWith(l.toLowerCase().slice(0, 4)))
 }
 
+// ── Fusão banco+geradas: de-duplica o conjunto e renormaliza a 100 pts ─────────
+// Helper de módulo (mantido FORA do handler POST, que é enorme — evita OOM do tsc).
+type HybridQ = { points?: number; text?: unknown; index?: number; markScheme?: string }
+type HybridG = { label?: string; description?: string; totalPoints?: number; questions: HybridQ[] }
+function mergeBankAndNormalize(bankQs: HybridQ[], generated: HybridG[]): HybridG[] {
+  const groups: HybridG[] = [{ label: 'Banco', description: '', totalPoints: 0, questions: bankQs }, ...generated]
+  // De-duplicação do CONJUNTO (banco vem primeiro → fica a questão validada do banco,
+  // cai a gerada repetida). A remoção anterior só via as geradas.
+  const normKey = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().slice(0, 90)
+  const seen = new Set<string>()
+  for (const g of groups) {
+    g.questions = (g.questions ?? []).filter(q => {
+      const k = normKey(String(q.text ?? ''))
+      if (!k || seen.has(k)) return false
+      seen.add(k); return true
+    })
+  }
+  // Renormalizar para exactamente 100 (corrige o total inflado quando o banco era
+  // somado por cima das geradas já normalizadas a 100).
+  const merged = groups.flatMap(g => g.questions)
+  const sum = merged.reduce((s, q) => s + (Number(q.points) || 0), 0)
+  if (sum > 0 && sum !== 100) {
+    let acc = 0
+    for (const q of merged) { q.points = Math.max(1, Math.round((Number(q.points) || 0) / sum * 100)); acc += Number(q.points) }
+    const h = merged.reduce((m, q) => (Number(q.points) || 0) > (Number(m.points) || 0) ? q : m, merged[0])
+    if (h) h.points = Math.max(1, (Number(h.points) || 0) + (100 - acc))
+  }
+  let idx = 1
+  for (const g of groups) {
+    for (const q of g.questions) { q.index = idx++; q.markScheme = fixMarkSchemeSum(q.markScheme, Number(q.points) || 0) }
+    g.totalPoints = g.questions.reduce((s, q) => s + (Number(q.points) || 0), 0)
+  }
+  return groups
+}
+
 // Prompt do crítico adversarial (adaptado de prompts.py::prompt_critico)
 // Usa modelo DIFERENTE do gerador para diversidade de perspectiva
 function buildCriticPrompt(subject: string, yearLevel: number, topic: string,
@@ -1323,22 +1358,13 @@ Responde APENAS com este JSON:
         }
       }
 
-      // Injectar questões do banco no início (já validadas, alta qualidade)
+      // Injectar questões do banco no início + de-duplicar o conjunto + renormalizar
+      // a 100. (Lógica num helper de módulo — fora deste handler gigante.)
       if (bankHits.length > 0) {
-        const bankQs = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1))
-        // Defesa para questões gravadas no banco antes desta correcção existir.
-        for (const q of bankQs) {
-          q.markScheme = fixMarkSchemeSum(q.markScheme as string | undefined, Number(q.points) || 0)
-        }
-        let nextIdx = bankQs.length + 1
-        for (const g of groups) for (const q of g.questions) q.index = nextIdx++
-        content.groups = [
-          { label: 'Banco', description: '', totalPoints: bankQs.reduce((s, q) => s + (q.points as number), 0), questions: bankQs },
-          ...groups,
-        ]
-        const totalAll = [...bankQs, ...allQsFinal].reduce((s, q) => s + (Number(q.points) || 0), 0)
-        content.totalPoints = totalAll
-        console.log(`[BANK] Teste híbrido: ${bankQs.length} banco + ${allQsFinal.length} IA`)
+        const bankQs = bankHits.map((bq, i) => bankToExamQuestion(bq, i + 1)) as unknown as HybridQ[]
+        content.groups = mergeBankAndNormalize(bankQs, groups as unknown as HybridG[])
+        content.totalPoints = 100
+        console.log(`[BANK] Teste híbrido: ${bankQs.length} banco + ${allQsFinal.length} IA → de-duplicado e renormalizado a 100pts`)
       }
 
       // ── Distribuição Bloom (validator.py port) ─────────────────────────────

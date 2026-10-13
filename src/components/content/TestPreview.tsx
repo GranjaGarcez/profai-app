@@ -661,6 +661,23 @@ export default function TestPreview({
     }); markDirty()
   }, [markDirty])
 
+  // Redistribui proporcionalmente os pontos de todas as questões para somar 100
+  // (inteiros; sobra/défice no mais pesado). Útil após acrescentar/retirar questões.
+  const normalizeTo100 = useCallback(() => {
+    setEditableTest(t => {
+      const groups = deepClone(t.groups ?? [])
+      const all = groups.flatMap(g => g.questions)
+      const sum = all.reduce((s, q) => s + (q.points ?? 0), 0)
+      if (!all.length || sum <= 0) return t
+      let acc = 0
+      for (const q of all) { q.points = Math.max(1, Math.round((q.points ?? 0) / sum * 100)); acc += q.points }
+      const heaviest = all.reduce((m, q) => (q.points ?? 0) > (m.points ?? 0) ? q : m, all[0])
+      if (heaviest) heaviest.points = Math.max(1, (heaviest.points ?? 0) + (100 - acc))
+      for (const g of groups) g.totalPoints = g.questions.reduce((s, q) => s + (q.points ?? 0), 0)
+      return { ...t, groups, totalPoints: 100 }
+    }); markDirty()
+  }, [markDirty])
+
   const handleSaveEdits = useCallback(async () => {
     if (!contentItemId || isSaving) return
     setIsSaving(true); setSaveMsg(null)
@@ -943,6 +960,12 @@ export default function TestPreview({
                 className="flex items-center justify-center w-9 h-9 rounded-lg border text-sm disabled:opacity-30 transition-opacity"
                 style={{ borderColor: '#e2e8f0', color: '#374151', cursor: canRedo ? 'pointer' : 'default' }}>
                 ↪️
+              </button>
+              <button onClick={normalizeTo100}
+                title="Redistribuir os pontos de todas as questões para somar 100"
+                className="flex items-center gap-1.5 px-3 h-9 rounded-lg border text-xs font-semibold transition-colors"
+                style={{ borderColor: editableTest.totalPoints === 100 ? '#e2e8f0' : '#c8a84b', color: editableTest.totalPoints === 100 ? '#374151' : '#7c5e10', background: editableTest.totalPoints === 100 ? 'white' : '#fffdf5' }}>
+                ⚖️ Normalizar a 100{editableTest.totalPoints !== 100 ? ` (${editableTest.totalPoints})` : ''}
               </button>
             </div>
           )}
