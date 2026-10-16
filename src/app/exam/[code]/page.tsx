@@ -138,6 +138,7 @@ export default function ExamPage() {
   const [studentName,   setStudentName]   = useState('')
   const [studentNumber, setStudentNumber] = useState('')
   const [studentClass,  setStudentClass]  = useState('')
+  const [studentYear,   setStudentYear]   = useState('')
 
   const [answers, setAnswers]             = useState<Record<string, string>>({})
   const [calcHistories, setCalcHistories] = useState<Record<string, CalcEntry[]>>({})
@@ -152,6 +153,9 @@ export default function ExamPage() {
         if (data.error) { setError(data.error); setPhase('error'); return }
         setSession(data.session as ExamSession)
         if (data.session.duration_minutes) setTimeLeft(data.session.duration_minutes * 60)
+        // Pré-preenche o ano com o ano do teste (o aluno confirma).
+        const ty = data.session?.test_snapshot?.yearLevel
+        if (ty) setStudentYear(String(ty))
         setPhase('identify')
       })
       .catch(() => { setError('Não foi possível carregar o exame.'); setPhase('error') })
@@ -192,6 +196,7 @@ export default function ExamPage() {
         body: JSON.stringify({
           sessionId: session!.id, studentName: studentName.trim(),
           studentNumber: studentNumber.trim(), studentClass: studentClass.trim(),
+          studentYear: studentYear.trim() ? Number(studentYear) : null,
           answers: answersWithCalc,
         }),
       })
@@ -319,7 +324,19 @@ export default function ExamPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: '#6B7280', fontSize: 10, letterSpacing: '0.08em' }}>
+              Ano *
+            </label>
+            <input type="number" min={1} max={12} value={studentYear} onChange={e => setStudentYear(e.target.value)}
+              placeholder="Ex: 6"
+              className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
+              style={{ border: '1.5px solid #e2e8f0', outline: 'none', color: '#0D1B2A' }}
+              onFocus={e => (e.target.style.borderColor = '#00B4D8')}
+              onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+            />
+          </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: '#6B7280', fontSize: 10, letterSpacing: '0.08em' }}>
               Número
@@ -334,10 +351,10 @@ export default function ExamPage() {
           </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: '#6B7280', fontSize: 10, letterSpacing: '0.08em' }}>
-              Turma
+              Turma *
             </label>
             <input type="text" value={studentClass} onChange={e => setStudentClass(e.target.value)}
-              placeholder="Ex: 6ºA"
+              placeholder="Ex: A"
               className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
               style={{ border: '1.5px solid #e2e8f0', outline: 'none', color: '#0D1B2A' }}
               onFocus={e => (e.target.style.borderColor = '#00B4D8')}
@@ -346,7 +363,7 @@ export default function ExamPage() {
           </div>
         </div>
 
-        <button disabled={!studentName.trim()} onClick={() => setPhase('exam')}
+        <button disabled={!studentName.trim() || !studentClass.trim() || !studentYear.trim()} onClick={() => setPhase('exam')}
           className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg, #00B4D8, #0096b7)', boxShadow: studentName.trim() ? '0 4px 14px rgba(0,180,216,0.4)' : 'none' }}>
           Iniciar exame →

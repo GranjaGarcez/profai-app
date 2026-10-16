@@ -6,7 +6,7 @@ import type { TestSnapshot } from '@/lib/exam/types'
 export async function POST(request: NextRequest) {
   const supabase = createAdminClient()
 
-  const { sessionId, studentName, studentNumber, studentClass, answers } = await request.json()
+  const { sessionId, studentName, studentNumber, studentClass, studentYear, answers } = await request.json()
 
   if (!sessionId || !studentName?.trim()) {
     return NextResponse.json({ error: 'Dados de submissão incompletos.' }, { status: 400 })
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   // Valida sessão
   const { data: session, error: sessErr } = await supabase
     .from('exam_sessions')
-    .select('id, status, test_snapshot')
+    .select('id, status, test_snapshot, teacher_id')
     .eq('id', sessionId)
     .single()
 
@@ -43,6 +43,26 @@ export async function POST(request: NextRequest) {
   if (subErr || !submission) {
     console.error('Erro ao inserir submissão:', subErr)
     return NextResponse.json({ error: 'Erro ao guardar submissão.' }, { status: 500 })
+  }
+
+  // Enriquecimento best-effort: ano do aluno + criação automática da turma.
+  // NUNCA pode fazer falhar a submissão (as respostas já estão guardadas acima),
+  // por isso fica isolado em try/catch — se a migração ainda não estiver aplicada,
+  // simplesmente não faz nada.
+  const anoNum = Number(studentYear) || (session.test_snapshot as TestSnapshot)?.yearLevel || null
+  const turmaNome = String(studentClass ?? '').trim().toUpperCase().replace(/\s+/g, '')
+  try {
+    if (anoNum) {
+      await supabase.from('exam_submissions').update({ student_year: anoNum }).eq('id', submission.id)
+    }
+    if (turmaNome && session.teacher_id) {
+      await supabase.from('turmas').upsert(
+        { teacher_id: session.teacher_id, nome: turmaNome, ano: anoNum },
+        { onConflict: 'teacher_id,ano,nome', ignoreDuplicates: true },
+      )
+    }
+  } catch (e) {
+    console.warn('[PROFAI] enriquecimento turma/ano falhou (migração aplicada?):', e)
   }
 
   // Corrige assincronamente (não bloqueia a resposta ao aluno)

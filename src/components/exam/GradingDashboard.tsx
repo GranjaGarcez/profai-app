@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
@@ -11,6 +11,7 @@ interface Submission {
   student_name: string
   student_number: string | null
   student_class: string | null
+  student_year?: number | null
   answers: Record<string, string>
   total_score: number | null
   max_score: number | null
@@ -774,6 +775,15 @@ export default function GradingDashboard({
     return true
   })
 
+  // Agrupamento por turma: etiqueta "6ºA", ordenado por (ano, turma, nome).
+  const turmaLabel = (s: Submission) => `${s.student_year ? s.student_year + 'º' : ''}${(s.student_class ?? '').trim() || '—'}`
+  const sorted = [...filtered].sort((a, b) => {
+    const ka = turmaLabel(a).toLowerCase(), kb = turmaLabel(b).toLowerCase()
+    if (ka !== kb) return ka < kb ? -1 : 1
+    return (a.student_name ?? '').localeCompare(b.student_name ?? '', 'pt')
+  })
+  const turmaCounts = sorted.reduce<Record<string, number>>((m, s) => { const k = turmaLabel(s); m[k] = (m[k] ?? 0) + 1; return m }, {})
+
   if (submissions.length === 0) {
     return (
       <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: '#0D1B2A10' }}>
@@ -878,16 +888,25 @@ export default function GradingDashboard({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((sub, i) => {
+              {sorted.map((sub, i) => {
                 const st = STATUS_LABEL[sub.status] ?? STATUS_LABEL['submitted']
                 const percentage = sub.total_score !== null && sub.max_score
                   ? Math.round((sub.total_score / sub.max_score) * 100)
                   : null
+                const tLabel = turmaLabel(sub)
+                const showHeader = i === 0 || turmaLabel(sorted[i - 1]) !== tLabel
 
                 return (
+                  <Fragment key={sub.id}>
+                  {showHeader && (
+                    <tr style={{ background: '#f8fafc' }}>
+                      <td colSpan={7} className="px-4 py-1.5 text-xs font-semibold" style={{ color: '#0D1B2A', borderTop: '1px solid #0D1B2A10' }}>
+                        📋 Turma {tLabel} <span className="font-normal" style={{ color: '#9CA3AF' }}>· {turmaCounts[tLabel]} aluno(s)</span>
+                      </td>
+                    </tr>
+                  )}
                   <tr
-                    key={sub.id}
-                    style={{ borderBottom: i < filtered.length - 1 ? '1px solid #0D1B2A05' : 'none' }}
+                    style={{ borderBottom: i < sorted.length - 1 ? '1px solid #0D1B2A05' : 'none' }}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3 font-medium" style={{ color: '#0D1B2A' }}>
@@ -941,6 +960,7 @@ export default function GradingDashboard({
                       </button>
                     </td>
                   </tr>
+                  </Fragment>
                 )
               })}
             </tbody>

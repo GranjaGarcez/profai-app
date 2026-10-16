@@ -71,6 +71,7 @@ export interface ExamSubmission {
   student_name: string
   student_number: string | null
   student_class: string | null
+  student_year?: number | null
   answers: Record<string, string>         // { "1": "A", "2": "texto..." }
   total_score: number | null
   max_score: number | null
