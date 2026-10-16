@@ -48,14 +48,16 @@ export async function POST(request: NextRequest) {
   // Corrige assincronamente (não bloqueia a resposta ao aluno)
   const snapshot = session.test_snapshot as TestSnapshot
   gradeSubmission(snapshot, answers)
-    .then(async ({ details, totalScore, maxScore }) => {
+    .then(async ({ details, totalScore, maxScore, pending }) => {
       await supabase
         .from('exam_submissions')
         .update({
           grading_details: details,
           total_score:     totalScore,
           max_score:       maxScore,
-          status:          'graded',
+          // Se a IA não conseguiu avaliar alguma aberta (quota/falha), fica
+          // "por_corrigir" (não "graded" com zeros) → re-correção com 1 clique.
+          status:          pending > 0 ? 'por_corrigir' : 'graded',
           graded_at:       new Date().toISOString(),
         })
         .eq('id', submission.id)

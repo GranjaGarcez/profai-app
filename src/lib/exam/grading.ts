@@ -176,6 +176,23 @@ ${responseFormat}`
   }
 }
 
+// ── Limitador global de concorrência da correção por IA ────────────────────────
+// Protege a quota quando uma turma inteira submete quase ao mesmo tempo: em vez de
+// disparar dezenas de chamadas Gemini em paralelo (→ 429 em cadeia → notas a 0),
+// limita as chamadas simultâneas. Partilhado por todas as correções da instância.
+const GRADING_CONCURRENCY = 4
+let activeGrading = 0
+const gradingQueue: Array<() => void> = []
+function acquireGradingSlot(): Promise<void> {
+  if (activeGrading < GRADING_CONCURRENCY) { activeGrading++; return Promise.resolve() }
+  return new Promise(resolve => gradingQueue.push(resolve))
+}
+function releaseGradingSlot(): void {
+  activeGrading = Math.max(0, activeGrading - 1)
+  const next = gradingQueue.shift()
+  if (next) { activeGrading++; next() }
+}
+
 // ── Correcção completa de uma submissão ───────────────────────────────────────
 export async function gradeSubmission(
   snapshot: TestSnapshot,
@@ -184,6 +201,7 @@ export async function gradeSubmission(
   details: Record<string, GradingDetail>
   totalScore: number
   maxScore: number
+  pending: number   // questões abertas que a IA NÃO conseguiu corrigir (quota/falha)
 }> {
   const questions = getAllQuestions(snapshot)
   const details: Record<string, GradingDetail> = {}
@@ -197,7 +215,12 @@ export async function gradeSubmission(
     if (q.type === 'multiple_choice' || q.type === 'true_false') {
       details[key] = gradeObjective(q, raw)
     } else {
-      details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
+      await acquireGradingSlot()
+      try {
+        details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
+      } finally {
+        releaseGradingSlot()
+      }
     }
   })
 
@@ -205,6 +228,9 @@ export async function gradeSubmission(
 
   const totalScore = Object.values(details).reduce((s, d) => s + d.score, 0)
   const maxScore   = questions.reduce((s, q) => s + q.points, 0)
+  // "pending" = abertas marcadas auto:false (a IA não as conseguiu avaliar) →
+  // a submissão NÃO deve ficar como "corrigida"; fica "por_corrigir" para re-tentar.
+  const pending = Object.values(details).filter(d => d.auto === false).length
 
-  return { details, totalScore, maxScore }
+  return { details, totalScore, maxScore, pending }
 }

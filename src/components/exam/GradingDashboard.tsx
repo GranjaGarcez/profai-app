@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 
@@ -75,6 +76,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
   grading:   { label: 'A corrigir',  color: '#1e40af', bg: '#eff6ff' },
   graded:    { label: 'Corrigido',   color: '#166534', bg: '#f0fdf4' },
   reviewed:  { label: 'Revisto',     color: '#6b21a8', bg: '#faf5ff' },
+  por_corrigir: { label: 'Por corrigir', color: '#b45309', bg: '#fffbeb' },
 }
 
 // ── Tabela de rubrica por critério (long_answer) ───────────────────────────────
@@ -732,7 +734,7 @@ function SubmissionDetail({
 
 // ── Componente principal ────────────────────────────────────────────────────────
 export default function GradingDashboard({
-  sessionId: _sessionId,
+  sessionId,
   submissions,
   testSnapshot,
   isActive,
@@ -742,15 +744,32 @@ export default function GradingDashboard({
   testSnapshot: unknown
   isActive: boolean
 }) {
+  const router = useRouter()
   const [selected, setSelected] = useState<Submission | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
   const [tab, setTab] = useState<'submissions' | 'analytics'>('submissions')
+  const [regrading, setRegrading] = useState(false)
+  const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
 
   const questions = getAllQuestions(testSnapshot as TestSnapshot)
   const gradedCount = submissions.filter(s => s.status === 'graded' || s.status === 'reviewed').length
+  // Submissões que a IA não conseguiu corrigir (quota/falha) ou que ficaram presas.
+  const toRegrade = submissions.filter(s => s.status === 'por_corrigir' || s.status === 'grading')
+
+  async function regradePending() {
+    setRegrading(true); setRegradeMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/regrade`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha ao corrigir.')
+      setRegradeMsg(d.regraded != null ? `${d.regraded} corrigida(s)${d.stillPending ? `, ${d.stillPending} ainda por corrigir (tenta mais tarde)` : ''}.` : 'Concluído.')
+      router.refresh()
+    } catch (e) { setRegradeMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setRegrading(false) }
+  }
 
   const filtered = submissions.filter(s => {
-    if (filter === 'pending') return s.status === 'submitted' || s.status === 'grading'
+    if (filter === 'pending') return s.status === 'submitted' || s.status === 'grading' || s.status === 'por_corrigir'
     if (filter === 'graded') return s.status === 'graded' || s.status === 'reviewed'
     return true
   })
@@ -780,6 +799,22 @@ export default function GradingDashboard({
           onClose={() => setSelected(null)}
         />
       )}
+
+      {/* Aviso + re-correção de pendentes (quota de IA esgotada no momento) */}
+      {toRegrade.length > 0 && (
+        <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border px-4 py-3 mb-3"
+          style={{ borderColor: '#f59e0b', background: '#fffbeb' }}>
+          <span className="text-sm" style={{ color: '#92400e' }}>
+            ⚠️ {toRegrade.length} submissão(ões) por corrigir (a IA não as conseguiu avaliar — normalmente quota). As respostas estão guardadas; podes corrigir agora ou quando o crédito voltar.
+          </span>
+          <button onClick={regradePending} disabled={regrading}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 shrink-0"
+            style={{ background: '#b45309' }}>
+            {regrading ? 'A corrigir…' : `Corrigir pendentes (${toRegrade.length})`}
+          </button>
+        </div>
+      )}
+      {regradeMsg && <p className="text-xs mb-2" style={{ color: '#6B7280' }}>{regradeMsg}</p>}
 
       {/* ── Tabs ── */}
       <div className="flex items-center gap-1 border-b" style={{ borderColor: '#0D1B2A10' }}>

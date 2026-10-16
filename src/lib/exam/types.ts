@@ -74,7 +74,7 @@ export interface ExamSubmission {
   answers: Record<string, string>         // { "1": "A", "2": "texto..." }
   total_score: number | null
   max_score: number | null
-  status: 'submitted' | 'grading' | 'graded' | 'reviewed'
+  status: 'submitted' | 'grading' | 'graded' | 'reviewed' | 'por_corrigir'
   grading_details: Record<string, GradingDetail> | null
   teacher_notes: string | null
   submitted_at: string
