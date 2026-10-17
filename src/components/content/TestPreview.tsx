@@ -601,6 +601,7 @@ export default function TestPreview({
   const [showLauncher, setShowLauncher] = useState(false)
   const [showStaleGuard, setShowStaleGuard] = useState(false)
   const [refreshingAll, setRefreshingAll] = useState(false)
+  const [addMenuGi, setAddMenuGi] = useState<number | null>(null)
   const [showDifferentiation, setShowDifferentiation] = useState(false)
   const [imageStudioFor, setImageStudioFor] = useState<{ gi: number; qi: number } | null>(null)
   const [printMode, setPrintMode] = useState<'student' | 'teacher'>('student')
@@ -671,21 +672,45 @@ export default function TestPreview({
     }); markDirty()
   }, [markDirty])
 
-  const addQuestion = useCallback((gi: number) => {
+  // Adiciona uma questão (do tipo escolhido) e devolve a sua posição no grupo,
+  // para que quem chama possa logo pedir a geração por IA nessa posição.
+  const addQuestion = useCallback((gi: number, type: string = 'short_answer'): number => {
+    const qi = (editableTest.groups ?? [])[gi]?.questions.length ?? 0
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
       const maxIdx = groups.flatMap(g => g.questions).reduce((m, q) => Math.max(m, q.index ?? 0), 0)
-      groups[gi].questions.push({
+      const base: Question = {
         index: maxIdx + 1,
-        type: 'short_answer',
-        text: 'Nova questão — edita o enunciado.',
+        type,
+        text: 'Nova questão — edita o enunciado ou gera com IA.',
         correctAnswer: '',
         points: 5,
         markScheme: '',
-      })
+      }
+      if (type === 'multiple_choice') base.options = ['A) ', 'B) ', 'C) ', 'D) ']
+      groups[gi].questions.push(base)
       groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
       const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
       return { ...t, groups, totalPoints: total }
+    }); markDirty()
+    return qi
+  }, [editableTest, markDirty])
+
+  // Mover uma questão dentro do grupo (−1 = para cima, +1 = para baixo). Move o
+  // objecto inteiro (enunciado, opções, corrigenda, figura, _bankId — tudo viaja
+  // junto) e renumera o index global sequencial, para manter index === posição,
+  // coerente com o exame e a correcção (que indexam as respostas por q.index).
+  const moveQuestion = useCallback((gi: number, qi: number, dir: -1 | 1) => {
+    setEditableTest(t => {
+      const groups = deepClone(t.groups ?? [])
+      const qs = groups[gi]?.questions
+      if (!qs) return t
+      const ni = qi + dir
+      if (ni < 0 || ni >= qs.length) return t
+      ;[qs[qi], qs[ni]] = [qs[ni], qs[qi]]
+      let n = 1
+      for (const g of groups) for (const q of g.questions) q.index = n++
+      return { ...t, groups }
     }); markDirty()
   }, [markDirty])
 
@@ -784,6 +809,49 @@ export default function TestPreview({
       setRegeneratingIdx(null)
     }
   }, [editableTest, markDirty])
+
+  // Gera uma questão NOVA (do tipo dado) directamente numa posição do grupo —
+  // sobre o tema do teste, evitando repetir as questões já presentes. Não depende
+  // de ler a questão do estado (pode ter acabado de ser adicionada).
+  const generateNewInto = useCallback(async (gi: number, qi: number, type: string, points: number) => {
+    const gIdx = (editableTest.groups ?? [])
+      .slice(0, gi).flatMap(g => g.questions).length + qi
+    setRegeneratingIdx(gIdx)
+    try {
+      const allTexts = (editableTest.groups ?? []).flatMap(g => g.questions).map(q => q.text)
+      const res = await fetch('/api/ai/generate-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject:      editableTest.subject,
+          yearLevel:    editableTest.yearLevel,
+          topic:        editableTest.topic,
+          questionType: type,
+          points,
+          existingTexts: allTexts,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.question) return
+      setEditableTest(t => {
+        const groups = deepClone(t.groups ?? [])
+        const cur = groups[gi]?.questions[qi]
+        if (!cur) return t
+        groups[gi].questions[qi] = { ...cur, ...data.question, index: cur.index, _bankId: undefined, _criteriaStale: false }
+        return { ...t, groups }
+      })
+      markDirty()
+    } finally {
+      setRegeneratingIdx(null)
+    }
+  }, [editableTest, markDirty])
+
+  // Adicionar questão escolhendo o tipo: cria-a e gera logo uma questão real desse
+  // tipo. Se a geração falhar, fica o esqueleto editável (nada se perde).
+  const handleAddQuestion = useCallback(async (gi: number, type: string) => {
+    const qi = addQuestion(gi, type)
+    await generateNewInto(gi, qi, type, 5)
+  }, [addQuestion, generateNewInto])
 
   // Actualizar SÓ a corrigenda (resposta + critérios) a partir da questão editada,
   // mantendo o enunciado e as opções do professor intactos. Distinto do "regenerar",
@@ -1393,6 +1461,8 @@ export default function TestPreview({
                       onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
                       onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
+                      onMoveUp={qi > 0 ? () => moveQuestion(gi, qi, -1) : undefined}
+                      onMoveDown={qi < group.questions.length - 1 ? () => moveQuestion(gi, qi, 1) : undefined}
                       onRegenerate={() => handleRegenerate(gi, qi)}
                       isRegenerating={regeneratingIdx === gIdx}
                       onRefreshCriteria={() => handleRefreshCriteria(gi, qi)}
@@ -1409,17 +1479,47 @@ export default function TestPreview({
                 })}
               </div>
 
-              {/* Adicionar questão */}
+              {/* Adicionar questão — escolhe o tipo a gerar (ou em branco) */}
               {isEditing && (
-                <button
-                  onClick={() => addQuestion(gi)}
-                  className="no-print mt-4 w-full py-2.5 rounded-xl text-sm font-semibold border-2 border-dashed transition-all"
-                  style={{ borderColor: '#00B4D850', color: '#00B4D8', background: 'transparent' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e0f7fc' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-                >
-                  + Adicionar questão ao {group.label}
-                </button>
+                addMenuGi === gi ? (
+                  <div className="no-print mt-4 p-3 rounded-xl border-2 border-dashed" style={{ borderColor: '#00B4D850', background: '#f8fdff' }}>
+                    <p className="text-xs font-semibold mb-2" style={{ color: '#0D1B2A' }}>
+                      Que tipo de questão gerar no {group.label}?
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank'] as const).map(type => (
+                        <button key={type}
+                          onClick={() => { setAddMenuGi(null); handleAddQuestion(gi, type) }}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
+                          style={{ borderColor: '#00B4D850', color: '#0369a1', background: '#e0f7fc' }}>
+                          {TYPE_LABEL[type]}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { setAddMenuGi(null); addQuestion(gi, 'short_answer') }}
+                        className="text-xs px-3 py-1.5 rounded-lg border"
+                        style={{ borderColor: '#e2e8f0', color: '#6B7280', background: 'white' }}>
+                        Em branco (escrevo eu)
+                      </button>
+                      <button onClick={() => setAddMenuGi(null)} className="text-xs px-3 py-1.5" style={{ color: '#9CA3AF' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                    <p className="text-xs mt-2" style={{ color: '#9CA3AF' }}>
+                      A questão gerada usa o tema do teste e evita repetir as já presentes.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAddMenuGi(gi)}
+                    className="no-print mt-4 w-full py-2.5 rounded-xl text-sm font-semibold border-2 border-dashed transition-all"
+                    style={{ borderColor: '#00B4D850', color: '#00B4D8', background: 'transparent' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e0f7fc' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    + Adicionar questão ao {group.label}
+                  </button>
+                )
               )}
             </div>
           ))}
@@ -1581,6 +1681,8 @@ interface QuestionBlockProps {
   onChangeOption: (oi: number, v: string) => void
   onChangeCalculator: (v: boolean) => void
   onDelete?: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
   onRegenerate?: () => void
   isRegenerating?: boolean
   onRefreshCriteria?: () => void
@@ -1594,7 +1696,7 @@ interface QuestionBlockProps {
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
-  onDelete, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onRemoveIllustration,
+  onDelete, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
@@ -1661,6 +1763,33 @@ function QuestionBlock({
             {/* Acções de edição — só visíveis em modo edição */}
             {editing && (
               <span className="no-print flex items-center gap-1.5 ml-auto">
+                {/* Mover questão (altera a ordem) */}
+                {(onMoveUp || onMoveDown) && (
+                  <span className="flex items-center gap-0.5 mr-1">
+                    <button
+                      onClick={onMoveUp}
+                      disabled={!onMoveUp}
+                      title="Mover para cima"
+                      className="flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold transition-all disabled:opacity-30"
+                      style={{ color: '#0D1B2A', background: 'transparent', border: '1px solid #e2e8f0', cursor: onMoveUp ? 'pointer' : 'not-allowed' }}
+                      onMouseEnter={e => { if (onMoveUp) (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={onMoveDown}
+                      disabled={!onMoveDown}
+                      title="Mover para baixo"
+                      className="flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold transition-all disabled:opacity-30"
+                      style={{ color: '#0D1B2A', background: 'transparent', border: '1px solid #e2e8f0', cursor: onMoveDown ? 'pointer' : 'not-allowed' }}
+                      onMouseEnter={e => { if (onMoveDown) (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    >
+                      ↓
+                    </button>
+                  </span>
+                )}
                 {/* Gerar alternativa */}
                 <button
                   onClick={onRegenerate}
