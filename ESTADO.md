@@ -6,6 +6,10 @@
 ---
 
 ## Último update
+2026-10-17 — corrigenda coerente na edição + rede de segurança no lançamento (ver secção no fim).
+Histórico recente relevante no fim do ficheiro: 2026-09-13 (motor por blocos, BYOK, ciclo de vida do banco).
+
+## Update anterior
 2026-06-24 (sessão 7) — consolidação, recuperação de merges e limpeza Netlify
 
 ### O que se fez nesta sessão (7)
@@ -258,3 +262,11 @@ NIM_API_KEY_2                       ✅ definida (nvapi-...) — segunda chave N
 - **Banco — ciclo de vida** (migração `20260913_bank_lifecycle.sql`, JÁ APLICADA): só Tier 1 completo entra activo; fallback/parcial e problemas graves do crítico → quarentena; 👎 de 2 profs distintos ou score<0.5 retira; 👍 readmite; `purge_question_bank()` limpa rejeitadas >30 dias. Serve só activas com score≥0.6 e rubrica com corpo.
 - **Rubricas** (`src/lib/exam/rubric.ts`): critérios analíticos montados em código (soma exacta), resposta esperada, erros frequentes, cotação parcial — para correcção automática de qualidade. Correcção (`grading.ts`) migrada para chaves Gemini com cooldown + Groq (o llama-3.3-70b-versatile morreu).
 - **Migrações aplicadas via Supabase MCP; `API_KEY_ENCRYPTION_SECRET` no Render.** Flux a 8 steps.
+
+## 2026-10-17 — Corrigenda coerente na edição + rede de segurança no lançamento
+Problema: ao editar o enunciado, as opções ou a resposta de uma questão no editor, a corrigenda (`markScheme` + `correctAnswer`) ficava **igual** — ficava obsoleta e a correcção automática podia dar notas erradas. (Na substituição MS a corrigenda já era refeita; o buraco era só na edição manual.)
+
+- **Actualizar critérios a partir da questão editada** (novo endpoint `src/app/api/ai/refresh-criteria/route.ts`): lê a questão tal como está (enunciado e opções **intocáveis**) e devolve só a corrigenda adequada — resposta re-derivada + critérios analíticos a somar à cotação. Cascata Gemini 2.5 Flash → Groq, PT-PT estrito, refaz cálculos do zero. Distinto do "regenerar", que troca a questão toda.
+- **Editor** (`src/components/content/TestPreview.tsx`): marca interna `_criteriaStale` posta ao editar enunciado/opções/resposta (limpa ao editar os critérios à mão); aviso âmbar + botão **"↻ Actualizar critérios"** por questão; a marca é removida antes de gravar/snapshot (`stripInternalFlags`), nunca persiste nem entra no exame.
+- **Rede de segurança no lançamento** (`handleLaunch`): se houver questões editadas sem corrigenda actualizada, avisa antes de abrir o lançador, com a contagem e três opções — **actualizar todas** (sequencial, para não esgotar quotas) e lançar, lançar mesmo assim, ou cancelar. Todas as vias de lançamento passam por aqui.
+- Validado localmente (`tsc` limpo); confirmados pelo Tiago os pontos 1-3; o ponto 4 (lançar com pendentes → "actualizar todas e lançar") ainda por testar com turma real. Commit `81f5803` em `main` (`GranjaGarcez/profai-app`).
