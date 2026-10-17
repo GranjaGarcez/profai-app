@@ -58,6 +58,7 @@ DIRECTRIZES DISCIPLINARES: ${subjNote}
 ${avoidSection}
 
 REGRAS OBRIGATÓRIAS:
+• AUTO-SUFICIÊNCIA (crítico): a questão tem de ser respondível APENAS com o texto do enunciado. NUNCA referencies imagens, figuras, esquemas, gráficos, tabelas, fotografias nem numeração de estruturas ("a estrutura 3", "a figura/imagem seguinte", "observa a imagem", "no diagrama ao lado") que não sejam fornecidas. Se um apoio visual ajudar, descreve-o integralmente por palavras no próprio enunciado.
 1. Linguagem: Português de Portugal estrito (actividade, óptimo, facto, fórmula, rectângulo, etc.)
 2. Alinhamento: Aprendizagens Essenciais DGE para o ${yearLevel}.º ano de ${subject}
 3. Qualidade: questão específica ao tema, com distratores plausíveis (se EM) ou contexto real
