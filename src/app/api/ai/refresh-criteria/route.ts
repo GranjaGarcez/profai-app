@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { callJsonCascade } from '@/lib/ai/singleCall'
+import { describeFigure } from '@/lib/exam/figureText'
 
 /**
  * PROF.IA — Actualizar critérios de correcção de UMA questão editada
@@ -31,10 +32,14 @@ function buildPrompt(
   points: number,
   text: string,
   options: string[] | null,
+  figureDesc: string | null,
 ): string {
   const typeDesc = TYPE_PT[qtype] ?? qtype
   const optionsBlock = options && options.length
     ? `\nOPÇÕES (imutáveis, usa-as tal como estão):\n${options.map(o => `• ${o}`).join('\n')}`
+    : ''
+  const figureBlock = figureDesc
+    ? `\nFIGURA/GRÁFICO DA QUESTÃO (fonte de verdade — lê DAQUI os valores):\n${figureDesc}\nA resposta e os critérios TÊM de corresponder EXACTAMENTE a estes dados. NÃO inventes valores, categorias ou unidades que não estejam na figura.`
     : ''
 
   let answerRule = '• correctAnswer: resposta-modelo completa e inequívoca.'
@@ -54,7 +59,7 @@ CONTEXTO: ${subject} · ${yearLevel}.º ano · Tema: "${topic}"
 TIPO: ${typeDesc} · Cotação: ${points} pontos
 
 ENUNCIADO (imutável):
-${text}${optionsBlock}
+${text}${optionsBlock}${figureBlock}
 
 O QUE DEVES PRODUZIR:
 ${answerRule}
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { subject, yearLevel, topic, type, points, text, options } = await request.json()
+  const { subject, yearLevel, topic, type, points, text, options, figure } = await request.json()
   if (!subject || !yearLevel || !topic || !type || !points || !text) {
     return NextResponse.json({ error: 'Parâmetros incompletos' }, { status: 400 })
   }
@@ -87,6 +92,7 @@ export async function POST(request: NextRequest) {
   const prompt = buildPrompt(
     subject, Number(yearLevel), topic, String(type), Number(points), String(text),
     Array.isArray(options) ? options.map(String) : null,
+    describeFigure(figure),
   )
 
   // Cascata validada (Gemini thinking-off → Groq gpt-oss → CF → reservas).

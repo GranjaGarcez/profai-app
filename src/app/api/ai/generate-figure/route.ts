@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { callJsonCascade } from '@/lib/ai/singleCall'
+import { describeFigure } from '@/lib/exam/figureText'
 
 const FIGURE_SYNTAX_MATH = `Tipos disponíveis e sintaxe exacta:
   {"type":"right_triangle","leg1":3,"leg2":4,"leg1Label":"3 cm","leg2Label":"4 cm","hypLabel":"5 cm"}
@@ -32,7 +34,10 @@ function hasChartSupport(subject: string) {
     .some(k => s.includes(k))
 }
 
-function buildPrompt(subject: string, yearLevel: number, questionText: string): string {
+function buildPrompt(
+  subject: string, yearLevel: number, questionText: string,
+  answerDesc: string | null, existingDesc: string | null,
+): string {
   const isMath = isMathSubject(subject)
   const syntax = isMath ? FIGURE_SYNTAX_MATH : hasChartSupport(subject) ? FIGURE_SYNTAX_CHART : null
 
@@ -40,11 +45,18 @@ function buildPrompt(subject: string, yearLevel: number, questionText: string): 
     return `A disciplina "${subject}" não tem suporte a figuras geométricas nem gráficos de dados. Responde APENAS com: {"figure": null}`
   }
 
+  const answerBlock = answerDesc
+    ? `\nCORRIGENDA DESTA QUESTÃO (a figura TEM de ser coerente — o aluno chega à resposta LENDO a figura):\n${answerDesc}\nOs valores e categorias da figura NÃO podem contradizer esta corrigenda.\n`
+    : ''
+  const existingBlock = existingDesc
+    ? `\nJÁ EXISTE uma figura com estes dados:\n${existingDesc}\nMantém os MESMOS valores e categorias; melhora apenas rótulos, título ou apresentação. Só corrige um valor se ele contradisser a corrigenda acima.\n`
+    : ''
+
   return `És professor de ${subject} do ${yearLevel}.º ano em Portugal. Esta questão precisa de uma figura/gráfico que represente correctamente os dados ou a forma geométrica que o enunciado descreve:
 
 ENUNCIADO DA QUESTÃO:
 "${questionText}"
-
+${answerBlock}${existingBlock}
 ${syntax}
 
 REGRAS OBRIGATÓRIAS:
@@ -61,52 +73,22 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { subject, yearLevel, questionText } = await request.json()
+  const { subject, yearLevel, questionText, correctAnswer, markScheme, existingFigure } = await request.json()
   if (!subject || !yearLevel || !questionText) {
     return NextResponse.json({ error: 'Parâmetros incompletos' }, { status: 400 })
   }
 
-  const prompt = buildPrompt(String(subject), Number(yearLevel), String(questionText))
+  // Corrigenda (fonte de verdade) e figura actual, para a nova figura ser coerente.
+  const answerDesc = correctAnswer
+    ? `• Resposta correcta: ${String(correctAnswer)}${markScheme ? `\n• Critérios: ${String(markScheme)}` : ''}`
+    : null
+  const existingDesc = describeFigure(existingFigure)
 
-  const geminiKey = process.env.GEMINI_API_KEY
-  const groqKey   = process.env.GROQ_API_KEY
+  const prompt = buildPrompt(String(subject), Number(yearLevel), String(questionText), answerDesc, existingDesc)
 
-  async function tryGemini(): Promise<string | null> {
-    if (!geminiKey) return null
-    try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai')
-      const ai    = new GoogleGenerativeAI(geminiKey)
-      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' })
-      const res   = await model.generateContent(prompt)
-      return res.response.text()
-    } catch { return null }
-  }
+  // Cascata validada (Gemini thinking-off → Groq gpt-oss → CF → reservas).
+  const obj = await callJsonCascade(prompt, { maxTokens: 1_200 })
+  if (!obj) return NextResponse.json({ error: 'Não foi possível gerar a figura. Tenta novamente.' }, { status: 503 })
 
-  async function tryGroq(): Promise<string | null> {
-    if (!groqKey) return null
-    try {
-      const Groq = (await import('groq-sdk')).default
-      const groq = new Groq({ apiKey: groqKey })
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 500,
-      })
-      return completion.choices[0]?.message?.content ?? null
-    } catch { return null }
-  }
-
-  const raw = await tryGemini() ?? await tryGroq()
-  if (!raw) return NextResponse.json({ error: 'Não foi possível gerar a figura. Tenta novamente.' }, { status: 503 })
-
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) return NextResponse.json({ error: 'Resposta da IA inválida. Tenta novamente.' }, { status: 502 })
-
-  try {
-    const parsed = JSON.parse(match[0]) as { figure: unknown }
-    return NextResponse.json({ figure: parsed.figure ?? null })
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido da IA. Tenta novamente.' }, { status: 502 })
-  }
+  return NextResponse.json({ figure: (obj as { figure?: unknown }).figure ?? null })
 }

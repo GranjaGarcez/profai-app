@@ -6,6 +6,7 @@ import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { enrichMarkSchemes, needsRubric, type RubricInput } from '@/lib/exam/rubric'
 import { resolvePersonalProvider } from '@/lib/ai/personal'
 import { callOpenAICompat, repairTruncatedJson, generateWithFallback, generateChunked, criticProvider } from '@/lib/ai/cascade'
+import { describeFigure } from '@/lib/exam/figureText'
 
 // Netlify/Vercel: duração máxima da função (segundos)
 export const maxDuration = 60
@@ -132,12 +133,13 @@ function mergeBankAndNormalize(bankQs: HybridQ[], generated: HybridG[]): HybridG
 // Usa modelo DIFERENTE do gerador para diversidade de perspectiva
 function buildCriticPrompt(subject: string, yearLevel: number, topic: string,
                             questions: Array<Record<string, unknown>>): string {
-  const sample = questions.slice(0, 10).map((q, i) =>
-    `Q${i + 1} [${q.type}|${q.bloomLevel}|${q.points}pt]
-Enunciado: ${String(q.text ?? '')}
+  const sample = questions.slice(0, 10).map((q, i) => {
+    const figDesc = describeFigure(q.figure)
+    return `Q${i + 1} [${q.type}|${q.bloomLevel}|${q.points}pt]
+Enunciado: ${String(q.text ?? '')}${figDesc ? `\nFigura/Gráfico: ${figDesc}` : ''}
 Resposta: ${String(q.correctAnswer ?? '')}
 Critérios: ${String(q.markScheme ?? '')}`
-  ).join('\n\n')
+  }).join('\n\n')
   return `És revisor crítico independente de fichas de avaliação. A tua função é DESCOBRIR falhas — não elogiar. Parte do princípio de que a ficha tem defeitos e procura-os.
 
 FICHA: ${subject} · ${yearLevel}.º ano · Tópico: "${topic}"
@@ -152,6 +154,7 @@ AUDITA sem complacência — verifica CADA questão da amostra:
 5. markScheme: os critérios são específicos (com pontos parcelares) ou vagos ("resposta correcta")?
 6. correcção_aritmética: em questões com números/cálculos, REFAZ o cálculo do zero de forma independente — não confies na "Resposta" dada, verifica-a. Se a questão pedir um valor "óptimo"/"máximo"/"mínimo" sob uma restrição, confirma que o enunciado tem restrições suficientes para uma resposta única E que essa resposta está matematicamente correcta (ex: confirma sempre uma lista de divisores antes de aceitar "o maior divisor"). Reporta QUALQUER divergência aritmética como gravidade "alta" — é o tipo de erro mais grave possível numa ficha de avaliação.
 7. coerência_resposta: a "Resposta" satisfaz literalmente o enunciado e as suas pistas? Em fill_blank com vários espaços, confirma que as respostas estão na ORDEM dos espaços e que cada uma corresponde à sua descrição no enunciado ("o primeiro...", "o segundo...") — respostas trocadas de ordem são erro grave. Em true_false/multiple_choice, confirma que a opção correcta torna a afirmação verdadeira e que nenhum distrator também está correcto. Reporta contradição resposta↔enunciado como gravidade "alta".
+8. coerência_figura: se a questão tem "Figura/Gráfico", a "Resposta" e os "Critérios" TÊM de ser lidos a partir desses valores. Reporta como gravidade "alta" se a resposta menciona valores, categorias ou unidades que NÃO existem na figura (ex.: resposta fala de "60 unidades" quando o gráfico só tem categorias "Baixa/Média/Alta"), ou se contradiz os dados (ex.: diz que o máximo é X quando o gráfico mostra outro). O que o aluno lê no gráfico é a fonte de verdade.
 
 Devolve EXCLUSIVAMENTE este JSON (sem texto antes ou depois):
 {"aprovado": bool, "score": 0-10, "problemas": [{"tipo": str, "gravidade": "alta|media|baixa", "descricao": str, "questao": int}]}`
@@ -693,6 +696,8 @@ MAPEAMENTO TÓPICO → FIGURA (usa SEMPRE que o tópico for relevante):
 
 Para questões de cálculo puro sem componente visual → "figure": null
 
+COERÊNCIA FIGURA↔RESPOSTA (CRÍTICO): se usares o campo "figure" com dados, a "correctAnswer" e o "markScheme" TÊM de ser lidos EXACTAMENTE desses valores. Antes de escreveres a resposta, relê os valores que puseste na figura. É PROIBIDO a resposta mencionar valores, categorias ou unidades que não existam na figura, ou descrever um conjunto de dados diferente do que o gráfico mostra.
+
 SINTAXE EXACTA dos tipos disponíveis (copia e adapta com valores reais para o ${yearLevel}.º ano):
   {"type":"right_triangle","leg1":3,"leg2":4,"leg1Label":"3 cm","leg2Label":"4 cm","hypLabel":"5 cm"}
   {"type":"triangle","base":6,"height":4,"baseLabel":"6 cm","heightLabel":"4 cm","sideLabel":"5 cm"}
@@ -725,6 +730,8 @@ REGRA PEDAGÓGICA CRÍTICA — gráficos que não podem dar a resposta:
 Para questões onde uma figura não acrescenta nada → "figure": null (não inventes contexto visual forçado).` : hasChartFigures ? `
 FIGURAS — APENAS GRÁFICOS DE DADOS, USAR SÓ QUANDO GENUINAMENTE ÚTIL:
 O sistema só sabe desenhar DOIS tipos de figura: "bar_chart" e "pie_chart". NENHUM outro tipo é suportado — nunca inventes "gráfico de linha", "circuito", "diagrama de forças", "esquema" ou qualquer outro: se a figura não for um destes dois tipos exactos, usa SEMPRE "figure": null e descreve os dados em texto no enunciado.
+
+COERÊNCIA FIGURA↔RESPOSTA (CRÍTICO): se usares o campo "figure", a "correctAnswer" e o "markScheme" TÊM de ser lidos EXACTAMENTE dos valores que puseste no gráfico. É PROIBIDO a resposta mencionar valores, categorias ou unidades que não existam na figura, ou descrever um conjunto de dados diferente do que o gráfico mostra (ex.: responder "60 unidades" quando o gráfico tem categorias "Baixa/Média/Alta"). Relê o teu gráfico antes de escrever a resposta.
 
 SINTAXE EXACTA (copia e adapta com valores reais):
   {"type":"bar_chart","title":"Título","yLabel":"Unidade","bars":[{"label":"A","value":5},{"label":"B","value":8},{"label":"C","value":3}]}

@@ -618,10 +618,17 @@ export default function TestPreview({
       const groups = deepClone(t.groups ?? [])
       const target = groups[gi].questions[qi] as unknown as Record<string, unknown>
       target[key as string] = val
-      // Corrigenda: editar enunciado ou resposta pode invalidar os critérios →
+      // Corrigenda: editar enunciado/resposta/cotação pode invalidar os critérios →
       // marca como desactualizada. Editar os próprios critérios à mão limpa a marca.
       if (key === 'text' || key === 'correctAnswer') target._criteriaStale = true
       else if (key === 'markScheme') target._criteriaStale = false
+      else if (key === 'points') {
+        // (A) Reescala determinística das parcelas para a nova cotação (sem IA): os
+        // pontos ficam logo divididos pelo novo total no markScheme guardado.
+        target.markScheme = fixMarkSchemeSum(target.markScheme as string | undefined, Number(val) || 0) ?? target.markScheme
+        // (B) Oferece o re-raciocínio opcional dos critérios (↻ Actualizar critérios).
+        target._criteriaStale = true
+      }
       return { ...t, groups }
     }); markDirty()
   }, [markDirty])
@@ -728,6 +735,9 @@ export default function TestPreview({
       for (const q of all) { q.points = Math.max(1, Math.round((q.points ?? 0) / sum * 100)); acc += q.points }
       const heaviest = all.reduce((m, q) => (q.points ?? 0) > (m.points ?? 0) ? q : m, all[0])
       if (heaviest) heaviest.points = Math.max(1, (heaviest.points ?? 0) + (100 - acc))
+      // (A) Reescala as parcelas de cada markScheme para a nova cotação (determinístico,
+      // sem IA). Operação em bloco → não marca critérios como desactualizados (sem ruído).
+      for (const q of all) q.markScheme = fixMarkSchemeSum(q.markScheme, q.points ?? 0) ?? q.markScheme
       for (const g of groups) g.totalPoints = g.questions.reduce((s, q) => s + (q.points ?? 0), 0)
       return { ...t, groups, totalPoints: 100 }
     }); markDirty()
@@ -887,6 +897,7 @@ export default function TestPreview({
           points:    q.points,
           text:      q.text,
           options:   q.options ?? null,
+          figure:    q.figure ?? null,
         }),
       })
       const data = await res.json()
@@ -934,7 +945,10 @@ export default function TestPreview({
         body: JSON.stringify({
           subject:      editableTest.subject,
           yearLevel:    editableTest.yearLevel,
-          questionText: q.text,
+          questionText:  q.text,
+          correctAnswer: q.correctAnswer ?? null,
+          markScheme:    q.markScheme ?? null,
+          existingFigure: q.figure ?? null,
         }),
       })
       const data = await res.json()
@@ -2002,7 +2016,7 @@ function QuestionBlock({
                 <span style={{ fontSize: 14, lineHeight: 1.2 }}>⚠️</span>
                 <div className="flex-1">
                   <p className="text-xs" style={{ color: '#92400e' }}>
-                    Editaste a questão — a resposta e os critérios de correcção podem já não corresponder.
+                    Editaste a questão — a resposta e os critérios de correcção podem precisar de ser actualizados.
                   </p>
                   <button
                     onClick={onRefreshCriteria}
