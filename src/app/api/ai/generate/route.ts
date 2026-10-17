@@ -762,8 +762,8 @@ MEDIDA UNIVERSAL (MU) — DL 54/2018, Art.º 28.º — adaptação de FORMA, nã
 • ÂNCORA OBRIGATÓRIA: cada questão deve continuar a avaliar EXACTAMENTE o(s) mesmo(s) descritor(es) de Aprendizagem Essencial listado(s) em CURRÍCULO OBRIGATÓRIO abaixo. Nunca substituas o descritor por outro mais simples.
 • Linguagem do ENUNCIADO mais clara e directa (frases mais curtas, vocabulário mais simples) — o CONTEÚDO avaliado e a exigência cognitiva (nível de Bloom) mantêm-se inalterados.
 • Estrutura visualmente mais segmentada: instruções passo-a-passo explícitas sobre o que fazer, sem reduzir o que é pedido.
-• Cotação e número de questões IDÊNTICOS aos de uma ficha padrão da disciplina — a MU não justifica facilitar a avaliação, só a tornar mais acessível.
-• PROIBIDO ABSOLUTO: baixar o nível de Bloom exigido pela AE, reduzir a cotação, ou qualquer menção a "medida", "MU", "adaptado" no título, enunciado, instruções ou rodapé.` : level === 'MS' ? `
+• Número de questões IDÊNTICO e cotação TOTAL igual (exactamente 100). Podes redistribuir pontos entre questões se isso tornar a prova mais clara/justa, mas a MU não justifica facilitar a avaliação — só torná-la mais acessível.
+• PROIBIDO ABSOLUTO: baixar o nível de Bloom exigido pela AE, reduzir a cotação TOTAL ou trivializar o que é pedido, ou qualquer menção a "medida", "MU", "adaptado" no título, enunciado, instruções ou rodapé.` : level === 'MS' ? `
 MEDIDA SELECTIVA (MS) — DL 54/2018, Adaptação Curricular Não Significativa — adapta-se a APRESENTAÇÃO e o CAMINHO, nunca o DESTINO de aprendizagem:
 • ÂNCORA OBRIGATÓRIA E INVIOLÁVEL: cada questão deve continuar a avaliar pelo menos um descritor de Aprendizagem Essencial listado em CURRÍCULO OBRIGATÓRIO abaixo, no nível de Bloom mínimo exigido por esse descritor. PROIBIDO testar apenas memorização/recordação quando a AE exige aplicação ou análise — isso anularia a validade da avaliação.
 • Podes reestruturar UMA questão complexa em 2–3 sub-passos escalonados (mesma competência, andaimes intermédios visíveis) em vez de uma única pergunta aberta — cada sub-passo com a sua cotação parcial explícita.
@@ -961,11 +961,16 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
 
 TAREFA: ADAPTA o teste ORIGINAL abaixo, produzindo uma versão que MANTÉM a base estrutural do original e conforma cada questão à adaptação pedida.
 
-REGRAS DE PRESERVAÇÃO DA ESTRUTURA (invioláveis):
-• Mantém EXACTAMENTE o mesmo número de questões, os mesmos grupos e rótulos, a mesma ordem e o mesmo "type" de cada questão.
-• Mantém a cotação ("points") de cada questão IGUAL à do original — a soma continua exactamente 100. (Excepção MS: podes repartir a cotação de UMA questão em sub-passos, mantendo o total dessa questão.)
-• Cada questão adaptada avalia o MESMO conceito/descritor curricular da questão original — muda a forma e a exigência conforme o nível, NUNCA o conteúdo avaliado nem o tema.
-• NÃO acrescentes, removas nem reordenes questões. Mantém o título IDÊNTICO ao original.
+REGRAS DE PRESERVAÇÃO DA ESTRUTURA:
+• Mantém o mesmo NÚMERO de questões, os mesmos grupos e rótulos, a mesma ordem e o mesmo "type" de cada questão.
+• ${(level === 'MU' || level === 'MS')
+  ? 'Podes AJUSTAR a cotação ("points") entre questões quando for pedagogicamente útil (ex.: dar mais peso aos sub-passos de uma questão reestruturada), mas a SOMA TOTAL continua EXACTAMENTE 100.'
+  : 'Mantém a cotação ("points") de cada questão IGUAL à do original — a soma continua exactamente 100.'}
+• Cada questão (adaptada OU, em MS, substituída) avalia o MESMO descritor curricular da questão original — muda a forma e a exigência conforme o nível, NUNCA o tema avaliado.
+${level === 'MS'
+  ? `• SUBSTITUIÇÃO CONTROLADA (só MS): podes SUBSTITUIR até 4 questões — e APENAS quando a adaptação por reformulação/andaimes não chega para a tornar acessível ao aluno. A questão substituta: (a) avalia o MESMO descritor de Aprendizagem Essencial; (b) mantém o mesmo "type" e a cotação da original (salvo o reajuste permitido acima); (c) NUNCA desce abaixo do nível de Bloom mínimo desse descritor — muda o contexto/abordagem, não o destino de aprendizagem (sem facilitismo). Se a reformulação for suficiente, NÃO substituas. Nunca substituas mais de 4. Não acrescentes nem reordenes.`
+  : '• NÃO acrescentes, removas, substituas nem reordenes questões.'}
+• Mantém o título IDÊNTICO ao original.
 ${differentiationNote}
 ${curriculumConstraint}CRITÉRIOS DE CORRECÇÃO: reescreve o markScheme de cada questão adaptada, específico e com pontos parciais cuja soma = "points" da questão. Português de Portugal estrito (correcto, actividade, óptimo — nunca formas brasileiras). Dirige-te ao aluno por "tu". PROIBIDO qualquer notação LaTeX (usa Unicode: × ÷ ² ³ √ π ≠ ≤ ≥). "figure": null salvo se essencial.
 

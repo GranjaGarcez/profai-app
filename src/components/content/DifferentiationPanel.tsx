@@ -29,8 +29,8 @@ type Level = 'A' | 'C' | 'MU' | 'MS'
 const LEVEL_INFO: Record<Level, { label: string; desc: string; color: string; group: 'diferenciacao' | 'medida' }> = {
   A:  { label: 'Ficha A — Apoio',           desc: 'Scaffolding visível, números inteiros, menor exigência cognitiva. Invisível para o aluno.', color: '#0EA5E9', group: 'diferenciacao' },
   C:  { label: 'Ficha C — Aprofundamento',  desc: 'Sem scaffolding, números mais exigentes, questão de raciocínio. Invisível para o aluno.',    color: '#7C3AED', group: 'diferenciacao' },
-  MU: { label: 'Medida Universal (MU)',     desc: 'Adapta a forma (linguagem, segmentação) — conteúdo e cotação inalterados. Código "MU" impresso no cabeçalho.', color: '#0D9488', group: 'medida' },
-  MS: { label: 'Medida Selectiva (MS)',     desc: 'Reestrutura em sub-passos escalonados, simplifica moderadamente — ancorado à AE. Código "MS" impresso no cabeçalho.', color: '#B45309', group: 'medida' },
+  MU: { label: 'Medida Universal (MU)',     desc: 'Adapta a forma (linguagem, segmentação); conteúdo inalterado. Cotação pode ser redistribuída (total 100). Código "MU" no cabeçalho.', color: '#0D9488', group: 'medida' },
+  MS: { label: 'Medida Selectiva (MS)',     desc: 'Reestrutura em sub-passos e, se necessário, substitui até 4 questões por equivalentes (mesmo descritor AE, sem facilitismo). Código "MS" no cabeçalho.', color: '#B45309', group: 'medida' },
 }
 
 function getAllQuestions(test: SourceTest) {
