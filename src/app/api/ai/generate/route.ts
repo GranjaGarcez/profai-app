@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurriculumConstraint } from '@/lib/curriculum'
-import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores, updateMarkSchemes } from '@/lib/exam/questionBank'
+import { findQuestions, saveQuestions, markUsed, bankToExamQuestion, updateQualityScores, updateMarkSchemes, recentTexts } from '@/lib/exam/questionBank'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { enrichMarkSchemes, needsRubric, type RubricInput } from '@/lib/exam/rubric'
 import { resolvePersonalProvider } from '@/lib/ai/personal'
@@ -1082,18 +1082,29 @@ Responde APENAS com este JSON:
     let bankHits: Awaited<ReturnType<typeof findQuestions>> = []
     let numFromAI = isTestLike ? (inputs as Record<string, unknown>).numQuestions as number : 0
 
-    // Interruptor de dev: PROFAI_BANK_OFF=1 desliga o banco-first (para testar a geração
-    // pura sem o banco a curto-circuitar). Nunca definido em produção.
+    // Interruptor de dev: PROFAI_BANK_OFF=1 desliga TODO o banco (inclusive fallback).
     const bankOff = process.env.PROFAI_BANK_OFF === '1'
+    // Por DEFEITO já NÃO servimos questões do banco na geração normal (gerava testes
+    // quase iguais entre si e detalhar o tópico não mudava nada). Geramos sempre
+    // fresco pela matriz, usando o que já existe apenas como LISTA A EVITAR. O banco
+    // continua a ser rede de segurança no fallback (modelos fracos), mais abaixo.
+    // Pôr PROFAI_BANK_SERVE=1 reactiva o banco-first (opt-in).
+    const bankServe = process.env.PROFAI_BANK_SERVE === '1'
+    let avoidFromBank: string[] = []
     if (isTestLike && !adaptFromSource && !bankOff) {
       const { subject, yearLevel, topic, questionTypes, difficulty, numQuestions } = inputs as {
         subject: string; yearLevel: number; topic: string
         questionTypes: string[]; difficulty: string; numQuestions: number
       }
 
-      // Em modo fallback, tentar buscar o máximo possível do banco (até 3× o pedido)
-      // para minimizar a quantidade gerada por modelos de menor qualidade.
-      // O valor final ajusta-se depois de saber se é fallback ou não.
+      if (!bankServe) {
+        // Defeito: não servir — recolher textos recentes deste tópico para o modelo
+        // NÃO os repetir (varia entre testes). Gera tudo fresco.
+        avoidFromBank = await recentTexts({ subject, yearLevel, topic, types: questionTypes, limit: 30 })
+        numFromAI = numQuestions
+        if (avoidFromBank.length) console.log(`[BANK] banco-first OFF: ${avoidFromBank.length} textos a evitar | ${numFromAI} a gerar fresco`)
+      } else {
+      // Opt-in (PROFAI_BANK_SERVE=1): comportamento banco-first clássico.
       bankHits = await findQuestions({
         subject, yearLevel, topic,
         types: questionTypes,
@@ -1139,6 +1150,7 @@ Responde APENAS com este JSON:
           `Total: ${numFromAI} questões (complementar banco existente)`
         )
       }
+      } // fim do ramo opt-in (bankServe)
     }
 
     // Chave pessoal do professor (Tier 0), se activa — usada primeiro, sem aviso amber
@@ -1158,7 +1170,7 @@ Responde APENAS com este JSON:
           aeMode: ti.aeMode === 'estrito' ? 'estrito' : 'equilibrado',
           bloomWeights: (ti.bloomWeights && typeof ti.bloomWeights === 'object') ? ti.bloomWeights as Record<string, number> : null,
           coverage: Array.isArray(ti.coverage) ? (ti.coverage as unknown[]).map(String).filter(Boolean) : null,
-          avoid: bankHits.map(b => String((b as { text?: unknown }).text ?? '')).filter(Boolean).slice(0, 20),
+          avoid: [...bankHits.map(b => String((b as { text?: unknown }).text ?? '')), ...avoidFromBank].filter(Boolean).slice(0, 25),
         })
       : await generateWithFallback(prompt, 58_000, personal ?? undefined)
     const { text, isFallback, modelUsed, personalModel, personalFellBack } = genResult

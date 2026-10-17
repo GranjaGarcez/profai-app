@@ -124,6 +124,33 @@ export async function findQuestions(params: BankSearchParams): Promise<BankQuest
   }
 }
 
+// Textos recentes de questões deste tópico (para a LISTA A EVITAR na geração —
+// não serve questões, só impede o modelo de repetir o que já existe). Inclui as
+// já usadas de propósito: o objectivo é variar entre testes.
+export async function recentTexts(params: {
+  subject: string; yearLevel: number; topic: string; types: string[]; limit?: number
+}): Promise<string[]> {
+  const supabase = createAdminClient()
+  try {
+    const keywords = params.topic
+      .split(/[\s,;]+/).map(w => w.replace(/[^\p{L}\p{N}]/gu, ''))
+      .filter(w => w.length >= 4).slice(0, 4).join(' | ')
+    const tsQuery = keywords || params.topic.replace(/[^\p{L}\p{N} ]/gu, '').split(' ')[0]
+    let q = supabase
+      .from('question_bank')
+      .select('text')
+      .eq('subject', params.subject)
+      .eq('year_level', params.yearLevel)
+      .in('type', params.types)
+      .order('created_at', { ascending: false })
+      .limit(params.limit ?? 30)
+    if (tsQuery) q = q.textSearch('topic', tsQuery, { config: 'portuguese' })
+    const { data, error } = await q
+    if (error) return []
+    return (data ?? []).map(r => String((r as { text?: unknown }).text ?? '')).filter(Boolean)
+  } catch { return [] }
+}
+
 // Fallback com ILIKE quando FTS não retorna resultados
 async function findQuestionsIlike(
   params: BankSearchParams,
