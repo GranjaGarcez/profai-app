@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
+import { callJsonCascade } from '@/lib/ai/singleCall'
 
 const TYPE_PT: Record<string, string> = {
   multiple_choice: 'escolha múltipla (4 opções A/B/C/D, apenas uma correcta)',
@@ -90,51 +91,22 @@ export async function POST(request: NextRequest) {
 
   const prompt = buildPrompt(subject, yearLevel, topic, questionType, points, existingTexts ?? [])
 
-  // Tenta Gemini, fallback Groq
-  const geminiKey = process.env.GEMINI_API_KEY
-  const groqKey   = process.env.GROQ_API_KEY
-
-  async function tryGemini(): Promise<string | null> {
-    if (!geminiKey) return null
-    try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai')
-      const ai    = new GoogleGenerativeAI(geminiKey)
-      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' })
-      const res   = await model.generateContent(prompt)
-      return res.response.text()
-    } catch { return null }
+  // Cascata validada (Gemini thinking-off → Groq gpt-oss → CF → reservas).
+  const q = await callJsonCascade(prompt, { maxTokens: 3_000 })
+  if (!q) {
+    return NextResponse.json({ error: 'Não foi possível gerar a questão. Tenta novamente.' }, { status: 503 })
   }
 
-  async function tryGroq(): Promise<string | null> {
-    if (!groqKey) return null
-    try {
-      const Groq = (await import('groq-sdk')).default
-      const groq = new Groq({ apiKey: groqKey })
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.6,
-        max_tokens: 800,
-      })
-      return completion.choices[0]?.message?.content ?? null
-    } catch { return null }
+  // Garantias mínimas
+  if (!q.text || !q.correctAnswer) {
+    return NextResponse.json({ error: 'A IA devolveu uma questão incompleta. Tenta novamente.' }, { status: 502 })
   }
-
-  const raw = await tryGemini() ?? await tryGroq()
-  if (!raw) return NextResponse.json({ error: 'Não foi possível gerar a questão. Tenta novamente.' }, { status: 503 })
-
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) return NextResponse.json({ error: 'Resposta da IA inválida. Tenta novamente.' }, { status: 502 })
-
-  try {
-    const q = JSON.parse(match[0])
-    // Garantias mínimas
-    if (!q.text || !q.correctAnswer) throw new Error('campos em falta')
-    q.type   = questionType
-    q.points = Number(points)
-    q.markScheme = fixMarkSchemeSum(q.markScheme, q.points)
-    return NextResponse.json({ question: q })
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido da IA. Tenta novamente.' }, { status: 502 })
+  // Escolha múltipla precisa das 4 opções — sem elas a questão sai "para editar à mão".
+  if (questionType === 'multiple_choice' && !(Array.isArray(q.options) && q.options.length >= 2)) {
+    return NextResponse.json({ error: 'A IA não gerou as opções de escolha múltipla. Tenta novamente.' }, { status: 502 })
   }
+  q.type   = questionType
+  q.points = Number(points)
+  q.markScheme = fixMarkSchemeSum(typeof q.markScheme === 'string' ? q.markScheme : '', Number(points))
+  return NextResponse.json({ question: q })
 }

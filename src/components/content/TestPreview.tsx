@@ -834,7 +834,19 @@ export default function TestPreview({
         }),
       })
       const data = await res.json()
-      if (!res.ok || !data.question) return
+      if (!res.ok || !data.question) {
+        // Falhou a geração: não deixar um esqueleto mudo — dá uma pista clara,
+        // mas só se o professor ainda não editou o enunciado de origem.
+        setEditableTest(t => {
+          const groups = deepClone(t.groups ?? [])
+          const cur = groups[gi]?.questions[qi] as unknown as Record<string, unknown> | undefined
+          if (cur && typeof cur.text === 'string' && cur.text.startsWith('Nova questão')) {
+            cur.text = 'Não foi possível gerar agora — carrega em 🔄 Alternativa para tentar de novo, ou escreve o enunciado.'
+          }
+          return { ...t, groups }
+        })
+        return
+      }
       setEditableTest(t => {
         const groups = deepClone(t.groups ?? [])
         const cur = groups[gi]?.questions[qi]

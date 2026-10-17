@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
+import { callJsonCascade } from '@/lib/ai/singleCall'
 
 /**
  * PROF.IA — Actualizar critérios de correcção de UMA questão editada
@@ -88,51 +89,18 @@ export async function POST(request: NextRequest) {
     Array.isArray(options) ? options.map(String) : null,
   )
 
-  const geminiKey = process.env.GEMINI_API_KEY
-  const groqKey   = process.env.GROQ_API_KEY
-
-  async function tryGemini(): Promise<string | null> {
-    if (!geminiKey) return null
-    try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai')
-      const ai    = new GoogleGenerativeAI(geminiKey)
-      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' })
-      const res   = await model.generateContent(prompt)
-      return res.response.text()
-    } catch { return null }
+  // Cascata validada (Gemini thinking-off → Groq gpt-oss → CF → reservas).
+  const c = await callJsonCascade(prompt, { maxTokens: 2_500 })
+  if (!c) {
+    return NextResponse.json({ error: 'Não foi possível actualizar os critérios. Tenta novamente.' }, { status: 503 })
   }
-
-  async function tryGroq(): Promise<string | null> {
-    if (!groqKey) return null
-    try {
-      const Groq = (await import('groq-sdk')).default
-      const groq = new Groq({ apiKey: groqKey })
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 800,
-      })
-      return completion.choices[0]?.message?.content ?? null
-    } catch { return null }
+  if (!c.correctAnswer || !c.markScheme) {
+    return NextResponse.json({ error: 'A IA devolveu uma corrigenda incompleta. Tenta novamente.' }, { status: 502 })
   }
-
-  const raw = await tryGemini() ?? await tryGroq()
-  if (!raw) return NextResponse.json({ error: 'Não foi possível actualizar os critérios. Tenta novamente.' }, { status: 503 })
-
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) return NextResponse.json({ error: 'Resposta da IA inválida. Tenta novamente.' }, { status: 502 })
-
-  try {
-    const c = JSON.parse(match[0])
-    if (!c.correctAnswer || !c.markScheme) throw new Error('campos em falta')
-    const criteria = {
-      correctAnswer: String(c.correctAnswer).trim(),
-      markScheme:    fixMarkSchemeSum(String(c.markScheme), Number(points)),
-      bloomLevel:    c.bloomLevel ? String(c.bloomLevel).trim() : undefined,
-    }
-    return NextResponse.json({ criteria })
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido da IA. Tenta novamente.' }, { status: 502 })
+  const criteria = {
+    correctAnswer: String(c.correctAnswer).trim(),
+    markScheme:    fixMarkSchemeSum(String(c.markScheme), Number(points)),
+    bloomLevel:    c.bloomLevel ? String(c.bloomLevel).trim() : undefined,
   }
+  return NextResponse.json({ criteria })
 }
