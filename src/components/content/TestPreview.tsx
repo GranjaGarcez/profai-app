@@ -23,6 +23,7 @@ interface Question {
   markScheme?: string
   allowCalculator?: boolean
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
+  _criteriaStale?: boolean   // interno: enunciado/opções/resposta editados → corrigenda pode estar desactualizada (nunca persistido)
   illustration?: string   // data URL base64 (IA) ou URL real — ilustração gerada/pesquisada no Estúdio de Imagens
   illustrationCredit?: string   // atribuição obrigatória quando a imagem vem de pesquisa (Wikimedia Commons)
 }
@@ -519,6 +520,23 @@ function EditArea({
   )
 }
 
+// Remove marcas internas de edição (_criteriaStale) antes de persistir/snapshot —
+// é um sinal só de ecrã, nunca deve ir para a base de dados nem para o exame.
+function stripInternalFlags(t: TestContent): TestContent {
+  if (!t.groups) return t
+  return {
+    ...t,
+    groups: t.groups.map(g => ({
+      ...g,
+      questions: g.questions.map(q => {
+        const { _criteriaStale: _drop, ...rest } = q
+        void _drop
+        return rest as Question
+      }),
+    })),
+  }
+}
+
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function TestPreview({
   content, contentItemId,
@@ -578,8 +596,11 @@ export default function TestPreview({
   const [saveMsg, setSaveMsg] = useState<'ok' | 'error' | null>(null)
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
   const [regeneratingFigureIdx, setRegeneratingFigureIdx] = useState<number | null>(null)
+  const [refreshingCriteriaIdx, setRefreshingCriteriaIdx] = useState<number | null>(null)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
+  const [showStaleGuard, setShowStaleGuard] = useState(false)
+  const [refreshingAll, setRefreshingAll] = useState(false)
   const [showDifferentiation, setShowDifferentiation] = useState(false)
   const [imageStudioFor, setImageStudioFor] = useState<{ gi: number; qi: number } | null>(null)
   const [printMode, setPrintMode] = useState<'student' | 'teacher'>('student')
@@ -611,7 +632,12 @@ export default function TestPreview({
   const updateQuestion = useCallback((gi: number, qi: number, key: keyof Question, val: unknown) => {
     setEditableTest(t => {
       const groups = deepClone(t.groups ?? [])
-      ;(groups[gi].questions[qi] as unknown as Record<string, unknown>)[key as string] = val
+      const target = groups[gi].questions[qi] as unknown as Record<string, unknown>
+      target[key as string] = val
+      // Corrigenda: editar enunciado ou resposta pode invalidar os critérios →
+      // marca como desactualizada. Editar os próprios critérios à mão limpa a marca.
+      if (key === 'text' || key === 'correctAnswer') target._criteriaStale = true
+      else if (key === 'markScheme') target._criteriaStale = false
       return { ...t, groups }
     }); markDirty()
   }, [markDirty])
@@ -621,6 +647,8 @@ export default function TestPreview({
       const opts = [...(groups[gi].questions[qi].options ?? [])]
       opts[oi] = val
       groups[gi].questions[qi].options = opts
+      // Alterar uma opção pode mudar qual é a correcta → corrigenda desactualizada.
+      ;(groups[gi].questions[qi] as unknown as Record<string, unknown>)._criteriaStale = true
       return { ...t, groups }
     }); markDirty()
   }, [markDirty])
@@ -685,7 +713,7 @@ export default function TestPreview({
       const res = await fetch(`/api/content/${contentItemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editableTest }),
+        body: JSON.stringify({ content: stripInternalFlags(editableTest) }),
       })
       if (!res.ok) throw new Error()
       setIsDirty(false); setSaveMsg('ok')
@@ -707,10 +735,20 @@ export default function TestPreview({
     return () => clearTimeout(timer)
   }, [isDirty, editableTest, contentItemId, handleSaveEdits])
 
+  // Questões com corrigenda potencialmente desactualizada (editadas sem actualizar critérios).
+  const staleRefs = useCallback(() => {
+    const refs: Array<{ gi: number; qi: number }> = []
+    ;(editableTest.groups ?? []).forEach((g, gi) =>
+      g.questions.forEach((q, qi) => { if (q._criteriaStale) refs.push({ gi, qi }) }))
+    return refs
+  }, [editableTest])
+
   const handleLaunch = useCallback(async () => {
     if (isDirty && contentItemId) await handleSaveEdits()
+    // Rede de segurança: não lançar às cegas com corrigendas por actualizar.
+    if (staleRefs().length > 0) { setShowStaleGuard(true); return }
     setShowLauncher(true)
-  }, [isDirty, contentItemId, handleSaveEdits])
+  }, [isDirty, contentItemId, handleSaveEdits, staleRefs])
 
   const handleRegenerate = useCallback(async (gi: number, qi: number) => {
     const globalIdx = (editableTest.groups ?? [])
@@ -746,6 +784,61 @@ export default function TestPreview({
       setRegeneratingIdx(null)
     }
   }, [editableTest, markDirty])
+
+  // Actualizar SÓ a corrigenda (resposta + critérios) a partir da questão editada,
+  // mantendo o enunciado e as opções do professor intactos. Distinto do "regenerar",
+  // que troca a questão toda. Resolve a corrigenda desactualizada após uma edição.
+  const handleRefreshCriteria = useCallback(async (gi: number, qi: number) => {
+    const globalIdx = (editableTest.groups ?? [])
+      .slice(0, gi).flatMap(g => g.questions).length + qi
+    setRefreshingCriteriaIdx(globalIdx)
+    try {
+      const q = (editableTest.groups ?? [])[gi].questions[qi]
+      const res = await fetch('/api/ai/refresh-criteria', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject:   editableTest.subject,
+          yearLevel: editableTest.yearLevel,
+          topic:     editableTest.topic,
+          type:      q.type,
+          points:    q.points,
+          text:      q.text,
+          options:   q.options ?? null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.criteria) return
+      setEditableTest(t => {
+        const groups = deepClone(t.groups ?? [])
+        const tq = groups[gi].questions[qi] as unknown as Record<string, unknown>
+        if (data.criteria.markScheme)    tq.markScheme = data.criteria.markScheme
+        if (data.criteria.correctAnswer) tq.correctAnswer = data.criteria.correctAnswer
+        if (data.criteria.bloomLevel)    tq.bloomLevel = data.criteria.bloomLevel
+        tq._criteriaStale = false
+        return { ...t, groups }
+      })
+      markDirty()
+    } finally {
+      setRefreshingCriteriaIdx(null)
+    }
+  }, [editableTest, markDirty])
+
+  // Rede de segurança do lançamento: actualiza TODAS as corrigendas pendentes e só
+  // depois abre o lançador. Sequencial para não esgotar as quotas de IA de uma vez.
+  const handleRefreshAllThenLaunch = useCallback(async () => {
+    setRefreshingAll(true)
+    try {
+      for (const { gi, qi } of staleRefs()) {
+        await handleRefreshCriteria(gi, qi)
+      }
+      if (contentItemId) await handleSaveEdits()
+      setShowStaleGuard(false)
+      setShowLauncher(true)
+    } finally {
+      setRefreshingAll(false)
+    }
+  }, [staleRefs, handleRefreshCriteria, contentItemId, handleSaveEdits])
 
   const handleRegenerateFigure = useCallback(async (gi: number, qi: number) => {
     const globalIdx = (editableTest.groups ?? [])
@@ -785,6 +878,41 @@ export default function TestPreview({
       {showLauncher && contentItemId && (
         <ExamLauncher contentItemId={contentItemId} contentTitle={editableTest.title} onClose={() => setShowLauncher(false)} />
       )}
+      {showStaleGuard && (() => {
+        const n = staleRefs().length
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: '#0D1B2A90' }}>
+            <div className="w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4" style={{ background: 'white' }}>
+              <h3 className="text-lg font-bold flex items-center gap-2" style={{ fontFamily: 'Playfair Display, serif', color: '#0D1B2A' }}>
+                ⚠️ Corrigendas por actualizar
+              </h3>
+              <p className="text-sm" style={{ color: '#374151' }}>
+                {n === 1
+                  ? 'Há 1 questão que editaste cuja resposta e critérios de correcção podem já não corresponder ao enunciado.'
+                  : `Há ${n} questões que editaste cuja resposta e critérios de correcção podem já não corresponder ao enunciado.`}
+                {' '}Se lançares assim, a correcção automática pode atribuir notas erradas.
+              </p>
+              <div className="space-y-2">
+                <button onClick={handleRefreshAllThenLaunch} disabled={refreshingAll}
+                  className="w-full py-2.5 rounded-xl font-semibold text-white disabled:opacity-50"
+                  style={{ background: '#b45309' }}>
+                  {refreshingAll ? 'A actualizar corrigendas…' : `↻ Actualizar ${n === 1 ? 'a corrigenda' : 'as corrigendas'} e lançar`}
+                </button>
+                <button onClick={() => { setShowStaleGuard(false); setShowLauncher(true) }} disabled={refreshingAll}
+                  className="w-full py-2 rounded-xl border text-sm font-medium disabled:opacity-50"
+                  style={{ borderColor: '#0D1B2A30', color: '#0D1B2A' }}>
+                  Lançar mesmo assim
+                </button>
+                <button onClick={() => setShowStaleGuard(false)} disabled={refreshingAll}
+                  className="w-full py-2 text-sm font-medium disabled:opacity-50"
+                  style={{ color: '#6B7280' }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       {imageStudioFor && (() => {
         const { gi, qi } = imageStudioFor
         const q = groups[gi]?.questions[qi]
@@ -1267,6 +1395,8 @@ export default function TestPreview({
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
                       onRegenerate={() => handleRegenerate(gi, qi)}
                       isRegenerating={regeneratingIdx === gIdx}
+                      onRefreshCriteria={() => handleRefreshCriteria(gi, qi)}
+                      isRefreshingCriteria={refreshingCriteriaIdx === gIdx}
                       onIllustrate={() => setImageStudioFor({ gi, qi })}
                       onRemoveIllustration={() => {
                         updateQuestion(gi, qi, 'illustration', undefined)
@@ -1453,6 +1583,8 @@ interface QuestionBlockProps {
   onDelete?: () => void
   onRegenerate?: () => void
   isRegenerating?: boolean
+  onRefreshCriteria?: () => void
+  isRefreshingCriteria?: boolean
   onIllustrate?: () => void
   onRemoveIllustration?: () => void
   onRegenerateFigure?: () => void
@@ -1462,7 +1594,7 @@ interface QuestionBlockProps {
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
-  onDelete, onRegenerate, isRegenerating, onIllustrate, onRemoveIllustration,
+  onDelete, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
@@ -1721,6 +1853,24 @@ function QuestionBlock({
 
           {/* ── Corrigenda (no-print — só no ecrã, colapsável) ── */}
           <div className="no-print mt-3">
+            {editing && q._criteriaStale && (
+              <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-lg"
+                style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <span style={{ fontSize: 14, lineHeight: 1.2 }}>⚠️</span>
+                <div className="flex-1">
+                  <p className="text-xs" style={{ color: '#92400e' }}>
+                    Editaste a questão — a resposta e os critérios de correcção podem já não corresponder.
+                  </p>
+                  <button
+                    onClick={onRefreshCriteria}
+                    disabled={isRefreshingCriteria}
+                    className="mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-md disabled:opacity-50"
+                    style={{ background: '#b45309', color: 'white' }}>
+                    {isRefreshingCriteria ? 'A actualizar…' : '↻ Actualizar critérios'}
+                  </button>
+                </div>
+              </div>
+            )}
             <details>
               <summary className="text-xs font-semibold cursor-pointer select-none inline-flex items-center gap-1"
                 style={{ color: '#00B4D8', listStyle: 'none' }}>
