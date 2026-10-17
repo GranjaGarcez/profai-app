@@ -7,6 +7,24 @@ function generateCode(): string {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
+// Remove marcas internas de edição (_criteriaStale) do conteúdo antes de o
+// congelar como snapshot do exame — é um sinal só do editor do professor,
+// nunca deve chegar ao aluno nem à correcção.
+function sanitizeSnapshot(content: unknown): unknown {
+  if (!content || typeof content !== 'object') return content
+  const c = JSON.parse(JSON.stringify(content)) as Record<string, unknown>
+  const clean = (q: Record<string, unknown>) => { delete q._criteriaStale }
+  if (Array.isArray(c.groups)) {
+    for (const g of c.groups as Array<Record<string, unknown>>) {
+      if (Array.isArray(g.questions)) for (const q of g.questions as Array<Record<string, unknown>>) clean(q)
+    }
+  }
+  if (Array.isArray(c.questions)) {
+    for (const q of c.questions as Array<Record<string, unknown>>) clean(q)
+  }
+  return c
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,7 +66,7 @@ export async function POST(request: NextRequest) {
       status:           'active',
       duration_minutes: durationMinutes ?? null,
       allow_calculator: allowCalculator ?? false,
-      test_snapshot:    item.content,
+      test_snapshot:    sanitizeSnapshot(item.content),
     })
     .select('id, access_code')
     .single()

@@ -23,7 +23,7 @@ interface Question {
   markScheme?: string
   allowCalculator?: boolean
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
-  _criteriaStale?: boolean   // interno: enunciado/opções/resposta editados → corrigenda pode estar desactualizada (nunca persistido)
+  _criteriaStale?: boolean   // interno: enunciado/opções/resposta editados → corrigenda pode estar desactualizada. Persiste no conteúdo (aviso sobrevive a recargas); removido do snapshot do exame em launch/route.ts
   illustration?: string   // data URL base64 (IA) ou URL real — ilustração gerada/pesquisada no Estúdio de Imagens
   illustrationCredit?: string   // atribuição obrigatória quando a imagem vem de pesquisa (Wikimedia Commons)
 }
@@ -520,23 +520,6 @@ function EditArea({
   )
 }
 
-// Remove marcas internas de edição (_criteriaStale) antes de persistir/snapshot —
-// é um sinal só de ecrã, nunca deve ir para a base de dados nem para o exame.
-function stripInternalFlags(t: TestContent): TestContent {
-  if (!t.groups) return t
-  return {
-    ...t,
-    groups: t.groups.map(g => ({
-      ...g,
-      questions: g.questions.map(q => {
-        const { _criteriaStale: _drop, ...rest } = q
-        void _drop
-        return rest as Question
-      }),
-    })),
-  }
-}
-
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function TestPreview({
   content, contentItemId,
@@ -696,21 +679,40 @@ export default function TestPreview({
     return qi
   }, [editableTest, markDirty])
 
-  // Mover uma questão dentro do grupo (−1 = para cima, +1 = para baixo). Move o
-  // objecto inteiro (enunciado, opções, corrigenda, figura, _bankId — tudo viaja
-  // junto) e renumera o index global sequencial, para manter index === posição,
-  // coerente com o exame e a correcção (que indexam as respostas por q.index).
+  // Mover uma questão (−1 = para cima, +1 = para baixo). Dentro do grupo troca com
+  // a vizinha; na fronteira do grupo passa para o fim do grupo anterior ou o início
+  // do seguinte. Move o objecto inteiro (enunciado, opções, corrigenda, figura,
+  // _bankId — tudo viaja junto). Recalcula as cotações de cada grupo (os pontos vão
+  // com a questão), renumera o index global (coerente com exame/correcção, que
+  // indexam por q.index) e remove grupos que fiquem vazios.
   const moveQuestion = useCallback((gi: number, qi: number, dir: -1 | 1) => {
     setEditableTest(t => {
-      const groups = deepClone(t.groups ?? [])
+      let groups = deepClone(t.groups ?? [])
       const qs = groups[gi]?.questions
       if (!qs) return t
       const ni = qi + dir
-      if (ni < 0 || ni >= qs.length) return t
-      ;[qs[qi], qs[ni]] = [qs[ni], qs[qi]]
+      if (ni >= 0 && ni < qs.length) {
+        ;[qs[qi], qs[ni]] = [qs[ni], qs[qi]]           // dentro do grupo
+      } else if (dir === -1 && gi > 0) {
+        const [moved] = qs.splice(qi, 1)                // para o fim do grupo anterior
+        groups[gi - 1].questions.push(moved)
+      } else if (dir === 1 && gi < groups.length - 1) {
+        const [moved] = qs.splice(qi, 1)                // para o início do grupo seguinte
+        groups[gi + 1].questions.unshift(moved)
+      } else {
+        return t                                        // já na ponta do teste
+      }
+      // Remove grupos esvaziados (mantém sempre pelo menos um grupo).
+      const pruned = groups.filter(g => g.questions.length > 0)
+      if (pruned.length > 0) groups = pruned
+      // Renumera index global + recalcula cotações por grupo.
       let n = 1
-      for (const g of groups) for (const q of g.questions) q.index = n++
-      return { ...t, groups }
+      for (const g of groups) {
+        for (const q of g.questions) q.index = n++
+        g.totalPoints = g.questions.reduce((s, q) => s + (q.points ?? 0), 0)
+      }
+      const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
+      return { ...t, groups, totalPoints: total }
     }); markDirty()
   }, [markDirty])
 
@@ -738,7 +740,7 @@ export default function TestPreview({
       const res = await fetch(`/api/content/${contentItemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: stripInternalFlags(editableTest) }),
+        body: JSON.stringify({ content: editableTest }),
       })
       if (!res.ok) throw new Error()
       setIsDirty(false); setSaveMsg('ok')
@@ -1461,8 +1463,8 @@ export default function TestPreview({
                       onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
                       onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
-                      onMoveUp={qi > 0 ? () => moveQuestion(gi, qi, -1) : undefined}
-                      onMoveDown={qi < group.questions.length - 1 ? () => moveQuestion(gi, qi, 1) : undefined}
+                      onMoveUp={(qi > 0 || gi > 0) ? () => moveQuestion(gi, qi, -1) : undefined}
+                      onMoveDown={(qi < group.questions.length - 1 || gi < groups.length - 1) ? () => moveQuestion(gi, qi, 1) : undefined}
                       onRegenerate={() => handleRegenerate(gi, qi)}
                       isRegenerating={regeneratingIdx === gIdx}
                       onRefreshCriteria={() => handleRefreshCriteria(gi, qi)}
