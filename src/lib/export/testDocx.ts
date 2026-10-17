@@ -1,9 +1,13 @@
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   AlignmentType, BorderStyle, HeadingLevel, WidthType, ShadingType,
-  convertInchesToTwip, PageBreak,
+  convertInchesToTwip, PageBreak, ImageRun,
 } from 'docx'
 import { saveAs } from 'file-saver'
+import { createElement } from 'react'
+import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
+import MathFigure from '@/components/math/MathFigure'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 
 interface Question {
@@ -14,6 +18,9 @@ interface Question {
   correctAnswer: string
   points: number
   markScheme?: string
+  figure?: unknown          // gráfico/diagrama/sólido/tabela desenhado pelo MathFigure
+  illustration?: string     // imagem (data URL base64 ou URL real) do Estúdio de Imagens
+  illustrationCredit?: string
 }
 
 interface TestGroup {
@@ -64,12 +71,178 @@ function getGroups(test: TestContent): TestGroup[] {
   return [{ label: '', description: '', questions: test.questions ?? [] }]
 }
 
+// ── Figuras e imagens ─────────────────────────────────────────────────────────
+// As figuras (gráficos, geometria, sólidos, mindmap) são desenhadas em SVG pelo
+// MathFigure; as tabelas são HTML; as ilustrações são imagens (base64/URL). O Word
+// não tem SVG vivo → rasterizamos as SVG para PNG e reconstruímos as tabelas como
+// tabela nativa. Tudo corre no browser (o export é client-side).
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes
+}
+
+// Renderiza uma figura do MathFigure (React) fora do ecrã e devolve a string SVG.
+function renderFigureSvg(figure: unknown): string | null {
+  if (typeof document === 'undefined') return null
+  const host = document.createElement('div')
+  host.style.cssText = 'position:fixed;left:-99999px;top:0;width:800px;'
+  document.body.appendChild(host)
+  const root = createRoot(host)
+  try {
+    flushSync(() => { root.render(createElement(MathFigure, { figure })) })
+    const svg = host.querySelector('svg')
+    return svg ? svg.outerHTML : null
+  } catch {
+    return null
+  } finally {
+    root.unmount()
+    host.remove()
+  }
+}
+
+function svgDims(svg: string): { w: number; h: number } {
+  const wm = svg.match(/\bwidth="(\d+(?:\.\d+)?)"/)
+  const hm = svg.match(/\bheight="(\d+(?:\.\d+)?)"/)
+  let w = wm ? Number(wm[1]) : 0
+  let h = hm ? Number(hm[1]) : 0
+  if (!w || !h) {
+    const vb = svg.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/)
+    if (vb) { w = w || Number(vb[1]); h = h || Number(vb[2]) }
+  }
+  return { w: w || 300, h: h || 200 }
+}
+
+// SVG → PNG (via canvas, 2× para nitidez). Devolve bytes + dimensões de origem.
+function svgToPng(svg: string, scale = 2): Promise<{ data: Uint8Array; w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const { w, h } = svgDims(svg)
+    const withNs = svg.includes('xmlns') ? svg : svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+    const url = URL.createObjectURL(new Blob([withNs], { type: 'image/svg+xml;charset=utf-8' }))
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(w * scale)
+        canvas.height = Math.round(h * scale)
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { URL.revokeObjectURL(url); return resolve(null) }
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        URL.revokeObjectURL(url)
+        resolve({ data: base64ToBytes(canvas.toDataURL('image/png').split(',')[1]), w, h })
+      } catch {
+        URL.revokeObjectURL(url)
+        resolve(null)
+      }
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+    img.src = url
+  })
+}
+
+// Ilustração: data URL (base64) ou URL remota → bytes + dimensões + formato.
+function loadImage(src: string): Promise<{ data: Uint8Array; w: number; h: number; type: 'png' | 'jpg' } | null> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = async () => {
+      const w = img.naturalWidth || 400
+      const h = img.naturalHeight || 300
+      try {
+        if (src.startsWith('data:')) {
+          const type: 'png' | 'jpg' = /image\/jpe?g/i.test(src) ? 'jpg' : 'png'
+          resolve({ data: base64ToBytes(src.split(',')[1]), w, h, type })
+        } else {
+          const buf = await (await fetch(src)).arrayBuffer()
+          const type: 'png' | 'jpg' = /\.jpe?g($|\?)/i.test(src) ? 'jpg' : 'png'
+          resolve({ data: new Uint8Array(buf), w, h, type })
+        }
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+}
+
+// Dimensão no documento (px), limitada à largura útil da página, mantendo proporção.
+function fitBox(w: number, h: number, maxW = 450): { width: number; height: number } {
+  if (w <= maxW) return { width: Math.round(w), height: Math.round(h) }
+  return { width: Math.round(maxW), height: Math.round(h * (maxW / w)) }
+}
+
+// Figura do tipo "table" → tabela nativa do Word (melhor que rasterizar texto).
+function figureTable(f: Record<string, unknown>): Table | null {
+  const headers = Array.isArray(f.headers) ? (f.headers as unknown[]).map(String) : []
+  const rows = Array.isArray(f.rows) ? (f.rows as unknown[]).map(r => (Array.isArray(r) ? r.map(String) : [])) : []
+  if (headers.length === 0 || rows.length === 0) return null
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: headers.map(hd => new TableCell({
+      shading: { type: ShadingType.CLEAR, fill: '0D1B2A', color: 'auto' },
+      children: [new Paragraph({ children: [new TextRun({ text: hd, bold: true, color: 'FFFFFF', size: 20 })] })],
+    })),
+  })
+  const bodyRows = rows.map(r => new TableRow({
+    children: headers.map((_, ci) => new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: r[ci] ?? '', size: 20 })] })],
+    })),
+  }))
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...bodyRows] })
+}
+
+// Constrói os blocos (imagem/tabela) de uma questão, se tiver figura ou ilustração.
+async function visualBlocks(q: Question): Promise<Array<Paragraph | Table>> {
+  const out: Array<Paragraph | Table> = []
+  // Figura (gráfico/diagrama/sólido/tabela)
+  if (q.figure && typeof q.figure === 'object') {
+    const f = q.figure as Record<string, unknown>
+    if (f.type === 'table') {
+      const t = figureTable(f)
+      if (t) { out.push(t); out.push(emptyLine(80)) }
+    } else {
+      const svg = renderFigureSvg(q.figure)
+      const png = svg ? await svgToPng(svg) : null
+      if (png) {
+        const box = fitBox(png.w, png.h)
+        out.push(new Paragraph({
+          children: [new ImageRun({ type: 'png', data: png.data, transformation: box })],
+          alignment: AlignmentType.CENTER, spacing: { before: 80, after: 160 },
+        }))
+      }
+    }
+  }
+  // Ilustração (imagem gerada/pesquisada)
+  if (typeof q.illustration === 'string' && q.illustration) {
+    const im = await loadImage(q.illustration)
+    if (im) {
+      const box = fitBox(im.w, im.h)
+      out.push(new Paragraph({
+        children: [new ImageRun({ type: im.type, data: im.data, transformation: box })],
+        alignment: AlignmentType.CENTER, spacing: { before: 80, after: q.illustrationCredit ? 40 : 160 },
+      }))
+      if (q.illustrationCredit) {
+        out.push(new Paragraph({
+          children: [new TextRun({ text: q.illustrationCredit, size: 14, italics: true, color: '999999' })],
+          alignment: AlignmentType.CENTER, spacing: { after: 160 },
+        }))
+      }
+    }
+  }
+  return out
+}
+
 export async function generateTestDocx(test: TestContent) {
   const groups = getGroups(test)
   const questions: Question[] = groups.flatMap(g => g.questions)
   const difficulty = DIFFICULTY_LABEL[test.difficulty] ?? test.difficulty
 
-  const children: Paragraph[] = []
+  const children: (Paragraph | Table)[] = []
 
   // ── Cabeçalho ──────────────────────────────────────────────────────────────
   children.push(
@@ -129,7 +302,7 @@ export async function generateTestDocx(test: TestContent) {
 
   // ── Grupos e perguntas ─────────────────────────────────────────────────────
   let globalIndex = 0
-  groups.forEach(group => {
+  for (const group of groups) {
     // Cabeçalho do grupo
     if (group.label) {
       children.push(
@@ -144,47 +317,46 @@ export async function generateTestDocx(test: TestContent) {
       )
     }
 
-    group.questions.forEach((q) => {
-    globalIndex++
-    const i = globalIndex - 1
-    const typeLabel = TYPE_LABEL[q.type] ?? q.type
+    for (const q of group.questions) {
+      globalIndex++
+      const typeLabel = TYPE_LABEL[q.type] ?? q.type
 
-    // Enunciado
-    children.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: `${globalIndex}. `, bold: true, size: 24, color: '0D1B2A' }),
-          new TextRun({ text: `[${typeLabel} — ${q.points} pontos]  `, size: 18, color: '888888', italics: true }),
-          new TextRun({ text: q.text, size: 22, color: '0D1B2A' }),
-        ],
-        spacing: { before: 320, after: 160 },
-      }),
-    )
+      // Enunciado
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `${globalIndex}. `, bold: true, size: 24, color: '0D1B2A' }),
+            new TextRun({ text: `[${typeLabel} — ${q.points} pontos]  `, size: 18, color: '888888', italics: true }),
+            new TextRun({ text: q.text, size: 22, color: '0D1B2A' }),
+          ],
+          spacing: { before: 320, after: 160 },
+        }),
+      )
 
-    // Opções
-    if (q.options && q.options.length > 0) {
-      q.options.forEach(opt => {
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: `○  ${opt}`, size: 22 })],
-            indent: { left: convertInchesToTwip(0.4) },
-            spacing: { before: 80, after: 80 },
-          }),
-        )
-      })
-      children.push(emptyLine(80))
-    } else {
-      // Linhas de resposta
-      const numLines = q.type === 'long_answer' ? 6 : q.type === 'short_answer' ? 3 : 2
-      for (let l = 0; l < numLines; l++) {
-        children.push(answerLine())
+      // Figura (gráfico/diagrama/tabela) e/ou ilustração — depois do enunciado
+      for (const block of await visualBlocks(q)) children.push(block)
+
+      // Opções
+      if (q.options && q.options.length > 0) {
+        q.options.forEach(opt => {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `○  ${opt}`, size: 22 })],
+              indent: { left: convertInchesToTwip(0.4) },
+              spacing: { before: 80, after: 80 },
+            }),
+          )
+        })
+        children.push(emptyLine(80))
+      } else {
+        // Linhas de resposta
+        const numLines = q.type === 'long_answer' ? 6 : q.type === 'short_answer' ? 3 : 2
+        for (let l = 0; l < numLines; l++) {
+          children.push(answerLine())
+        }
       }
-    }
-
-    // Corrigenda — incluída em secção separada abaixo
-    void i
-  }) // fim group.questions.forEach
-  }) // fim groups.forEach
+    } // fim group.questions
+  } // fim groups
 
   // ── Rodapé ─────────────────────────────────────────────────────────────────
   children.push(
