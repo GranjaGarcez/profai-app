@@ -130,6 +130,7 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
     aeMode: 'equilibrado' as 'equilibrado' | 'estrito',
     customBloom: false,
     bloomWeights: { Lembrar: 15, Compreender: 25, Aplicar: 20, Analisar: 20, Avaliar: 10, Criar: 10 } as Record<string, number>,
+    guidance: '',   // orientação livre do professor (opcional) — guia a geração
   })
 
   // ── Modo personalizado: escolher AE individualmente (opt-in) ──
@@ -344,6 +345,23 @@ export default function TestGenerator({ onClose, onSave }: TestGeneratorProps) {
                   </p>
                 )}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0D1B2A' }}>
+                Descreve o teste <span style={{ color: '#9CA3AF', fontWeight: 400 }}>(opcional — guia a geração)</span>
+              </label>
+              <textarea
+                value={form.guidance}
+                onChange={e => setForm(f => ({ ...f, guidance: e.target.value }))}
+                rows={2}
+                placeholder="Ex.: foca nos ecossistemas portugueses; linguagem simples; inclui uma questão de interpretação de gráfico; evita cálculos longos."
+                className="w-full px-3 py-2 rounded-lg border text-sm"
+                style={{ borderColor: '#0D1B2A20', outline: 'none', resize: 'vertical' }}
+              />
+              <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>
+                Orienta o conteúdo, o estilo e o tipo de questões. Não substitui o tema nem o currículo — complementa-os.
+              </p>
             </div>
 
             <div>

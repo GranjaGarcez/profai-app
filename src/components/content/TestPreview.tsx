@@ -54,12 +54,18 @@ interface TestContent {
   _differentiationLevel?: 'A' | 'B' | 'C'
   _differentiationGroupId?: string
   _measureType?: 'MU' | 'MS'   // DL 54/2018 — Medida Universal / Medida Selectiva (impresso, discreto)
+  _accessibilityLevel?: 'LF' | 'LS'   // versão de acessibilidade linguística (rótulo só para o professor)
 }
 
 const DIFF_LEVEL_LABEL: Record<'A' | 'B' | 'C', { label: string; color: string }> = {
   A: { label: 'Ficha A — Apoio', color: '#0EA5E9' },
   B: { label: 'Ficha B — Consolidação', color: '#0D1B2A' },
   C: { label: 'Ficha C — Aprofundamento', color: '#7C3AED' },
+}
+
+const ACCESS_LEVEL_LABEL: Record<'LF' | 'LS', { label: string; color: string }> = {
+  LF: { label: 'Linguagem acessível', color: '#0891B2' },
+  LS: { label: 'Simplificada (linguagem + apoio)', color: '#2563EB' },
 }
 
 const MEASURE_LABEL: Record<'MU' | 'MS', string> = {
@@ -122,6 +128,36 @@ function normaliseGroups(test: TestContent): TestGroup[] {
 }
 
 function deepClone<T>(v: T): T { return JSON.parse(JSON.stringify(v)) }
+
+// Lê um ficheiro de imagem e devolve um data URL já REDIMENSIONADO (lado maior ≤ maxDim)
+// para não inchar o teste/snapshot com fotos enormes de telemóvel. Mantém proporção.
+async function fileToImageDataUrl(file: File, maxDim = 1000): Promise<string> {
+  const rawUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result))
+    r.onerror = () => reject(new Error('Não foi possível ler o ficheiro'))
+    r.readAsDataURL(file)
+  })
+  return await new Promise<string>((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const longest = Math.max(img.naturalWidth, img.naturalHeight)
+      const scale = longest > 0 ? Math.min(1, maxDim / longest) : 1
+      if (scale >= 1 && file.size < 400_000) return resolve(rawUrl) // já é pequena
+      const w = Math.max(1, Math.round(img.naturalWidth * scale))
+      const h = Math.max(1, Math.round(img.naturalHeight * scale))
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return resolve(rawUrl)
+      ctx.drawImage(img, 0, 0, w, h)
+      const png = /image\/png/i.test(file.type)
+      resolve(canvas.toDataURL(png ? 'image/png' : 'image/jpeg', 0.82))
+    }
+    img.onerror = () => resolve(rawUrl)
+    img.src = rawUrl
+  })
+}
 
 // ── Painel de distribuição de cotação ─────────────────────────────────────────
 const GROUP_COLORS = ['#0D1B2A', '#00B4D8', '#7c3aed', '#059669', '#C8A84B']
@@ -1056,6 +1092,19 @@ export default function TestPreview({
         </div>
       )}
 
+      {/* Badge de acessibilidade linguística (só no ecrã do professor — nunca impresso) */}
+      {editableTest._accessibilityLevel && (
+        <div className="no-print mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+          style={{
+            background: `${ACCESS_LEVEL_LABEL[editableTest._accessibilityLevel].color}15`,
+            color: ACCESS_LEVEL_LABEL[editableTest._accessibilityLevel].color,
+            border: `1px solid ${ACCESS_LEVEL_LABEL[editableTest._accessibilityLevel].color}40`,
+          }}>
+          🗣️ {ACCESS_LEVEL_LABEL[editableTest._accessibilityLevel].label}
+          <span style={{ opacity: 0.7 }}>— versão invisível no papel</span>
+        </div>
+      )}
+
       {/* ── Aviso de qualidade (modelo fallback) ──────────────────────────── */}
       {editableTest._qualityWarning && editableTest._qualityWarningContext === 'medida_suporte' ? (
         <div className="no-print mb-4 flex items-start gap-3 rounded-xl border-2 px-4 py-3"
@@ -1496,6 +1545,10 @@ export default function TestPreview({
                       onRefreshCriteria={() => handleRefreshCriteria(gi, qi)}
                       isRefreshingCriteria={refreshingCriteriaIdx === gIdx}
                       onIllustrate={() => setImageStudioFor({ gi, qi })}
+                      onUploadImage={(dataUrl: string) => {
+                        updateQuestion(gi, qi, 'illustration', dataUrl)
+                        updateQuestion(gi, qi, 'illustrationCredit', undefined)   // imagem própria/copiada — sem atribuição obrigatória
+                      }}
                       onRemoveIllustration={() => {
                         updateQuestion(gi, qi, 'illustration', undefined)
                         updateQuestion(gi, qi, 'illustrationCredit', undefined)
@@ -1716,6 +1769,7 @@ interface QuestionBlockProps {
   onRefreshCriteria?: () => void
   isRefreshingCriteria?: boolean
   onIllustrate?: () => void
+  onUploadImage?: (dataUrl: string) => void
   onRemoveIllustration?: () => void
   onRegenerateFigure?: () => void
   isRegeneratingFigure?: boolean
@@ -1724,7 +1778,7 @@ interface QuestionBlockProps {
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
-  onDelete, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onRemoveIllustration,
+  onDelete, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
@@ -1847,6 +1901,27 @@ function QuestionBlock({
                   >
                     🎨 Ilustrar
                   </button>
+                )}
+                {/* Carregar imagem (upload do dispositivo) */}
+                {onUploadImage && (
+                  <label
+                    title="Carregar uma imagem do teu dispositivo (útil para repor imagens ou copiar de outro teste)"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold cursor-pointer transition-all"
+                    style={{ color: '#0369a1', background: 'transparent', border: '1px solid #bae6fd' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.background = '#e0f7fc' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.background = 'transparent' }}
+                  >
+                    ⬆️ Carregar imagem
+                    <input
+                      type="file" accept="image/*" className="hidden"
+                      onChange={async e => {
+                        const f = e.target.files?.[0]
+                        e.currentTarget.value = ''   // permite recarregar o mesmo ficheiro
+                        if (!f) return
+                        try { onUploadImage(await fileToImageDataUrl(f)) } catch { /* ignora ficheiro inválido */ }
+                      }}
+                    />
+                  </label>
                 )}
                 {/* Eliminar */}
                 {onDelete && (

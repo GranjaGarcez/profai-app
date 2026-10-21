@@ -540,11 +540,11 @@ export async function POST(request: NextRequest) {
   let adaptFromSource = false
 
   if (isTestLike) {
-    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle, sourceTest, bloomWeights } =
+    const { subject, yearLevel, topic, difficulty, questionTypes, numQuestions, duration, country, avoidTexts, level, title: forcedTitle, sourceTest, bloomWeights, guidance } =
       inputs as { subject: string; yearLevel: number; topic: string; difficulty: string
         questionTypes: string[]; numQuestions: number; duration?: number; country: string
-        avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS'; title?: string
-        bloomWeights?: Record<string, number> | null
+        avoidTexts?: string[]; level?: 'A' | 'C' | 'MU' | 'MS' | 'LF' | 'LS'; title?: string
+        bloomWeights?: Record<string, number> | null; guidance?: string
         sourceTest?: { title?: string; instructions?: string; groups?: Array<{ label?: string; description?: string; questions?: Array<Record<string, unknown>> }> } }
     // Modo Bloom personalizado activo? (sobrepõe-se ao nível de dificuldade)
     const customBloom = !!bloomWeights && typeof bloomWeights === 'object'
@@ -776,7 +776,19 @@ MEDIDA SELECTIVA (MS) — DL 54/2018, Adaptação Curricular Não Significativa 
 • Podes reestruturar UMA questão complexa em 2–3 sub-passos escalonados (mesma competência, andaimes intermédios visíveis) em vez de uma única pergunta aberta — cada sub-passo com a sua cotação parcial explícita.
 • Podes simplificar MODERADAMENTE a complexidade numérica (ex: menos casas decimais, números mais redondos) SEM trivializar o procedimento ou raciocínio que está a ser avaliado — o aluno continua a ter de aplicar o mesmo processo cognitivo.
 • markScheme com cotação mais granular: mais oportunidades de cotação parcial em cada passo intermédio, em vez de "tudo ou nada" na resposta final.
-• PROIBIDO ABSOLUTO: descer abaixo do nível de Bloom mínimo da AE, eliminar o descritor central, ou qualquer menção a "medida", "MS", "adaptado", "selectiva" no título, enunciado, instruções ou rodapé.` : ''
+• PROIBIDO ABSOLUTO: descer abaixo do nível de Bloom mínimo da AE, eliminar o descritor central, ou qualquer menção a "medida", "MS", "adaptado", "selectiva" no título, enunciado, instruções ou rodapé.` : level === 'LF' ? `
+LINGUAGEM ACESSÍVEL — invisível para o aluno. Adapta-se SÓ A LÍNGUA, nada mais:
+• MANTÉM tudo o resto EXACTAMENTE igual à versão de origem: as MESMAS questões, pela MESMA ordem, o mesmo tipo, a mesma estrutura de grupos, a MESMA resposta correcta, o mesmo markScheme e a MESMA cotação por questão (total 100). NÃO acrescentes, retires, troques nem reordenes questões.
+• Reescreve APENAS o texto dos enunciados (e dos excertos/contextos) para ficar o mais curto e explícito possível: frases curtas, UMA ideia por frase; vocabulário do dia-a-dia; voz activa; ordem directa (sujeito-verbo-complemento); evita orações subordinadas encaixadas, duplas negações e pronomes ambíguos.
+• Diz claramente o que o aluno tem de fazer ("Lê o texto. Depois responde: …"). Explica entre parênteses qualquer palavra técnica indispensável, sem mudar o conceito avaliado.
+• NÃO baixes o nível de Bloom nem simplifiques o que é PEDIDO — a tarefa e a exigência cognitiva são as mesmas; só o texto é que fica mais legível.
+• PROIBIDO ABSOLUTO: alterar a resposta correcta ou a cotação; qualquer menção a "nível", "apoio", "simplificado", "fácil" ou marcador no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : level === 'LS' ? `
+VERSÃO SIMPLIFICADA (linguagem + apoio) — invisível para o aluno. Combina texto acessível com menos exigência cognitiva:
+• LINGUAGEM: reescreve os enunciados curtos e explícitos — frases curtas, uma ideia por frase, vocabulário do dia-a-dia, voz activa, ordem directa; explica entre parênteses termos técnicos indispensáveis; diz claramente o que fazer.
+• EXIGÊNCIA: prioriza Bloom Recordar/Compreender/Aplicar; números e dados mais simples (inteiros, directos, sem passos escondidos); scaffolding visível (passos sugeridos, dados parcialmente organizados); distratores de escolha múltipla menos subtis.
+• ÂNCORA: cada questão continua a avaliar o MESMO tema/competência da origem — NUNCA desças abaixo do que a Aprendizagem Essencial do ${yearLevel}.º ano exige nem troques o conteúdo por outro. Mantém o número de questões e a cotação total (100).
+• Mantém a correspondência resposta↔enunciado e reescreve o markScheme coerente com o enunciado simplificado.
+• PROIBIDO ABSOLUTO: trivializar a avaliação ou qualquer menção a "nível", "apoio", "simplificado", "fácil" ou marcador no título, enunciado, instruções ou rodapé — o aluno nunca pode distinguir esta versão de outra.` : ''
 
     // Directrizes CONCRETAS de dificuldade — sem isto, "Fácil"/"Difícil" era só uma etiqueta
     // e o teste saía igual. Calibra Bloom, complexidade dos dados, scaffolding e distratores.
@@ -832,6 +844,12 @@ PERFIL DO ALUNO (PASEO) — as questões devem mobilizar COMPETÊNCIAS, não ape
       : 'Lê atentamente cada questão antes de responder. Responde de forma clara e organizada, justificando sempre que for pedido. Não é permitido o uso de corretor — risca e reescreve com clareza.'
     const instructionsRule = `INSTRUÇÕES DO TESTE (campo "instructions"): adapta-as à disciplina (${subject}) e ao ${yearLevel}.º ano. NUNCA menciones materiais que não se usam nesta disciplina${allowsCalc ? '' : ' (em especial, nada de calculadora/máquina de calcular)'}. Usa como referência: "${exampleInstructions}"`
 
+    // Orientação livre do professor (modo "Descreve o teste") — guia conteúdo,
+    // estilo e tipos, sem poder quebrar rigor, currículo, adequação ou os 100 pontos.
+    const guidanceNote = (typeof guidance === 'string' && guidance.trim())
+      ? `\nORIENTAÇÃO DO PROFESSOR (segue-a, desde que não entre em conflito com o rigor científico, a adequação ao ${yearLevel}.º ano, o currículo obrigatório ou o total de 100 pontos):\n"${guidance.trim().slice(0, 600)}"\nIncorpora-a no conteúdo, no estilo e nos tipos de questão. Se pedir um formato que o sistema não suporta, aproxima-te o mais possível e descreve o resto em texto no enunciado.`
+      : ''
+
     prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação formativa e sumativa. Conheces em profundidade as Aprendizagens Essenciais da DGE e o Perfil dos Alunos à Saída da Escolaridade Obrigatória.
 
 TAREFA: Cria uma ficha de avaliação EXCELENTE sobre "${topic}".
@@ -881,6 +899,7 @@ VARIEDADE E RIQUEZA — REGRAS ABSOLUTAS:
 • A variedade de contextos (situações do mundo real) é tão importante quanto a variedade de conceitos.
 ${avoidTexts?.length ? `\nESTE TESTE JÁ TEM AS SEGUINTES QUESTÕES (geradas numa fase anterior) — NÃO repitas o conceito, contexto, cálculo ou formulação de nenhuma delas:\n${avoidTexts.slice(0, 20).map((t, i) => `${i + 1}. ${t.slice(0, 140)}`).join('\n')}` : ''}
 ${differentiationNote}
+${guidanceNote}
 
 Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
 {
@@ -962,6 +981,9 @@ Responde APENAS com este JSON válido (sem texto, sem markdown, sem \`\`\`):
           type: q.type, bloomLevel: q.bloomLevel, points: q.points,
           text: q.text, options: q.options ?? null,
           correctAnswer: q.correctAnswer, markScheme: q.markScheme,
+          // Descrição da figura (texto) só para a IA manter o enunciado coerente com
+          // ela — a figura real é reanexada em código depois (não a reproduzas).
+          figuraExistente: describeFigure(q.figure) ?? undefined,
         })),
       }))
       prompt = `És um professor especialista de ${subject} do ${yearLevel}.º ano em ${countryLabel}, com mais de 15 anos de experiência em avaliação. Conheces em profundidade as Aprendizagens Essenciais da DGE.
@@ -978,6 +1000,7 @@ ${level === 'MS'
   ? `• SUBSTITUIÇÃO CONTROLADA (só MS): podes SUBSTITUIR até 4 questões — e APENAS quando a adaptação por reformulação/andaimes não chega para a tornar acessível ao aluno. A questão substituta: (a) avalia o MESMO descritor de Aprendizagem Essencial; (b) mantém o mesmo "type" e a cotação da original (salvo o reajuste permitido acima); (c) NUNCA desce abaixo do nível de Bloom mínimo desse descritor — muda o contexto/abordagem, não o destino de aprendizagem (sem facilitismo). Se a reformulação for suficiente, NÃO substituas. Nunca substituas mais de 4. Não acrescentes nem reordenes.`
   : '• NÃO acrescentes, removas, substituas nem reordenes questões.'}
 • Mantém o título IDÊNTICO ao original.
+• FIGURAS: quando uma questão tem "figuraExistente", mantém o enunciado coerente com ela (se referires "o gráfico"/"a tabela"/"a figura", continua a fazer sentido com esses dados) e devolve SEMPRE "figure": null — a figura real é reanexada automaticamente, NÃO a reproduzas nem a descrevas no JSON de saída.
 ${differentiationNote}
 ${curriculumConstraint}CRITÉRIOS DE CORRECÇÃO: reescreve o markScheme de cada questão adaptada, específico e com pontos parciais cuja soma = "points" da questão. Português de Portugal estrito (correcto, actividade, óptimo — nunca formas brasileiras). Dirige-te ao aluno por "tu". PROIBIDO qualquer notação LaTeX (usa Unicode: × ÷ ² ³ √ π ≠ ≤ ≥). "figure": null salvo se essencial.
 
@@ -1530,11 +1553,41 @@ Responde APENAS com este JSON:
       // Diferenciação invisível — o aluno nunca pode distinguir as versões pelo
       // cabeçalho. O nível é decidido pelo professor, nunca exposto no documento.
       if (tool === 'differentiate') {
-        const { title: forcedTitle, level: diffLevel } = inputs as { title?: string; level?: 'A' | 'C' | 'MU' | 'MS' }
-        if (forcedTitle) content.title = forcedTitle
+        const { title: forcedTitle, level: diffLevel, sourceTest: srcForFig } = inputs as {
+          title?: string; level?: 'A' | 'C' | 'MU' | 'MS' | 'LF' | 'LS'
+          sourceTest?: { groups?: Array<{ questions?: Array<Record<string, unknown>> }> } }
+        // Título: MU/MS acrescentam a sigla ao NOME (distinguir na biblioteca; o código
+        // já é impresso discretamente no cabeçalho). A/C/LF/LS mantêm o título IDÊNTICO
+        // ao original — diferenciação invisível ao aluno.
+        const baseTitle = forcedTitle ?? (typeof content.title === 'string' ? content.title : '')
+        if (baseTitle) {
+          content.title = (diffLevel === 'MU' || diffLevel === 'MS') ? `${baseTitle} (${diffLevel})` : baseTitle
+        }
 
         // MU/MS marca-se automaticamente — é a medida de suporte, não o nível A/B/C
         if (diffLevel === 'MU' || diffLevel === 'MS') content._measureType = diffLevel
+        // LF/LS — versões de acessibilidade linguística (rótulo só para o professor)
+        if (diffLevel === 'LF' || diffLevel === 'LS') content._accessibilityLevel = diffLevel
+
+        // ── Reanexar figuras/ilustrações do ORIGINAL às questões adaptadas ──
+        // A IA não reproduz as imagens (o template força figure:null; as ilustrações
+        // são base64 e nunca passam pela IA). Cópia posicional a partir do teste-fonte:
+        // exacta em A/C/MU/LF/LS (mesma contagem e ordem); em MS, se houver substituição,
+        // o professor revê (já há aviso de revisão nas medidas de suporte).
+        const flatSrc = (srcForFig?.groups ?? []).flatMap(g => g.questions ?? []) as Array<Record<string, unknown>>
+        const flatAdapted = ((content.groups ?? []) as Array<{ questions?: Array<Record<string, unknown>> }>)
+          .flatMap(g => g.questions ?? [])
+        if (flatSrc.length > 0 && flatSrc.length === flatAdapted.length) {
+          flatAdapted.forEach((q, i) => {
+            const s = flatSrc[i]
+            if (!s) return
+            if (s.figure != null) q.figure = s.figure
+            if (typeof s.illustration === 'string' && s.illustration) {
+              q.illustration = s.illustration
+              if (s.illustrationCredit) q.illustrationCredit = s.illustrationCredit
+            }
+          })
+        }
 
         // Reforço do aviso de qualidade: nestas gerações (NEE/medidas de suporte) o
         // modelo usado importa mais — se foi preciso recorrer ao fallback, o professor

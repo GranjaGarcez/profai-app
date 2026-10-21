@@ -24,13 +24,15 @@ interface DifferentiationPanelProps {
 }
 
 type Phase = 'intro' | 'generating' | 'done' | 'error'
-type Level = 'A' | 'C' | 'MU' | 'MS'
+type Level = 'A' | 'C' | 'MU' | 'MS' | 'LF' | 'LS'
 
-const LEVEL_INFO: Record<Level, { label: string; desc: string; color: string; group: 'diferenciacao' | 'medida' }> = {
+const LEVEL_INFO: Record<Level, { label: string; desc: string; color: string; group: 'diferenciacao' | 'medida' | 'acessibilidade' }> = {
   A:  { label: 'Ficha A — Apoio',           desc: 'Scaffolding visível, números inteiros, menor exigência cognitiva. Invisível para o aluno.', color: '#0EA5E9', group: 'diferenciacao' },
   C:  { label: 'Ficha C — Aprofundamento',  desc: 'Sem scaffolding, números mais exigentes, questão de raciocínio. Invisível para o aluno.',    color: '#7C3AED', group: 'diferenciacao' },
   MU: { label: 'Medida Universal (MU)',     desc: 'Adapta a forma (linguagem, segmentação); conteúdo inalterado. Cotação pode ser redistribuída (total 100). Código "MU" no cabeçalho.', color: '#0D9488', group: 'medida' },
   MS: { label: 'Medida Selectiva (MS)',     desc: 'Reestrutura em sub-passos e, se necessário, substitui até 4 questões por equivalentes (mesmo descritor AE, sem facilitismo). Código "MS" no cabeçalho.', color: '#B45309', group: 'medida' },
+  LF: { label: 'Linguagem acessível',       desc: 'Mesmo conteúdo, estrutura, respostas e cotação — só o texto fica curto, explícito e com vocabulário simples. Para quem tem dificuldades de leitura/interpretação. Invisível para o aluno.', color: '#0891B2', group: 'acessibilidade' },
+  LS: { label: 'Simplificada (linguagem + apoio)', desc: 'Texto acessível E menos exigência cognitiva (passos guiados, números simples), sem descer abaixo da Aprendizagem Essencial. Invisível para o aluno.', color: '#2563EB', group: 'acessibilidade' },
 }
 
 function getAllQuestions(test: SourceTest) {
@@ -42,7 +44,7 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
   const [phase, setPhase] = useState<Phase>('intro')
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<Partial<Record<Level, string>>>({})
-  const [selected, setSelected] = useState<Record<Level, boolean>>({ A: false, C: false, MU: false, MS: false })
+  const [selected, setSelected] = useState<Record<Level, boolean>>({ A: false, C: false, MU: false, MS: false, LF: false, LS: false })
 
   const anySelected = Object.values(selected).some(Boolean)
 
@@ -84,9 +86,16 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
   }
 
   async function saveLevel(level: Level, content: Record<string, unknown>): Promise<string> {
-    // _measureType de MU/MS já vem marcado pelo servidor; aqui só o nível A/C/MU/MS
-    // pedagógico é registado para a Biblioteca de Conteúdos saber agrupar a família.
-    const tagged = { ...content, _differentiationLevel: level === 'MU' || level === 'MS' ? undefined : level, _differentiationGroupId: contentItemId }
+    // Regista o rótulo da família para a Biblioteca de Conteúdos agrupar com a origem.
+    // A/C → _differentiationLevel; LF/LS → _accessibilityLevel; MU/MS → _measureType (servidor).
+    const isAC = level === 'A' || level === 'C'
+    const isAccess = level === 'LF' || level === 'LS'
+    const tagged = {
+      ...content,
+      _differentiationLevel: isAC ? level : undefined,
+      _accessibilityLevel: isAccess ? level : undefined,
+      _differentiationGroupId: contentItemId,
+    }
     const res = await fetch('/api/content/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -190,6 +199,16 @@ export default function DifferentiationPanel({ contentItemId, test, onClose }: D
               <div className="space-y-2">
                 <LevelCard level="MU" />
                 <LevelCard level="MS" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2 mt-3" style={{ color: '#9CA3AF' }}>
+                Acessibilidade linguística — invisível ao aluno
+              </p>
+              <div className="space-y-2">
+                <LevelCard level="LF" />
+                <LevelCard level="LS" />
               </div>
             </div>
 

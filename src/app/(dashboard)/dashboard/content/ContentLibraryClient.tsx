@@ -13,13 +13,18 @@ interface ContentItem {
   year_level: number | null
   topic: string | null
   created_at: string
-  content?: { _differentiationLevel?: 'A' | 'B' | 'C' } | null
+  content?: { _differentiationLevel?: 'A' | 'B' | 'C'; _accessibilityLevel?: 'LF' | 'LS' } | null
 }
 
 const DIFF_BADGE: Record<'A' | 'B' | 'C', { label: string; color: string }> = {
   A: { label: 'A · Apoio', color: '#0EA5E9' },
   B: { label: 'B · Consolidação', color: '#0D1B2A' },
   C: { label: 'C · Aprofundamento', color: '#7C3AED' },
+}
+
+const ACCESS_BADGE: Record<'LF' | 'LS', { label: string; color: string }> = {
+  LF: { label: 'Linguagem acessível', color: '#0891B2' },
+  LS: { label: 'Simplificada', color: '#2563EB' },
 }
 
 const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
@@ -98,6 +103,7 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
           {localItems.map(item => {
             const meta = TYPE_LABELS[item.type] ?? { label: item.type, icon: '📄', color: '#6B7280' }
             const diffLevel = item.content?._differentiationLevel
+            const accessLevel = item.content?._accessibilityLevel
             return (
               <div
                 key={item.id}
@@ -126,6 +132,15 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
                           title="Visível só para ti — nunca aparece no documento impresso"
                         >
                           🎯 {DIFF_BADGE[diffLevel].label}
+                        </span>
+                      )}
+                      {accessLevel && (
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: `${ACCESS_BADGE[accessLevel].color}15`, color: ACCESS_BADGE[accessLevel].color }}
+                          title="Visível só para ti — nunca aparece no documento impresso"
+                        >
+                          🗣️ {ACCESS_BADGE[accessLevel].label}
                         </span>
                       )}
                     </div>
