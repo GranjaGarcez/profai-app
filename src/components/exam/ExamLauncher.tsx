@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface Props {
   contentItemId: string
@@ -171,6 +172,18 @@ export default function ExamLauncher({ contentItemId, contentTitle, onClose }: P
                   <p className="text-xs font-semibold mb-1" style={{ color: '#64748b' }}>LINK DIRECTO (clica para copiar)</p>
                   <p className="text-xs font-mono break-all" style={{ color: '#0369a1' }}>{examUrl}</p>
                 </div>
+
+                {/* QR: os alunos lêem com a câmara e entram directamente no teste */}
+                {examUrl && (
+                  <div className="flex flex-col items-center gap-2 pt-1">
+                    <div className="p-3 rounded-xl bg-white" style={{ border: '1px solid #e2e8f0' }}>
+                      <QRCodeSVG value={examUrl} size={168} level="M" marginSize={0} />
+                    </div>
+                    <p className="text-xs" style={{ color: '#9CA3AF' }}>
+                      Aponta a câmara do telemóvel ao QR para entrar no teste
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
