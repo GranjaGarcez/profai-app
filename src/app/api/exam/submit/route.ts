@@ -6,7 +6,7 @@ import type { TestSnapshot } from '@/lib/exam/types'
 export async function POST(request: NextRequest) {
   const supabase = createAdminClient()
 
-  const { sessionId, studentName, studentNumber, studentClass, studentYear, answers } = await request.json()
+  const { sessionId, studentName, studentNumber, studentClass, studentYear, studentEmail, answers } = await request.json()
 
   if (!sessionId || !studentName?.trim()) {
     return NextResponse.json({ error: 'Dados de submissão incompletos.' }, { status: 400 })
@@ -54,6 +54,10 @@ export async function POST(request: NextRequest) {
   try {
     if (anoNum) {
       await supabase.from('exam_submissions').update({ student_year: anoNum }).eq('id', submission.id)
+    }
+    const emailTrim = String(studentEmail ?? '').trim()
+    if (emailTrim.includes('@')) {
+      await supabase.from('exam_submissions').update({ student_email: emailTrim }).eq('id', submission.id)
     }
     if (turmaNome && session.teacher_id) {
       await supabase.from('turmas').upsert(

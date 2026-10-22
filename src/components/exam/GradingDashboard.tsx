@@ -12,6 +12,7 @@ interface Submission {
   student_number: string | null
   student_class: string | null
   student_year?: number | null
+  student_email?: string | null
   answers: Record<string, string>
   total_score: number | null
   max_score: number | null
@@ -470,6 +471,12 @@ function SubmissionDetail({
   const [savingNotes, setSavingNotes] = useState(false)
   const [localDetails, setLocalDetails] = useState(submission.grading_details ?? {})
   const [localTotal, setLocalTotal] = useState(submission.total_score)
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  async function copyResultLink() {
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/exam/resultado/${submission.id}`
+    try { await navigator.clipboard.writeText(url); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) } catch { /* noop */ }
+  }
 
   async function handleSaveScore(qKey: string, max: number) {
     const newScore = overrides[qKey]
@@ -534,6 +541,12 @@ function SubmissionDetail({
               {[submission.student_class, submission.student_number && `N.º ${submission.student_number}`]
                 .filter(Boolean).join(' · ')}
             </p>
+            <button onClick={copyResultLink}
+              className="mt-1 text-xs font-semibold px-2 py-0.5 rounded-md"
+              title="Copiar o link da correcção deste aluno (só abre depois de divulgares)"
+              style={{ background: '#e0f7fc', color: '#0369a1' }}>
+              {linkCopied ? '✓ Link copiado' : '🔗 Link da correcção'}
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-mono font-bold text-lg" style={{ color: '#0D1B2A' }}>
@@ -739,11 +752,13 @@ export default function GradingDashboard({
   submissions,
   testSnapshot,
   isActive,
+  resultsReleased,
 }: {
   sessionId: string
   submissions: Submission[]
   testSnapshot: unknown
   isActive: boolean
+  resultsReleased?: boolean
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Submission | null>(null)
@@ -751,6 +766,37 @@ export default function GradingDashboard({
   const [tab, setTab] = useState<'submissions' | 'analytics'>('submissions')
   const [regrading, setRegrading] = useState(false)
   const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
+  const [released, setReleased] = useState(!!resultsReleased)
+  const [releasing, setReleasing] = useState(false)
+  const [emailing, setEmailing] = useState(false)
+  const [resultMsg, setResultMsg] = useState<string | null>(null)
+  const withEmail = submissions.filter(s => typeof s.student_email === 'string' && s.student_email.includes('@')).length
+
+  async function toggleRelease() {
+    setReleasing(true); setResultMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/release`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ released: !released }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha.')
+      setReleased(!!d.released)
+      setResultMsg(d.released ? 'Resultados divulgados — os alunos já podem ver a sua correcção.' : 'Resultados ocultados dos alunos.')
+    } catch (e) { setResultMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setReleasing(false) }
+  }
+
+  async function sendEmails() {
+    setEmailing(true); setResultMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/email-results`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha ao enviar.')
+      setResultMsg(d.sent != null ? `${d.sent} email(s) enviado(s)${d.failed ? `, ${d.failed} falhou(aram)` : ''}.` : (d.message ?? 'Concluído.'))
+    } catch (e) { setResultMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setEmailing(false) }
+  }
 
   const questions = getAllQuestions(testSnapshot as TestSnapshot)
   const gradedCount = submissions.filter(s => s.status === 'graded' || s.status === 'reviewed').length
@@ -825,6 +871,38 @@ export default function GradingDashboard({
         </div>
       )}
       {regradeMsg && <p className="text-xs mb-2" style={{ color: '#6B7280' }}>{regradeMsg}</p>}
+
+      {/* ── Divulgação de resultados aos alunos ── */}
+      <div className="rounded-xl border px-4 py-3 mb-3"
+        style={{ borderColor: released ? '#86efac' : '#e2e8f0', background: released ? '#f0fdf4' : '#f8fafc' }}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>
+              {released ? '✓ Resultados divulgados' : 'Resultados ocultos dos alunos'}
+            </p>
+            <p className="text-xs" style={{ color: '#6B7280' }}>
+              {released
+                ? 'Cada aluno vê a sua correcção pelo link/QR que recebeu ao submeter.'
+                : 'Revê as notas (sobretudo as “por corrigir”) e depois divulga para os alunos verem a correcção.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={toggleRelease} disabled={releasing}
+              className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+              style={{ background: released ? 'transparent' : '#0D1B2A', color: released ? '#0D1B2A' : '#F7F3EE', border: released ? '1px solid #0D1B2A30' : 'none' }}>
+              {releasing ? '…' : released ? 'Ocultar' : 'Divulgar resultados'}
+            </button>
+            {released && withEmail > 0 && (
+              <button onClick={sendEmails} disabled={emailing}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                style={{ background: '#00B4D8' }}>
+                {emailing ? 'A enviar…' : `✉️ Enviar por email (${withEmail})`}
+              </button>
+            )}
+          </div>
+        </div>
+        {resultMsg && <p className="text-xs mt-2" style={{ color: '#374151' }}>{resultMsg}</p>}
+      </div>
 
       {/* ── Tabs ── */}
       <div className="flex items-center gap-1 border-b" style={{ borderColor: '#0D1B2A10' }}>

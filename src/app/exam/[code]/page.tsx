@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import { QRCodeSVG } from 'qrcode.react'
 import type { CalcEntry, ExamSession, Question, TestSnapshot } from '@/lib/exam/types'
 import { getAllQuestions } from '@/lib/exam/types'
 import Calculator from '@/components/exam/Calculator'
@@ -139,6 +140,8 @@ export default function ExamPage() {
   const [studentNumber, setStudentNumber] = useState('')
   const [studentClass,  setStudentClass]  = useState('')
   const [studentYear,   setStudentYear]   = useState('')
+  const [studentEmail,  setStudentEmail]  = useState('')
+  const [resultId,      setResultId]      = useState<string | null>(null)
 
   const [answers, setAnswers]             = useState<Record<string, string>>({})
   const [calcHistories, setCalcHistories] = useState<Record<string, CalcEntry[]>>({})
@@ -197,11 +200,13 @@ export default function ExamPage() {
           sessionId: session!.id, studentName: studentName.trim(),
           studentNumber: studentNumber.trim(), studentClass: studentClass.trim(),
           studentYear: studentYear.trim() ? Number(studentYear) : null,
+          studentEmail: studentEmail.trim() || null,
           answers: answersWithCalc,
         }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); setPhase('error'); return }
+      setResultId(data.submissionId ?? null)
       setPhase('submitted')
     } catch {
       setError('Erro ao submeter. Verifica a tua ligação.')
@@ -264,9 +269,30 @@ export default function ExamPage() {
             style={{ width: `${Math.round((answered / questions.length) * 100)}%`, background: '#059669' }} />
         </div>
       </div>
-      <p className="text-xs" style={{ color: '#9CA3AF' }}>
-        O professor irá divulgar os resultados em breve.
-      </p>
+      {resultId && (
+        <div className="w-full max-w-sm p-5 rounded-2xl flex flex-col items-center gap-3"
+          style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+          <p className="text-sm font-semibold text-center" style={{ color: '#0D1B2A' }}>
+            Guarda este acesso para veres a tua correcção
+          </p>
+          <div className="p-3 rounded-xl bg-white" style={{ border: '1px solid #e2e8f0' }}>
+            <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : ''}/exam/resultado/${resultId}`} size={150} level="M" marginSize={0} />
+          </div>
+          <a href={`/exam/resultado/${resultId}`}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+            style={{ background: '#e0f7fc', color: '#0369a1' }}>
+            Abrir a minha correcção →
+          </a>
+          <p className="text-xs text-center" style={{ color: '#9CA3AF' }}>
+            Fica disponível quando o professor divulgar{studentEmail.trim() ? '; também te será enviada por email' : ''}.
+          </p>
+        </div>
+      )}
+      {!resultId && (
+        <p className="text-xs" style={{ color: '#9CA3AF' }}>
+          O professor irá divulgar os resultados em breve.
+        </p>
+      )}
     </div>
   )
 
@@ -361,6 +387,19 @@ export default function ExamPage() {
               onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: '#6B7280', fontSize: 10, letterSpacing: '0.08em' }}>
+            Email <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>(opcional — para receberes a correcção)</span>
+          </label>
+          <input type="email" value={studentEmail} onChange={e => setStudentEmail(e.target.value)}
+            placeholder="Ex: maria@exemplo.pt" inputMode="email" autoComplete="email"
+            className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
+            style={{ border: '1.5px solid #e2e8f0', outline: 'none', color: '#0D1B2A' }}
+            onFocus={e => (e.target.style.borderColor = '#00B4D8')}
+            onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+          />
         </div>
 
         <button disabled={!studentName.trim() || !studentClass.trim() || !studentYear.trim()} onClick={() => setPhase('exam')}

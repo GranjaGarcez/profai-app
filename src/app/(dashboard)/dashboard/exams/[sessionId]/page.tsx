@@ -113,6 +113,7 @@ export default async function ExamDetailPage({ params }: Props) {
         submissions={subs}
         testSnapshot={session.test_snapshot}
         isActive={isActive}
+        resultsReleased={!!session.results_released}
       />
     </div>
   )
