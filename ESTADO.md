@@ -6,8 +6,8 @@
 ---
 
 ## Último update
-2026-10-17 — corrigenda coerente na edição + rede de segurança no lançamento (ver secção no fim).
-Histórico recente relevante no fim do ficheiro: 2026-09-13 (motor por blocos, BYOK, ciclo de vida do banco).
+2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).
+Updates anteriores relevantes no fim: 2026-10-17 (corrigenda na edição + rede de segurança), 2026-09-13 (motor por blocos, BYOK).
 
 ## Update anterior
 2026-06-24 (sessão 7) — consolidação, recuperação de merges e limpeza Netlify
@@ -270,3 +270,37 @@ Problema: ao editar o enunciado, as opções ou a resposta de uma questão no ed
 - **Editor** (`src/components/content/TestPreview.tsx`): marca interna `_criteriaStale` posta ao editar enunciado/opções/resposta (limpa ao editar os critérios à mão); aviso âmbar + botão **"↻ Actualizar critérios"** por questão; a marca é removida antes de gravar/snapshot (`stripInternalFlags`), nunca persiste nem entra no exame.
 - **Rede de segurança no lançamento** (`handleLaunch`): se houver questões editadas sem corrigenda actualizada, avisa antes de abrir o lançador, com a contagem e três opções — **actualizar todas** (sequencial, para não esgotar quotas) e lançar, lançar mesmo assim, ou cancelar. Todas as vias de lançamento passam por aqui.
 - Validado localmente (`tsc` limpo); confirmados pelo Tiago os pontos 1-3; o ponto 4 (lançar com pendentes → "actualizar todas e lançar") ainda por testar com turma real. Commit `81f5803` em `main` (`GranjaGarcez/profai-app`).
+
+## 2026-10-24 — Exame ao vivo: resultados ao aluno, turmas, correção horizontal
+Sessão longa de melhorias para uso real com alunos. Tudo aditivo; `cascade.ts` (roster de IA) nunca foi tocado.
+
+### Geração / versões (17–24 Out)
+- **Adicionar questão por tipo** (geração IA) + **reordenar/mover questões** (incl. entre grupos, com renumeração coerente). Commits `5e1d605`, `16fc8dd`.
+- **Fiabilidade da questão única** (gerar/regenerar/critérios): novo `src/lib/ai/singleCall.ts` (`callJsonCascade`) reutiliza a cascata validada; fim do Groq `llama-3.3-70b-versatile` morto. `af9c7e6`.
+- **Questões auto-suficientes** — prompt proíbe referir imagens/figuras que não existem. `572a329`.
+- **Export Word com figuras/gráficos/ilustrações** (rasteriza SVG→PNG; tabela nativa; ilustrações base64). `cbfc8d2`.
+- **Coerência figura↔corrigenda** (`src/lib/exam/figureText.ts`): `refresh-criteria` e `generate-figure` passam a ler a figura; crítico também. Resolve corrigendas que falavam de dados diferentes do gráfico. **Cotação integrada nos critérios**: mudar a cotação reescala o markScheme. `f72bbe7`.
+- **QR de entrada no exame** (`qrcode.react`) no `ExamLauncher`. `e041738`.
+- **Acessibilidade linguística** (2 níveis novos no painel de versões: "Linguagem acessível" e "Simplificada") + **modo "Descreve o teste"** (texto livre que guia a geração) + **imagens passam para as versões adaptadas** (reanexo por posição) + **MU/MS acrescentam sigla ao nome** + **upload de imagem por questão** (com redução de tamanho). `49b7da9`.
+
+### Resultados ao aluno (PENDENTE DE MIGRAÇÃO + RESEND)
+- Divulgação controlada pelo professor + página pública `/exam/resultado/[id]` (link/QR dado ao aluno ao submeter) + envio por email via **Resend** (fetch, sem SDK). `cb4b3b2`.
+- **Falta aplicar** a migração `supabase/migrations/20261022_student_results.sql` (Supabase MCP está só-leitura; colar no SQL editor). Sem ela: submissão funciona, divulgar/resultado ficam inactivos.
+- **Email (Resend):** precisa de `RESEND_API_KEY` + `EXAM_EMAIL_FROM` no Render (o Tiago tem a chave; o plano grátis do Render só permite 2 env vars; **envio congelado por agora**). O link/QR NÃO precisa de env vars — só da migração.
+
+### Turmas inteligentes
+- `src/lib/exam/turma.ts` (`canonicalTurma`/`turmaLabel`): normaliza grafias inconsistentes ("6g"/"G", "6º G", "turma A"…) → par (ano, turma) canónico. Aplicado no submit (dados limpos) e no agrupamento do painel (corrige também os dados já guardados, sem migração).
+- **Associação manual** por aluno (endpoint `/api/exam/submissions/[id]/turma`) no detalhe, com **sugestão pela hora de submissão**. `ebfe293`.
+
+### Correção horizontal
+- Nova tab "Correção horizontal" (`src/components/exam/HorizontalGrading.tsx`): navega questão a questão (setas ← →), lista todos os alunos com a resposta, a resposta certa e os critérios; filtra/agrupa por turma; cota em série (✓/✗ nos objectivos, campo numérico nas abertas). Versões (MU/MS…) são sessões separadas → já agrupadas por versão. `3d63fc5`.
+
+### Correção de "completar espaços" + re-correção selectiva
+- `fill_blank` passou a ser corrigido **pelo significado**: aceita sinónimos/equivalentes no contexto ("elevadas"="altas", "escassez"="falta de", "baixas"="geladas"), exige termo exacto só em termos técnicos. `7cf8507`.
+- **"Re-corrigir com os critérios novos"**: só aparece quando há submissões corrigidas **antes** da última melhoria do motor (`src/lib/exam/graderVersion.ts` → `GRADER_IMPROVED_AT`), e re-corrige **só as perguntas do tipo afectado** (`GRADER_AFFECTS`, agora `fill_blank`), preservando as outras e as revistas à mão. Poupa tokens, não estraga trabalho feito. `0d65caa`, `e105857`.
+  - Ao melhorar o motor no futuro: actualizar `GRADER_IMPROVED_AT` e `GRADER_AFFECTS`.
+
+### Pendentes
+- Aplicar a migração `20261022_student_results.sql` (resultados ao aluno).
+- Email por Resend congelado (limite de env vars do Render / plano).
+- Alíneas (subquestões) como tipo novo — adiado (toca na página de exame ao vivo).
