@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gradeSubmission } from '@/lib/exam/grading'
+import { canonicalTurma } from '@/lib/exam/turma'
 import type { TestSnapshot } from '@/lib/exam/types'
 
 export async function POST(request: NextRequest) {
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'O exame já foi encerrado.' }, { status: 410 })
   }
 
+  // Normaliza turma/ano logo à entrada (determinístico): resolve "6g"/"G", "6º G",
+  // "turma A"… para um par canónico, para os alunos caírem na turma certa.
+  const fallbackYear = (session.test_snapshot as TestSnapshot)?.yearLevel ?? null
+  const { ano, turma } = canonicalTurma(studentYear, studentClass, fallbackYear)
+
   // Insere submissão em estado "grading"
   const { data: submission, error: subErr } = await supabase
     .from('exam_submissions')
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
       session_id:     sessionId,
       student_name:   studentName.trim(),
       student_number: studentNumber?.trim() || null,
-      student_class:  studentClass?.trim() || null,
+      student_class:  turma || (studentClass?.trim() || null),
       answers,
       status:         'grading',
     })
@@ -49,8 +55,8 @@ export async function POST(request: NextRequest) {
   // NUNCA pode fazer falhar a submissão (as respostas já estão guardadas acima),
   // por isso fica isolado em try/catch — se a migração ainda não estiver aplicada,
   // simplesmente não faz nada.
-  const anoNum = Number(studentYear) || (session.test_snapshot as TestSnapshot)?.yearLevel || null
-  const turmaNome = String(studentClass ?? '').trim().toUpperCase().replace(/\s+/g, '')
+  const anoNum = ano
+  const turmaNome = turma
   try {
     if (anoNum) {
       await supabase.from('exam_submissions').update({ student_year: anoNum }).eq('id', submission.id)

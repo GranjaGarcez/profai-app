@@ -4,6 +4,7 @@ import { useState, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
+import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -460,10 +461,16 @@ function SubmissionDetail({
   submission,
   questions,
   onClose,
+  allSubmissions,
+  fallbackYear,
+  onReassigned,
 }: {
   submission: Submission
   questions: Question[]
   onClose: () => void
+  allSubmissions: Submission[]
+  fallbackYear: number | null
+  onReassigned: () => void
 }) {
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState<Record<string, boolean>>({})
@@ -476,6 +483,46 @@ function SubmissionDetail({
   async function copyResultLink() {
     const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/exam/resultado/${submission.id}`
     try { await navigator.clipboard.writeText(url); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) } catch { /* noop */ }
+  }
+
+  // ── Reatribuição de turma (associação manual) ──
+  const current = canonicalTurma(submission.student_year, submission.student_class, fallbackYear)
+  const [turmaInput, setTurmaInput] = useState(`${current.ano ?? ''}${current.turma}`)
+  const [savingTurma, setSavingTurma] = useState(false)
+  const [turmaMsg, setTurmaMsg] = useState<string | null>(null)
+
+  // Sugestão pela HORA de submissão: a turma dominante entre quem submeteu numa
+  // janela de ~75 min à volta desta submissão (os da mesma turma fazem juntos).
+  const timeSuggestion = (() => {
+    const t0 = new Date(submission.submitted_at).getTime()
+    const WINDOW = 75 * 60 * 1000
+    const counts: Record<string, number> = {}
+    for (const s of allSubmissions) {
+      if (s.id === submission.id) continue
+      if (Math.abs(new Date(s.submitted_at).getTime() - t0) > WINDOW) continue
+      const lbl = turmaLabelOf(s.student_year, s.student_class, fallbackYear)
+      if (lbl === '—') continue
+      counts[lbl] = (counts[lbl] ?? 0) + 1
+    }
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+    const currentLbl = turmaLabelOf(submission.student_year, submission.student_class, fallbackYear)
+    return top && top[0] !== currentLbl ? top[0] : null
+  })()
+
+  async function saveTurma(raw?: string) {
+    const value = (raw ?? turmaInput).trim()
+    if (!value) return
+    setSavingTurma(true); setTurmaMsg(null)
+    try {
+      // "6A"/"A"/"6º A" → canonicaliza no servidor; passamos o texto como ano+turma.
+      const res = await fetch(`/api/exam/submissions/${submission.id}/turma`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ano: value, turma: value }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha.')
+      onReassigned()
+    } catch (e) { setTurmaMsg(e instanceof Error ? e.message : 'Erro.'); setSavingTurma(false) }
   }
 
   async function handleSaveScore(qKey: string, max: number) {
@@ -547,6 +594,29 @@ function SubmissionDetail({
               style={{ background: '#e0f7fc', color: '#0369a1' }}>
               {linkCopied ? '✓ Link copiado' : '🔗 Link da correcção'}
             </button>
+            {/* Associação manual de turma */}
+            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs" style={{ color: '#9CA3AF' }}>Turma:</span>
+              <input value={turmaInput} onChange={e => setTurmaInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveTurma() }}
+                placeholder="ex.: 6A"
+                className="w-20 px-2 py-0.5 rounded-md border text-xs"
+                style={{ borderColor: '#e2e8f0', outline: 'none', color: '#0D1B2A' }} />
+              <button onClick={() => saveTurma()} disabled={savingTurma}
+                className="text-xs font-semibold px-2 py-0.5 rounded-md text-white disabled:opacity-50"
+                style={{ background: '#0D1B2A' }}>
+                {savingTurma ? '…' : 'Guardar turma'}
+              </button>
+              {timeSuggestion && (
+                <button onClick={() => saveTurma(timeSuggestion)} disabled={savingTurma}
+                  title="Sugestão pela hora de submissão (colegas que submeteram por perto)"
+                  className="text-xs font-semibold px-2 py-0.5 rounded-md"
+                  style={{ background: '#fef9c3', color: '#854d0e' }}>
+                  🕐 Pôr em {timeSuggestion}?
+                </button>
+              )}
+            </div>
+            {turmaMsg && <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{turmaMsg}</p>}
           </div>
           <div className="flex items-center gap-3">
             <span className="font-mono font-bold text-lg" style={{ color: '#0D1B2A' }}>
@@ -822,7 +892,10 @@ export default function GradingDashboard({
   })
 
   // Agrupamento por turma: etiqueta "6ºA", ordenado por (ano, turma, nome).
-  const turmaLabel = (s: Submission) => `${s.student_year ? s.student_year + 'º' : ''}${(s.student_class ?? '').trim() || '—'}`
+  // Agrupa pela turma CANÓNICA (corrige também as submissões já guardadas com
+  // grafias inconsistentes — "6g"/"G", "6º G", etc.), não pelo texto em bruto.
+  const fallbackYear = (testSnapshot as TestSnapshot)?.yearLevel ?? null
+  const turmaLabel = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
   const sorted = [...filtered].sort((a, b) => {
     const ka = turmaLabel(a).toLowerCase(), kb = turmaLabel(b).toLowerCase()
     if (ka !== kb) return ka < kb ? -1 : 1
@@ -852,6 +925,9 @@ export default function GradingDashboard({
         <SubmissionDetail
           submission={selected}
           questions={questions}
+          allSubmissions={submissions}
+          fallbackYear={fallbackYear}
+          onReassigned={() => { setSelected(null); router.refresh() }}
           onClose={() => setSelected(null)}
         />
       )}
@@ -991,7 +1067,7 @@ export default function GradingDashboard({
                       {sub.student_name}
                     </td>
                     <td className="px-4 py-3" style={{ color: '#6B7280' }}>
-                      {sub.student_class ?? '—'}
+                      {tLabel}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: '#6B7280' }}>
                       {sub.student_number ?? '—'}
