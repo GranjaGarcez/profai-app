@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { gradeSubmission } from '@/lib/exam/grading'
 import { canonicalTurma } from '@/lib/exam/turma'
+import { studentKey } from '@/app/api/exam/draft/route'
 import type { TestSnapshot } from '@/lib/exam/types'
 
 export async function POST(request: NextRequest) {
@@ -71,6 +72,11 @@ export async function POST(request: NextRequest) {
         { onConflict: 'teacher_id,ano,nome', ignoreDuplicates: true },
       )
     }
+    // Entregue → apaga o rascunho em curso (se a tabela existir).
+    await supabase.from('exam_drafts')
+      .delete()
+      .eq('session_id', sessionId)
+      .eq('student_key', studentKey(studentName, studentYear, studentClass, studentNumber))
   } catch (e) {
     console.warn('[PROFAI] enriquecimento turma/ano falhou (migração aplicada?):', e)
   }

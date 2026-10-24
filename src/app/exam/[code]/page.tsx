@@ -157,6 +157,43 @@ export default function ExamPage() {
   }
   const [draft, setDraft] = useState<Draft | null>(null)   // rascunho encontrado neste dispositivo
   const storageKey = `profai_exam_${code}`
+  const serverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [recovering, setRecovering] = useState(false)
+  const [recoverMsg, setRecoverMsg] = useState<string | null>(null)
+
+  // Grava o rascunho no SERVIDOR (para retomar noutro dispositivo). Best-effort:
+  // se falhar (offline ou migração por aplicar), o localStorage continua a cobrir.
+  function saveDraftServer() {
+    fetch('/api/exam/draft', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code, name: studentName, number: studentNumber, studentClass, year: studentYear,
+        answers, calc: calcHistories, deadline: deadlineRef.current,
+      }),
+    }).catch(() => { /* ignora */ })
+  }
+
+  // Recupera do servidor um rascunho começado noutro dispositivo, pela identidade.
+  async function recoverFromServer() {
+    setRecovering(true); setRecoverMsg(null)
+    try {
+      const res = await fetch('/api/exam/draft/find', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, name: studentName, number: studentNumber, studentClass, year: studentYear }),
+      })
+      const d = await res.json()
+      if (d.draft) {
+        setAnswers((d.draft.answers ?? {}) as Record<string, string>)
+        setCalcHistories((d.draft.calc ?? {}) as Record<string, CalcEntry[]>)
+        deadlineRef.current = typeof d.draft.deadline === 'number' ? d.draft.deadline : null
+        setDraft(null)
+        setPhase('exam')
+      } else {
+        setRecoverMsg('Não encontrámos uma prova começada com estes dados. Confirma o nome, o ano e a turma.')
+      }
+    } catch { setRecoverMsg('Não foi possível recuperar agora. Tenta outra vez.') }
+    finally { setRecovering(false) }
+  }
 
   function saveDraft(patch: Partial<Draft>) {
     try {
@@ -208,20 +245,35 @@ export default function ExamPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
-  // Grava o progresso localmente sempre que as respostas mudam (durante o exame).
+  // Grava o progresso localmente (imediato) e no servidor (com atraso ~4 s, para
+  // não martelar) sempre que as respostas mudam, durante o exame.
   useEffect(() => {
     if (phase !== 'exam') return
     saveDraft({ answers, calc: calcHistories })
+    if (serverTimerRef.current) clearTimeout(serverTimerRef.current)
+    serverTimerRef.current = setTimeout(() => saveDraftServer(), 4000)
+    return () => { if (serverTimerRef.current) clearTimeout(serverTimerRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, calcHistories, phase])
 
   // Avisa antes de sair/fechar com uma prova em curso (evita saídas acidentais).
   useEffect(() => {
     if (phase !== 'exam') return
-    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    const warn = (e: BeforeUnloadEvent) => {
+      // Gravação de última hora que sobrevive ao fecho da página.
+      try {
+        const payload = JSON.stringify({
+          code, name: studentName, number: studentNumber, studentClass, year: studentYear,
+          answers, calc: calcHistories, deadline: deadlineRef.current,
+        })
+        navigator.sendBeacon?.('/api/exam/draft', new Blob([payload], { type: 'application/json' }))
+      } catch { /* noop */ }
+      e.preventDefault(); e.returnValue = ''
+    }
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
-  }, [phase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, answers, calcHistories])
 
   // Começar a prova: fixa o prazo, grava o rascunho inicial e entra no exame.
   function startExam() {
@@ -232,6 +284,7 @@ export default function ExamPage() {
       year: studentYear, email: studentEmail, answers, calc: calcHistories,
       deadline: deadlineRef.current,
     })
+    saveDraftServer()   // regista logo no servidor (p/ recuperar noutro dispositivo)
     setPhase('exam')
   }
 
@@ -500,6 +553,16 @@ export default function ExamPage() {
           style={{ background: 'linear-gradient(135deg, #00B4D8, #0096b7)', boxShadow: studentName.trim() ? '0 4px 14px rgba(0,180,216,0.4)' : 'none' }}>
           Iniciar exame →
         </button>
+
+        {/* Já comecei esta prova noutro dispositivo? Recuperar pela identidade. */}
+        <button
+          disabled={recovering || !studentName.trim() || !studentClass.trim() || !studentYear.trim()}
+          onClick={recoverFromServer}
+          className="w-full py-2.5 rounded-xl text-sm font-medium border disabled:opacity-40"
+          style={{ borderColor: '#0D1B2A20', color: '#0369a1' }}>
+          {recovering ? 'A recuperar…' : '↻ Já comecei noutro dispositivo — recuperar'}
+        </button>
+        {recoverMsg && <p className="text-xs text-center" style={{ color: '#92400e' }}>{recoverMsg}</p>}
       </div>
     </div>
   )
