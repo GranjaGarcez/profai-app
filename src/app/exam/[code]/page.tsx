@@ -149,6 +149,26 @@ export default function ExamPage() {
   const [timeLeft, setTimeLeft]           = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // ── Gravação local do progresso (para retomar após sair/actualizar/adormecer) ──
+  const deadlineRef = useRef<number | null>(null)   // instante-limite (epoch ms) p/ o temporizador resistir a sleep/refresh
+  interface Draft {
+    name: string; number: string; class: string; year: string; email: string
+    answers: Record<string, string>; calc: Record<string, CalcEntry[]>; deadline: number | null
+  }
+  const [draft, setDraft] = useState<Draft | null>(null)   // rascunho encontrado neste dispositivo
+  const storageKey = `profai_exam_${code}`
+
+  function saveDraft(patch: Partial<Draft>) {
+    try {
+      // Funde com o que já está gravado (fonte de verdade), não com o estado —
+      // durante o exame o estado `draft` é null, mas o nome/prazo estão no storage.
+      const raw = localStorage.getItem(storageKey)
+      const prev: Draft = raw ? JSON.parse(raw) : { name: '', number: '', class: '', year: '', email: '', answers: {}, calc: {}, deadline: null }
+      localStorage.setItem(storageKey, JSON.stringify({ ...prev, ...patch }))
+    } catch { /* localStorage indisponível (modo privado) — segue sem gravar */ }
+  }
+  function clearDraft() { try { localStorage.removeItem(storageKey) } catch { /* noop */ } }
+
   useEffect(() => {
     fetch(`/api/exam/session/${code}`)
       .then(r => r.json())
@@ -159,22 +179,72 @@ export default function ExamPage() {
         // Pré-preenche o ano com o ano do teste (o aluno confirma).
         const ty = data.session?.test_snapshot?.yearLevel
         if (ty) setStudentYear(String(ty))
+        // Há prova por terminar neste dispositivo? Guarda-a para oferecer "retomar".
+        try {
+          const raw = localStorage.getItem(`profai_exam_${code}`)
+          if (raw) {
+            const d = JSON.parse(raw) as Draft
+            if (d && (Object.keys(d.answers ?? {}).length > 0 || d.name)) setDraft(d)
+          }
+        } catch { /* localStorage indisponível */ }
         setPhase('identify')
       })
       .catch(() => { setError('Não foi possível carregar o exame.'); setPhase('error') })
   }, [code])
 
+  // Temporizador baseado no PRAZO (deadlineRef): recalcula o tempo restante a cada
+  // segundo a partir do instante-limite — resiste a actualizar a página e a o
+  // telemóvel adormecer, e já não dá tempo a mais a quem recarrega.
   useEffect(() => {
-    if (phase !== 'exam' || timeLeft === null) return
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t === null || t <= 1) { clearInterval(timerRef.current!); handleSubmit(); return 0 }
-        return t - 1
-      })
-    }, 1000)
+    if (phase !== 'exam' || deadlineRef.current == null) return
+    const tick = () => {
+      const left = Math.max(0, Math.round((deadlineRef.current! - Date.now()) / 1000))
+      setTimeLeft(left)
+      if (left <= 0) { if (timerRef.current) clearInterval(timerRef.current); handleSubmit() }
+    }
+    tick()
+    timerRef.current = setInterval(tick, 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
+
+  // Grava o progresso localmente sempre que as respostas mudam (durante o exame).
+  useEffect(() => {
+    if (phase !== 'exam') return
+    saveDraft({ answers, calc: calcHistories })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, calcHistories, phase])
+
+  // Avisa antes de sair/fechar com uma prova em curso (evita saídas acidentais).
+  useEffect(() => {
+    if (phase !== 'exam') return
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [phase])
+
+  // Começar a prova: fixa o prazo, grava o rascunho inicial e entra no exame.
+  function startExam() {
+    const dur = session?.duration_minutes ?? null
+    deadlineRef.current = dur ? Date.now() + dur * 60 * 1000 : null
+    saveDraft({
+      name: studentName, number: studentNumber, class: studentClass,
+      year: studentYear, email: studentEmail, answers, calc: calcHistories,
+      deadline: deadlineRef.current,
+    })
+    setPhase('exam')
+  }
+
+  // Retomar a prova guardada neste dispositivo.
+  function resumeDraft() {
+    if (!draft) return
+    setStudentName(draft.name); setStudentNumber(draft.number)
+    setStudentClass(draft.class); setStudentYear(draft.year); setStudentEmail(draft.email)
+    setAnswers(draft.answers ?? {}); setCalcHistories(draft.calc ?? {})
+    deadlineRef.current = draft.deadline ?? null
+    setDraft(null)
+    setPhase('exam')
+  }
 
   const questions: Question[] = session ? getAllQuestions(session.test_snapshot as TestSnapshot) : []
   const answered = Object.keys(answers).filter(k => answers[k].trim()).length
@@ -207,6 +277,7 @@ export default function ExamPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error); setPhase('error'); return }
       setResultId(data.submissionId ?? null)
+      clearDraft()   // entregue com sucesso → já não há rascunho a retomar
       setPhase('submitted')
     } catch {
       setError('Erro ao submeter. Verifica a tua ligação.')
@@ -299,6 +370,28 @@ export default function ExamPage() {
   // ── Ecrã de identificação ──────────────────────────────────────────────────
   if (phase === 'identify') return (
     <div className="space-y-5 max-w-lg mx-auto">
+      {/* Retomar prova por terminar neste dispositivo */}
+      {draft && (
+        <div className="rounded-2xl p-4 flex flex-col gap-3"
+          style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc' }}>
+          <p className="text-sm font-semibold" style={{ color: '#075985' }}>
+            ↩️ Tens uma prova por terminar neste dispositivo{draft.name ? ` (${draft.name})` : ''}.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={resumeDraft}
+              className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm"
+              style={{ background: '#0369a1' }}>
+              Retomar onde ia
+            </button>
+            <button onClick={() => { clearDraft(); setDraft(null) }}
+              className="flex-1 py-2.5 rounded-xl font-medium text-sm border"
+              style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+              Começar de novo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Banner do exame */}
       <div className="rounded-2xl overflow-hidden"
         style={{ border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(13,27,42,0.08)' }}>
@@ -402,7 +495,7 @@ export default function ExamPage() {
           />
         </div>
 
-        <button disabled={!studentName.trim() || !studentClass.trim() || !studentYear.trim()} onClick={() => setPhase('exam')}
+        <button disabled={!studentName.trim() || !studentClass.trim() || !studentYear.trim()} onClick={startExam}
           className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg, #00B4D8, #0096b7)', boxShadow: studentName.trim() ? '0 4px 14px rgba(0,180,216,0.4)' : 'none' }}>
           Iniciar exame →
