@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
+import HorizontalGrading from '@/components/exam/HorizontalGrading'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -833,7 +834,7 @@ export default function GradingDashboard({
   const router = useRouter()
   const [selected, setSelected] = useState<Submission | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
-  const [tab, setTab] = useState<'submissions' | 'analytics'>('submissions')
+  const [tab, setTab] = useState<'submissions' | 'horizontal' | 'analytics'>('submissions')
   const [regrading, setRegrading] = useState(false)
   const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
   const [released, setReleased] = useState(!!resultsReleased)
@@ -984,6 +985,7 @@ export default function GradingDashboard({
       <div className="flex items-center gap-1 border-b" style={{ borderColor: '#0D1B2A10' }}>
         {([
           { key: 'submissions', label: `Submissões (${submissions.length})` },
+          { key: 'horizontal',  label: 'Correção horizontal' },
           { key: 'analytics',   label: `Análise${gradedCount > 0 ? ` (${gradedCount} corrigidas)` : ''}` },
         ] as const).map(({ key, label }) => (
           <button
@@ -1000,6 +1002,16 @@ export default function GradingDashboard({
           </button>
         ))}
       </div>
+
+      {/* ── Tab: Correção horizontal ── */}
+      {tab === 'horizontal' && (
+        <HorizontalGrading
+          submissions={submissions}
+          questions={questions}
+          fallbackYear={fallbackYear}
+          onChanged={() => router.refresh()}
+        />
+      )}
 
       {/* ── Tab: Análise ── */}
       {tab === 'analytics' && (
