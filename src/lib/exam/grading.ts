@@ -118,6 +118,16 @@ RUBRICA OBRIGATÓRIA: O markScheme contém critérios com pontuação máxima (e
 Identifica cada critério e avalia-o individualmente. Devolve o array "rubric" com todos os critérios encontrados.
 A soma dos "score" da rubrica DEVE ser igual ao "score" total.` : ''
 
+  // Completar espaços: avaliar pelo SIGNIFICADO, não por correspondência exacta —
+  // sinónimos/equivalentes contam; só se exige o termo exacto se for técnico/científico.
+  const fillBlankInstruction = q.type === 'fill_blank' ? `
+COMPLETAR ESPAÇOS — avalia ESPAÇO A ESPAÇO, pelo SIGNIFICADO:
+• A "Resposta certa" lista as palavras esperadas pela ORDEM dos espaços (separadas por vírgula); a resposta do aluno vem na mesma ordem. Associa cada preenchimento ao seu espaço.
+• Reparte a cotação igualmente pelos espaços (cotação total ÷ n.º de espaços) e soma o que cada espaço merece — NUNCA "tudo ou nada" no conjunto.
+• Dá a cotação de um espaço quando o aluno escreve um SINÓNIMO ou expressão SEMANTICAMENTE EQUIVALENTE no contexto da frase (ex.: "elevadas"="altas"; "escassez"="falta de"/"pouca"/"ausência"; "baixas"="frias"/"geladas"). Ignora maiúsculas/minúsculas, acentos e pequenos erros ortográficos.
+• EXIGE o termo EXACTO só quando a palavra esperada é um termo técnico/científico preciso sem sinónimo aceitável (ex.: "fototropismo", "mitose", "fotossíntese", "isósceles") — aí, uma palavra diferente, ainda que relacionada, não conta.
+• NÃO dês pontos a um espaço com significado errado ou oposto (ex.: "quantidade" quando se pede "escassez"; "quente" quando se pede "terrestre").` : ''
+
   const responseFormat = isLong
     ? `{"score": <total 0–${q.points}>, "rubric": [{"criterion": "<nome>", "score": <pontos>, "max": <máximo>}], "feedback": "<frase curta PT-PT>", "confidence": <0.0–1.0>}`
     : `{"score": <0–${q.points}>, "feedback": "<frase curta PT-PT>", "confidence": <0.0–1.0>}`
@@ -143,7 +153,7 @@ REGRAS DE CORRECÇÃO — aplica todas sem excepção:
 8. IN DUBIO PRO DISCIPULUM: em caso de dúvida genuína sobre se a resposta é correcta ou parcialmente correcta, decide sempre a favor do aluno. A confiança deve reflectir essa dúvida (valor baixo).
 9. O histórico da calculadora mostra a estratégia usada, não um rascunho limpo — procura a linha coerente e ignora ruído.
 10. O feedback deve ser uma frase curta, construtiva e em Português de Portugal.
-${rubricInstruction}
+${rubricInstruction}${fillBlankInstruction}
 
 Responde APENAS com JSON válido (sem texto extra, sem markdown):
 ${responseFormat}`
