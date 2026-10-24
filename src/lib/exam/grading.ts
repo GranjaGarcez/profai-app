@@ -244,3 +244,44 @@ export async function gradeSubmission(
 
   return { details, totalScore, maxScore, pending }
 }
+
+// ── Re-correcção SELECTIVA ─────────────────────────────────────────────────────
+// Re-corrige apenas as perguntas para as quais shouldRegrade() devolve true
+// (ex.: só as afectadas por uma melhoria do motor) e PRESERVA tal como estavam as
+// restantes — poupa tokens e não arrisca mexer no que já estava bem. Devolve a
+// submissão inteira (perguntas re-corrigidas + preservadas) com o total recalculado.
+export async function regradeSubmissionSelective(
+  snapshot: TestSnapshot,
+  answers: Record<string, string>,
+  existing: Record<string, GradingDetail>,
+  shouldRegrade: (q: Question) => boolean,
+): Promise<{ details: Record<string, GradingDetail>; totalScore: number; maxScore: number; pending: number; regradedCount: number }> {
+  const questions = getAllQuestions(snapshot)
+  const details: Record<string, GradingDetail> = {}
+  let regradedCount = 0
+
+  const tasks = questions.map(async q => {
+    const key = String(q.index)
+    // Preserva se não é para re-corrigir E já existe correcção para a pergunta.
+    if (!shouldRegrade(q) && existing[key]) { details[key] = existing[key]; return }
+    regradedCount++
+    const raw = answers[key] ?? ''
+    const calcHistory = answers[`calc_${key}`] ?? undefined
+    if (q.type === 'multiple_choice' || q.type === 'true_false') {
+      details[key] = gradeObjective(q, raw)
+    } else {
+      await acquireGradingSlot()
+      try {
+        details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
+      } finally {
+        releaseGradingSlot()
+      }
+    }
+  })
+  await Promise.all(tasks)
+
+  const totalScore = Object.values(details).reduce((s, d) => s + d.score, 0)
+  const maxScore   = questions.reduce((s, q) => s + q.points, 0)
+  const pending    = Object.values(details).filter(d => d.auto === false).length
+  return { details, totalScore, maxScore, pending, regradedCount }
+}

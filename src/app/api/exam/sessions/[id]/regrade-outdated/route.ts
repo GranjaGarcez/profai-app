@@ -6,9 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { gradeSubmission } from '@/lib/exam/grading'
-import { GRADER_IMPROVED_AT } from '@/lib/exam/graderVersion'
-import type { TestSnapshot } from '@/lib/exam/types'
+import { regradeSubmissionSelective } from '@/lib/exam/grading'
+import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
+import type { TestSnapshot, GradingDetail } from '@/lib/exam/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -31,7 +31,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   // manual) e as pendentes ficam de fora.
   const { data: subs } = await supabase
     .from('exam_submissions')
-    .select('id, answers, graded_at')
+    .select('id, answers, graded_at, grading_details')
     .eq('session_id', id)
     .eq('status', 'graded')
     .lt('graded_at', GRADER_IMPROVED_AT)
@@ -40,12 +40,19 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!outdated.length) return NextResponse.json({ regraded: 0, message: 'Nada a re-corrigir.' })
 
   const snapshot = session.test_snapshot as TestSnapshot
+  const affected = (q: { type: string }) => GRADER_AFFECTS.includes(q.type)
   const admin = createAdminClient()
   let regraded = 0, stillPending = 0
 
   for (const sub of outdated) {
     try {
-      const { details, totalScore, maxScore, pending } = await gradeSubmission(snapshot, (sub.answers ?? {}) as Record<string, string>)
+      // Só re-corrige as perguntas afectadas; preserva as restantes tal como estavam.
+      const { details, totalScore, maxScore, pending } = await regradeSubmissionSelective(
+        snapshot,
+        (sub.answers ?? {}) as Record<string, string>,
+        (sub.grading_details ?? {}) as Record<string, GradingDetail>,
+        affected,
+      )
       await admin.from('exam_submissions').update({
         grading_details: details,
         total_score: totalScore,

@@ -6,7 +6,7 @@ import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 import HorizontalGrading from '@/components/exam/HorizontalGrading'
-import { GRADER_IMPROVED_AT } from '@/lib/exam/graderVersion'
+import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -876,7 +876,9 @@ export default function GradingDashboard({
   const toRegrade = submissions.filter(s => s.status === 'por_corrigir' || s.status === 'grading')
   // Corrigidas automaticamente ANTES da última melhoria do motor (podem ser re-corrigidas).
   // "reviewed" (ajuste manual do professor) fica de fora de propósito.
-  const outdated = submissions.filter(s =>
+  // Só faz sentido se o teste TIVER perguntas do tipo afectado pela melhoria.
+  const testHasAffected = questions.some(q => GRADER_AFFECTS.includes(q.type))
+  const outdated = !testHasAffected ? [] : submissions.filter(s =>
     s.status === 'graded' && s.graded_at && new Date(s.graded_at) < new Date(GRADER_IMPROVED_AT))
   const [regradingOld, setRegradingOld] = useState(false)
 
@@ -971,7 +973,7 @@ export default function GradingDashboard({
         <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border px-4 py-3 mb-3"
           style={{ borderColor: '#0EA5E9', background: '#f0f9ff' }}>
           <span className="text-sm" style={{ color: '#075985' }}>
-            ✨ {outdated.length} submissão(ões) corrigida(s) com critérios anteriores a uma melhoria da correcção. Podes re-corrigi-las — as que ajustaste à mão NÃO são tocadas.
+            ✨ {outdated.length} submissão(ões) com perguntas corrigidas antes de uma melhoria da correcção. Re-corrige só essas perguntas (as restantes e as revistas à mão ficam intactas).
           </span>
           <button onClick={regradeOutdated} disabled={regradingOld}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 shrink-0"
