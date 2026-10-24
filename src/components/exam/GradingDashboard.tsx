@@ -6,6 +6,7 @@ import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/lib/exam/types'
 import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 import HorizontalGrading from '@/components/exam/HorizontalGrading'
+import { GRADER_IMPROVED_AT } from '@/lib/exam/graderVersion'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -873,6 +874,11 @@ export default function GradingDashboard({
   const gradedCount = submissions.filter(s => s.status === 'graded' || s.status === 'reviewed').length
   // Submissões que a IA não conseguiu corrigir (quota/falha) ou que ficaram presas.
   const toRegrade = submissions.filter(s => s.status === 'por_corrigir' || s.status === 'grading')
+  // Corrigidas automaticamente ANTES da última melhoria do motor (podem ser re-corrigidas).
+  // "reviewed" (ajuste manual do professor) fica de fora de propósito.
+  const outdated = submissions.filter(s =>
+    s.status === 'graded' && s.graded_at && new Date(s.graded_at) < new Date(GRADER_IMPROVED_AT))
+  const [regradingOld, setRegradingOld] = useState(false)
 
   async function regradePending() {
     setRegrading(true); setRegradeMsg(null)
@@ -884,6 +890,18 @@ export default function GradingDashboard({
       router.refresh()
     } catch (e) { setRegradeMsg(e instanceof Error ? e.message : 'Erro.') }
     finally { setRegrading(false) }
+  }
+
+  async function regradeOutdated() {
+    setRegradingOld(true); setRegradeMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/regrade-outdated`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha.')
+      setRegradeMsg(d.regraded != null ? `${d.regraded} re-corrigida(s) com os critérios novos${d.stillPending ? `, ${d.stillPending} ficaram por corrigir` : ''}.` : (d.message ?? 'Concluído.'))
+      router.refresh()
+    } catch (e) { setRegradeMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setRegradingOld(false) }
   }
 
   const filtered = submissions.filter(s => {
@@ -944,6 +962,21 @@ export default function GradingDashboard({
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 shrink-0"
             style={{ background: '#b45309' }}>
             {regrading ? 'A corrigir…' : `Corrigir pendentes (${toRegrade.length})`}
+          </button>
+        </div>
+      )}
+
+      {/* Re-correção com critérios novos — só quando há notas de um motor mais antigo */}
+      {outdated.length > 0 && (
+        <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border px-4 py-3 mb-3"
+          style={{ borderColor: '#0EA5E9', background: '#f0f9ff' }}>
+          <span className="text-sm" style={{ color: '#075985' }}>
+            ✨ {outdated.length} submissão(ões) corrigida(s) com critérios anteriores a uma melhoria da correcção. Podes re-corrigi-las — as que ajustaste à mão NÃO são tocadas.
+          </span>
+          <button onClick={regradeOutdated} disabled={regradingOld}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 shrink-0"
+            style={{ background: '#0369a1' }}>
+            {regradingOld ? 'A re-corrigir…' : `Re-corrigir com os critérios novos (${outdated.length})`}
           </button>
         </div>
       )}
