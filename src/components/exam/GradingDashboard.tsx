@@ -998,7 +998,13 @@ export default function GradingDashboard({
                 : 'Revê as notas (sobretudo as “por corrigir”) e depois divulga para os alunos verem a correcção.'}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <a href={`/dashboard/exams/${sessionId}/folha`}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border"
+              style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}
+              title="Imprimir um talão com QR por aluno, para distribuir">
+              🖨️ Folha de QR
+            </a>
             <button onClick={toggleRelease} disabled={releasing}
               className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
               style={{ background: released ? 'transparent' : '#0D1B2A', color: released ? '#0D1B2A' : '#F7F3EE', border: released ? '1px solid #0D1B2A30' : 'none' }}>
