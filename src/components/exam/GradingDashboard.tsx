@@ -524,6 +524,151 @@ function AnalyticsDashboard({
   )
 }
 
+// ── Certificar dados dos alunos + exportar grelhas para Excel ───────────────────
+function RosterExport({
+  sessionId, submissions, fallbackYear, onClose, onSaved,
+}: {
+  sessionId: string
+  submissions: Submission[]
+  fallbackYear: number | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  type R = { id: string; name: string; number: string; turma: string; turma0: string }
+  const [rows, setRows] = useState<R[]>(() => submissions.map(s => {
+    const t = turmaLabelOf(s.student_year, s.student_class, fallbackYear)
+    return { id: s.id, name: s.student_name ?? '', number: s.student_number ?? '', turma: t === '—' ? '' : t, turma0: t === '—' ? '' : t }
+  }))
+  const [dirty, setDirty] = useState<Record<string, boolean>>({})
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const numKey = (n: string) => { const v = parseInt(String(n).replace(/\D/g, ''), 10); return Number.isFinite(v) ? v : Number.MAX_SAFE_INTEGER }
+  const ordered = [...rows].sort((a, b) => {
+    if (a.turma !== b.turma) return a.turma.localeCompare(b.turma, 'pt')
+    const ka = numKey(a.number), kb = numKey(b.number)
+    if (ka !== kb) return ka - kb
+    return a.name.localeCompare(b.name, 'pt')
+  })
+  const turmas = Array.from(new Set(rows.map(r => r.turma).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt'))
+  const dirtyCount = Object.values(dirty).filter(Boolean).length
+
+  function edit(id: string, patch: Partial<R>) {
+    setRows(rs => rs.map(r => (r.id === id ? { ...r, ...patch } : r)))
+    setDirty(d => ({ ...d, [id]: true }))
+  }
+
+  async function saveAll() {
+    const changed = rows.filter(r => dirty[r.id])
+    if (changed.length === 0) { setMsg('Não há alterações para guardar.'); return }
+    setSaving(true); setMsg(null)
+    let ok = 0, fail = 0
+    for (const r of changed) {
+      const body: Record<string, unknown> = { name: r.name, number: r.number }
+      if (r.turma !== r.turma0 && r.turma.trim()) { body.ano = r.turma; body.turma = r.turma }
+      try {
+        const res = await fetch(`/api/exam/submissions/${r.id}/identity`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        })
+        if (res.ok) ok++; else fail++
+      } catch { fail++ }
+    }
+    setSaving(false); setDirty({})
+    setMsg(`${ok} guardado(s)${fail ? `, ${fail} falhou(aram)` : ''}.`)
+    onSaved()
+  }
+
+  function download(turma?: string) {
+    const url = `/api/exam/sessions/${sessionId}/export-grades${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`
+    const a = document.createElement('a'); a.href = url; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: '#00000050' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mt-4 mb-4 overflow-hidden" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10" style={{ borderColor: '#0D1B2A10' }}>
+          <div>
+            <h3 className="font-bold" style={{ color: '#0D1B2A' }}>Certificar dados e exportar grelhas</h3>
+            <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>Confirma o número, o nome e a turma de cada aluno. As grelhas Excel são ordenadas pelo número.</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-4" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+          {turmas.length === 0 && rows.every(r => !r.turma) && (
+            <p className="text-xs px-3 py-2 rounded-lg" style={{ background: '#fffbeb', color: '#92400e' }}>
+              Nenhuma turma definida. Preenche a turma de cada aluno para as grelhas saírem agrupadas.
+            </p>
+          )}
+          {/* Tabela editável */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #0D1B2A10' }}>
+                  {['Nº', 'Nome', 'Turma'].map(h => <th key={h} className="px-2 py-2 text-left font-semibold" style={{ color: '#6B7280' }}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {ordered.map((r, i) => {
+                  const header = i === 0 || ordered[i - 1].turma !== r.turma
+                  return (
+                    <Fragment key={r.id}>
+                      {header && (
+                        <tr><td colSpan={3} className="px-2 pt-3 pb-1 text-xs font-bold" style={{ color: '#0D1B2A' }}>📋 Turma {r.turma || '(sem turma)'}</td></tr>
+                      )}
+                      <tr style={{ borderBottom: '1px solid #0D1B2A05', background: dirty[r.id] ? '#fffbeb' : 'transparent' }}>
+                        <td className="px-2 py-1.5">
+                          <input value={r.number} onChange={e => edit(r.id, { number: e.target.value })}
+                            className="w-14 px-1.5 py-1 rounded border text-xs text-center" style={{ borderColor: '#e2e8f0', outline: 'none', color: '#0D1B2A' }} />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <input value={r.name} onChange={e => edit(r.id, { name: e.target.value })}
+                            className="w-full px-1.5 py-1 rounded border text-xs" style={{ borderColor: '#e2e8f0', outline: 'none', color: '#0D1B2A' }} />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <input value={r.turma} onChange={e => edit(r.id, { turma: e.target.value })} placeholder="ex.: 6ºA"
+                            className="w-16 px-1.5 py-1 rounded border text-xs text-center" style={{ borderColor: '#e2e8f0', outline: 'none', color: '#0D1B2A' }} />
+                        </td>
+                      </tr>
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Rodapé: guardar + exportar */}
+        <div className="sticky bottom-0 bg-white border-t px-5 py-3 space-y-2" style={{ borderColor: '#0D1B2A10' }}>
+          {msg && <p className="text-xs" style={{ color: '#374151' }}>{msg}</p>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={saveAll} disabled={saving || dirtyCount === 0}
+              className="px-3 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#0D1B2A' }}>
+              {saving ? 'A guardar…' : dirtyCount ? `Guardar alterações (${dirtyCount})` : 'Sem alterações'}
+            </button>
+            <span className="text-xs" style={{ color: '#9CA3AF' }}>
+              {dirtyCount ? 'Guarda antes de exportar para as grelhas saírem certas.' : 'Dados certificados — exporta:'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => download()} disabled={saving}
+              className="px-3 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#166534' }}>
+              ⬇️ Excel — tudo (global + todas as turmas)
+            </button>
+            {turmas.map(t => (
+              <button key={t} onClick={() => download(t)} disabled={saving}
+                className="px-2.5 py-2 rounded-lg text-xs font-semibold border disabled:opacity-50" style={{ borderColor: '#16653430', color: '#166534' }}>
+                ⬇️ {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Componente de detalhe de submissão ─────────────────────────────────────────
 function SubmissionDetail({
   submission,
@@ -1007,6 +1152,7 @@ export default function GradingDashboard({
   const [selected, setSelected] = useState<Submission | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
   const [turmaView, setTurmaView] = useState<'all' | string>('all')   // filtro por turma (Submissões + Análise)
+  const [rosterOpen, setRosterOpen] = useState(false)                 // modal certificar + exportar Excel
   const [tab, setTab] = useState<'submissions' | 'horizontal' | 'analytics'>('submissions')
   const [regrading, setRegrading] = useState(false)
   const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
@@ -1156,6 +1302,16 @@ export default function GradingDashboard({
         />
       )}
 
+      {rosterOpen && (
+        <RosterExport
+          sessionId={sessionId}
+          submissions={submissions}
+          fallbackYear={fallbackYear}
+          onClose={() => setRosterOpen(false)}
+          onSaved={() => router.refresh()}
+        />
+      )}
+
       {/* Incoerências de cotação — bem visível, para não passarem */}
       {incoherenceCount > 0 && (
         <div className="rounded-xl border-2 px-4 py-3 mb-3" style={{ borderColor: '#dc2626', background: '#fef2f2' }}>
@@ -1234,6 +1390,12 @@ export default function GradingDashboard({
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <button onClick={() => setRosterOpen(true)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border"
+              style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}
+              title="Certificar os dados dos alunos e exportar as grelhas de cotações para Excel">
+              📊 Exportar Excel
+            </button>
             <a href={`/dashboard/exams/${sessionId}/folha`}
               className="px-4 py-2 rounded-lg text-sm font-semibold border"
               style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}
