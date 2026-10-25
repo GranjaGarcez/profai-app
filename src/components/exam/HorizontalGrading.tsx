@@ -150,6 +150,7 @@ export default function HorizontalGrading({
         body: JSON.stringify({
           subject, yearLevel, topic, type: q.type, points: q.points,
           text: q.text, options: q.options ?? null, figure: q.figure ?? null,
+          currentAnswer: editAnswer || q.correctAnswer, currentMarkScheme: editMark || q.markScheme || '',
         }),
       })
       const d = await res.json()

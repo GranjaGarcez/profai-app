@@ -33,6 +33,8 @@ function buildPrompt(
   text: string,
   options: string[] | null,
   figureDesc: string | null,
+  currentAnswer: string | null,
+  currentMarkScheme: string | null,
 ): string {
   const typeDesc = TYPE_PT[qtype] ?? qtype
   const optionsBlock = options && options.length
@@ -42,13 +44,24 @@ function buildPrompt(
     ? `\nFIGURA/GRÁFICO DA QUESTÃO (fonte de verdade — lê DAQUI os valores):\n${figureDesc}\nA resposta e os critérios TÊM de corresponder EXACTAMENTE a estes dados. NÃO inventes valores, categorias ou unidades que não estejam na figura.`
     : ''
 
-  let answerRule = '• correctAnswer: resposta-modelo completa e inequívoca.'
+  // Âncora: quando o professor já tem uma resposta certa, MANTÉM-NA e constrói os
+  // critérios à volta dela — não a reinventes (era este o problema: regenerava do
+  // zero e divergia do que o professor queria).
+  const anchorBlock = currentAnswer && currentAnswer.trim()
+    ? `\nRESPOSTA CERTA DO PROFESSOR (ÂNCORA — é esta a referência):\n${currentAnswer.trim()}${currentMarkScheme && currentMarkScheme.trim() ? `\nCRITÉRIOS ACTUAIS (melhora, não deites fora o que está bom):\n${currentMarkScheme.trim()}` : ''}`
+    : ''
+
+  let answerRule = currentAnswer && currentAnswer.trim()
+    ? '• correctAnswer: MANTÉM a resposta certa do professor acima (podes afiná-la na forma, mas não mudes o conteúdo). Só a corriges se estiver CLARAMENTE errada face ao enunciado — e, nesse caso, explica a correcção no feedback dos critérios.'
+    : '• correctAnswer: resposta-modelo completa e inequívoca.'
   if (qtype === 'multiple_choice') {
     answerRule = '• correctAnswer: APENAS a letra da opção correcta (A, B, C ou D). Lê as opções acima e confirma qual está certa face ao enunciado.'
   } else if (qtype === 'true_false') {
     answerRule = '• correctAnswer: "Verdadeiro" ou "Falso".'
   } else if (qtype === 'fill_blank') {
-    answerRule = '• correctAnswer: a palavra ou expressão exacta que preenche o espaço.'
+    answerRule = currentAnswer && currentAnswer.trim()
+      ? '• correctAnswer: MANTÉM a palavra/expressão esperada pelo professor acima; só a corriges se estiver claramente errada.'
+      : '• correctAnswer: a palavra ou expressão exacta que preenche o espaço.'
   }
 
   return `És professor especialista de ${subject} do ${yearLevel}.º ano em Portugal.
@@ -59,7 +72,7 @@ CONTEXTO: ${subject} · ${yearLevel}.º ano · Tema: "${topic}"
 TIPO: ${typeDesc} · Cotação: ${points} pontos
 
 ENUNCIADO (imutável):
-${text}${optionsBlock}${figureBlock}
+${text}${optionsBlock}${figureBlock}${anchorBlock}
 
 O QUE DEVES PRODUZIR:
 ${answerRule}
@@ -70,6 +83,7 @@ REGRAS OBRIGATÓRIAS:
 2. Se a questão envolver números/cálculos, refaz o cálculo do zero a partir DESTE enunciado antes de dar a resposta — nunca assumas valores.
 3. A corrigenda tem de corresponder EXACTAMENTE a este enunciado editado, não a uma versão anterior.
 4. Não inventes dados nem alteres o sentido da questão.
+5. NÍVEL/ANO: o que se EXIGE ao aluno e a linguagem dos critérios têm de ser adequados ao ${yearLevel}.º ano (2.º ciclo, 10-12 anos). NÃO exijas termos científicos, conceitos ou vocabulário acima do ano; aceita como correcta uma resposta certa expressa em linguagem simples e própria da idade. Não inventes exigências que o enunciado não faz.
 
 Responde APENAS com este JSON válido (sem texto extra, sem markdown):
 {
@@ -84,7 +98,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { subject, yearLevel, topic, type, points, text, options, figure } = await request.json()
+  const { subject, yearLevel, topic, type, points, text, options, figure, currentAnswer, currentMarkScheme } = await request.json()
   if (!subject || !yearLevel || !topic || !type || !points || !text) {
     return NextResponse.json({ error: 'Parâmetros incompletos' }, { status: 400 })
   }
@@ -93,6 +107,8 @@ export async function POST(request: NextRequest) {
     subject, Number(yearLevel), topic, String(type), Number(points), String(text),
     Array.isArray(options) ? options.map(String) : null,
     describeFigure(figure),
+    typeof currentAnswer === 'string' ? currentAnswer : null,
+    typeof currentMarkScheme === 'string' ? currentMarkScheme : null,
   )
 
   // Cascata validada (Gemini thinking-off → Groq gpt-oss → CF → reservas).
