@@ -76,6 +76,13 @@ export default async function ExamDetailPage({ params }: Props) {
                   hour: '2-digit', minute: '2-digit',
                 })}
               </span>
+              {session.content_item_id && (
+                <Link href={`/dashboard/content/${session.content_item_id}`}
+                  className="hover:underline font-medium" style={{ color: '#0369a1' }}
+                  title="Abre o teste de origem nos Conteúdos (editar aqui aplica-se a lançamentos futuros, não a este exame já lançado)">
+                  ✏️ Teste de origem <span className="font-mono" style={{ color: '#9CA3AF' }}>#{String(session.content_item_id).slice(0, 6)}</span>
+                </Link>
+              )}
             </div>
           </div>
 

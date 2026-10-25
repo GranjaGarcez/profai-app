@@ -34,11 +34,13 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   differentiated: { label: 'Diferenciação', icon: '🎯', color: '#10B981' },
 }
 
+interface ExamUse { code: string; status: string; created_at: string; session_id: string }
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function ContentLibraryClient({ items, error }: { items: ContentItem[]; error: string | null }) {
+export default function ContentLibraryClient({ items, usage = {}, turmas = {}, error }: { items: ContentItem[]; usage?: Record<string, ExamUse[]>; turmas?: Record<string, string[]>; error: string | null }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [localItems, setLocalItems] = useState<ContentItem[]>(items)
   const router = useRouter()
@@ -104,6 +106,8 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
             const meta = TYPE_LABELS[item.type] ?? { label: item.type, icon: '📄', color: '#6B7280' }
             const diffLevel = item.content?._differentiationLevel
             const accessLevel = item.content?._accessibilityLevel
+            const uses = usage[item.id] ?? []
+            const itemTurmas = turmas[item.id] ?? []
             return (
               <div
                 key={item.id}
@@ -143,8 +147,18 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
                           🗣️ {ACCESS_BADGE[accessLevel].label}
                         </span>
                       )}
+                      {uses.length > 0 && (
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: '#dcfce7', color: '#166534' }}
+                          title={`Lançado como exame: ${uses.map(u => u.code).join(', ')}`}
+                        >
+                          📣 Em uso ({uses.length}) · {uses[0].code}{uses.length > 1 ? ` +${uses.length - 1}` : ''}
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-semibold text-sm leading-snug truncate" style={{ color: '#0D1B2A' }}>
+                    <h3 className="font-semibold text-sm leading-snug" title={item.title}
+                      style={{ color: '#0D1B2A', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {item.title}
                     </h3>
                     {item.subject && (
@@ -152,8 +166,14 @@ export default function ContentLibraryClient({ items, error }: { items: ContentI
                         {item.subject}{item.topic ? ` · ${item.topic}` : ''}
                       </p>
                     )}
-                    <p className="text-xs mt-2" style={{ color: '#9CA3AF' }}>
-                      {formatDate(item.created_at)}
+                    {itemTurmas.length > 0 && (
+                      <p className="text-xs mt-1" style={{ color: '#166534' }}>
+                        👥 Turmas: {itemTurmas.join(', ')}
+                      </p>
+                    )}
+                    <p className="text-xs mt-2 flex items-center gap-2" style={{ color: '#9CA3AF' }}>
+                      <span>{formatDate(item.created_at)}</span>
+                      <span className="font-mono" title="Referência deste teste (coincide com a do exame)">#{item.id.slice(0, 6)}</span>
                     </p>
                   </div>
                   <button
