@@ -484,6 +484,29 @@ function SubmissionDetail({
   const [localTotal, setLocalTotal] = useState(submission.total_score)
   const [linkCopied, setLinkCopied] = useState(false)
 
+  // ── Integridade: indícios + anulação (decisão humana) ──
+  const integ = parseIntegrity(submission.answers)
+  const integSummary = summarizeIntegrity(integ)
+  const [annulOpen, setAnnulOpen] = useState(false)
+  const [annulReason, setAnnulReason] = useState('')
+  const [annulling, setAnnulling] = useState(false)
+
+  async function setAnnul(annul: boolean) {
+    setAnnulling(true)
+    try {
+      const res = await fetch(`/api/exam/submissions/${submission.id}/annul`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annul, reason: annul ? annulReason.trim() : '' }),
+      })
+      if (res.ok) onReassigned()   // fecha + refresca
+      else setAnnulling(false)
+    } catch { setAnnulling(false) }
+  }
+
+  const fmtEvent = (kind: string) => kind === 'exit' ? 'Saiu do ecrã do teste'
+    : kind === 'paste' ? 'Colou texto' : kind === 'copy' ? 'Copiou texto'
+    : kind === 'fullscreen_exit' ? 'Saiu do ecrã inteiro' : kind === 'blur' ? 'Janela perdeu o foco' : kind
+
   async function copyResultLink() {
     const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/exam/resultado/${submission.id}`
     try { await navigator.clipboard.writeText(url); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) } catch { /* noop */ }
@@ -635,6 +658,87 @@ function SubmissionDetail({
 
         {/* Corpo */}
         <div className="overflow-y-auto p-6 space-y-4" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
+
+          {/* ── Integridade: indícios + anulação ── */}
+          {(integSummary.hasAny || integ?.annulled) && (
+            <div className="rounded-xl border-2 p-3"
+              style={{ borderColor: integ?.annulled ? '#991b1b' : integSummary.level === 'high' ? '#dc2626' : '#f59e0b',
+                       background: integ?.annulled ? '#fef2f2' : '#fffbeb' }}>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-sm font-bold" style={{ color: integ?.annulled ? '#991b1b' : '#92400e' }}>
+                  {integ?.annulled ? '⛔ Exame ANULADO' : '🛡️ Indícios de integridade'}
+                </p>
+                {!integ?.annulled && (
+                  <button onClick={() => setAnnulOpen(o => !o)}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-md border"
+                    style={{ borderColor: '#dc2626', color: '#dc2626' }}>
+                    Anular exame…
+                  </button>
+                )}
+              </div>
+
+              {/* Resumo dos sinais */}
+              <div className="flex gap-3 flex-wrap mt-1.5 text-xs" style={{ color: '#374151' }}>
+                {integSummary.exits > 0 && <span>↩️ {integSummary.exits} saída(s) do ecrã{integSummary.awayMs > 1000 ? ` (${Math.round(integSummary.awayMs / 1000)}s fora)` : ''}</span>}
+                {integSummary.pastes > 0 && <span>📋 {integSummary.pastes} colagem(ns)</span>}
+                {integSummary.contentAbove > 0 && <span>🧠 {integSummary.contentAbove} resposta(s) com conteúdo acima do ano / fora do tema</span>}
+                {!integSummary.hasAny && <span>Sem sinais ao vivo.</span>}
+              </div>
+
+              {/* Linha temporal dos eventos ao vivo (prova) */}
+              {(integ?.events?.length ?? 0) > 0 && (
+                <details className="mt-2">
+                  <summary className="text-xs cursor-pointer" style={{ color: '#0369a1' }}>Ver registo ({integ!.events!.length} eventos)</summary>
+                  <ul className="mt-1 space-y-0.5">
+                    {integ!.events!.map((e, i) => (
+                      <li key={i} className="text-xs" style={{ color: '#6B7280' }}>
+                        {new Date(e.t).toLocaleTimeString('pt-PT')} — {fmtEvent(e.kind)}
+                        {e.durMs ? ` (${Math.round(e.durMs / 1000)}s)` : ''}
+                        {e.qKey ? ` · Q${e.qKey}` : ''}
+                        {e.info ? ` · «${e.info}»` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
+              {/* Anulação já feita */}
+              {integ?.annulled && (
+                <div className="mt-2 text-xs" style={{ color: '#991b1b' }}>
+                  <p>Anulado em {new Date(integ.annulled.at).toLocaleString('pt-PT')}.</p>
+                  {integ.annulled.reason && <p className="mt-0.5"><strong>Motivo:</strong> {integ.annulled.reason}</p>}
+                  <button onClick={() => setAnnul(false)} disabled={annulling}
+                    className="mt-1 text-xs font-semibold px-2.5 py-1 rounded-md border disabled:opacity-50"
+                    style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                    {annulling ? '…' : 'Reverter anulação'}
+                  </button>
+                </div>
+              )}
+
+              {/* Caixa de anulação */}
+              {annulOpen && !integ?.annulled && (
+                <div className="mt-2 rounded-lg border p-2.5 space-y-2" style={{ borderColor: '#dc2626', background: '#fff' }}>
+                  <p className="text-xs" style={{ color: '#991b1b' }}>
+                    Anular regista a decisão e o motivo neste exame, com o registo acima como prova (para mostrares ao aluno/EE). Não apaga nada; podes reverter.
+                  </p>
+                  <textarea value={annulReason} onChange={e => setAnnulReason(e.target.value)} rows={2}
+                    placeholder="Motivo (ex.: saiu do ecrã 5× e colou texto na Q4; termos de secundário não dados na aula)"
+                    className="w-full px-2.5 py-1.5 rounded-lg border text-xs"
+                    style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
+                  <div className="flex gap-2">
+                    <button onClick={() => setAnnul(true)} disabled={annulling || !annulReason.trim()}
+                      className="text-xs font-bold px-3 py-1.5 rounded-md text-white disabled:opacity-50" style={{ background: '#dc2626' }}>
+                      {annulling ? 'A anular…' : 'Confirmar anulação'}
+                    </button>
+                    <button onClick={() => setAnnulOpen(false)} disabled={annulling}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-md border" style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {questions.map(q => {
             const qKey = String(q.index)
@@ -1181,6 +1285,15 @@ export default function GradingDashboard({
                   >
                     <td className="px-4 py-3 font-medium" style={{ color: '#0D1B2A' }}>
                       {sub.student_name}
+                      {(() => {
+                        const rec = parseIntegrity(sub.answers)
+                        const sum = summarizeIntegrity(rec)
+                        if (rec?.annulled) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: '#fee2e2', color: '#991b1b' }} title="Exame anulado">⛔ anulado</span>
+                        if (!sum.hasAny) return null
+                        const c = sum.level === 'high' ? { bg: '#fee2e2', fg: '#991b1b' } : sum.level === 'medium' ? { bg: '#ffedd5', fg: '#9a3412' } : { bg: '#fef9c3', fg: '#854d0e' }
+                        return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded" style={{ background: c.bg, color: c.fg }}
+                          title="Indícios de integridade — abre para ver">🛡️ indícios</span>
+                      })()}
                     </td>
                     <td className="px-4 py-3" style={{ color: '#6B7280' }}>
                       {tLabel}

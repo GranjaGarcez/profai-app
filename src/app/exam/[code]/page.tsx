@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { QRCodeSVG } from 'qrcode.react'
 import type { CalcEntry, ExamSession, Question, TestSnapshot } from '@/lib/exam/types'
 import { getAllQuestions } from '@/lib/exam/types'
+import { INTEGRITY_KEY } from '@/lib/exam/integrity'
+import { useExamIntegrity } from '@/lib/exam/useExamIntegrity'
 import Calculator from '@/components/exam/Calculator'
 import MathFigure from '@/components/math/MathFigure'
 
@@ -161,6 +163,9 @@ export default function ExamPage() {
   const [recovering, setRecovering] = useState(false)
   const [recoverMsg, setRecoverMsg] = useState<string | null>(null)
 
+  // Sinais ao vivo de integridade (só registar; o professor é que vê e decide).
+  const integ = useExamIntegrity(phase === 'exam')
+
   // Grava o rascunho no SERVIDOR (para retomar noutro dispositivo). Best-effort:
   // se falhar (offline ou migração por aplicar), o localStorage continua a cobrir.
   function saveDraftServer() {
@@ -316,6 +321,9 @@ export default function ExamPage() {
             .join(' | ')
         }
       }
+      // Anexa o registo de integridade (saídas/colagens/suspensão), se houver.
+      const integRec = integ.payload()
+      if (integRec) answersWithCalc[INTEGRITY_KEY] = JSON.stringify(integRec)
       const res = await fetch('/api/exam/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -547,6 +555,10 @@ export default function ExamPage() {
             onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
           />
         </div>
+
+        <p className="text-xs px-3 py-2 rounded-xl" style={{ background: '#f8fafc', color: '#6B7280', border: '1px solid #e2e8f0', lineHeight: 1.5 }}>
+          🛡️ Durante a prova, <strong>sair do ecrã do teste</strong> (trocar de app/aba) e <strong>colar texto</strong> ficam registados e ficam visíveis para o teu professor.
+        </p>
 
         <button disabled={!studentName.trim() || !studentClass.trim() || !studentYear.trim()} onClick={startExam}
           className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
@@ -931,6 +943,7 @@ function QuestionCard({
             {/* Textarea */}
             <textarea
               ref={textareaRef} value={answer} onChange={e => onChange(e.target.value)}
+              data-qkey={String(q.index)}
               rows={q.type === 'long_answer' ? 8 : 4}
               placeholder="Escreve a tua resposta aqui..."
               className="w-full px-4 py-3 rounded-xl text-sm resize-none transition-all"

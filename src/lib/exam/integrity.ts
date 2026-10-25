@@ -98,13 +98,10 @@ export function summarizeIntegrity(rec: IntegrityRecord | null): IntegritySummar
   return { exits, pastes, awayMs, suspended, contentAbove, annulled, level, hasAny: pts > 0 || annulled }
 }
 
-// Limiares do aviso/suspensão ao vivo (no dispositivo do aluno). Conservadores de
-// propósito: avisa cedo, só suspende perante acumulação clara (evita falsos
-// positivos com crianças — uma notificação que salta não deve anular um teste).
+// Filtros de ruído do registo ao vivo (no dispositivo do aluno). Não há suspensão:
+// regista-se em silêncio e o professor decide. Estes limiares só evitam registar
+// falsos sinais (toques acidentais, colagens triviais).
 export const INTEGRITY_THRESHOLDS = {
-  warnAfterExits: 1,       // 1.º desvio → aviso no ecrã
-  suspendAfterExits: 4,    // acumulação de saídas → suspensão
-  suspendOnPaste: 1,       // uma colagem de texto substancial → suspensão
   minExitMs: 1_200,        // ignora "saídas" instantâneas (toques acidentais)
   substantialPasteLen: 25, // nº de caracteres a partir do qual a colagem conta
 }
