@@ -195,14 +195,41 @@ interface QuestionStat {
 function AnalyticsDashboard({
   submissions,
   questions,
+  fallbackYear,
+  turmaView,
+  allSubmissions,
 }: {
   submissions: Submission[]
   questions: Question[]
+  fallbackYear: number | null
+  turmaView: 'all' | string
+  allSubmissions: Submission[]
 }) {
   const graded = useMemo(
     () => submissions.filter(s => s.status === 'graded' || s.status === 'reviewed'),
     [submissions],
   )
+
+  // Comparação por turma (só na vista "Todas") — média, aprovados, dispersão.
+  const perTurma = useMemo(() => {
+    if (turmaView !== 'all') return []
+    const groups: Record<string, number[]> = {}
+    const maxByGroup: Record<string, number> = {}
+    for (const s of allSubmissions) {
+      if (s.status !== 'graded' && s.status !== 'reviewed') continue
+      const lbl = turmaLabelOf(s.student_year, s.student_class, fallbackYear)
+      if (lbl === '—') continue
+      ;(groups[lbl] ??= []).push(s.total_score ?? 0)
+      maxByGroup[lbl] = s.max_score ?? maxByGroup[lbl] ?? 100
+    }
+    return Object.entries(groups).map(([turma, arr]) => {
+      const mx = maxByGroup[turma] || 100
+      const mean = arr.reduce((a, b) => a + b, 0) / arr.length
+      const pass = arr.filter(v => v / mx >= 0.5).length
+      return { turma, n: arr.length, avg: mean, max: mx, avgPct: Math.round((mean / mx) * 100),
+        passPct: Math.round((pass / arr.length) * 100), min: Math.min(...arr), maxV: Math.max(...arr), sd: stdev(arr) }
+    }).sort((a, b) => a.turma.localeCompare(b.turma, 'pt'))
+  }, [turmaView, allSubmissions, fallbackYear])
 
   const scores = useMemo(
     () => graded.map(s => s.total_score ?? 0),
@@ -301,10 +328,47 @@ function AnalyticsDashboard({
         ))}
       </div>
 
+      {/* ── Comparação por turma (só na vista "Todas") ── */}
+      {perTurma.length > 1 && (
+        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
+          <div className="px-5 py-3 border-b" style={{ borderColor: '#0D1B2A08' }}>
+            <h3 className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Resultados por turma</h3>
+            <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>Escolhe uma turma em cima para ver a análise detalhada só dessa turma.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #0D1B2A08' }}>
+                  {['Turma', 'Alunos', 'Média', 'Acerto', 'Aprovados ≥50%', 'Mín / Máx', 'DP'].map(h => (
+                    <th key={h} className="px-3 py-2.5 text-left font-semibold" style={{ color: '#6B7280' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {perTurma.map((t, i) => {
+                  const c = pctColor(t.avgPct)
+                  return (
+                    <tr key={t.turma} style={{ borderBottom: i < perTurma.length - 1 ? '1px solid #0D1B2A05' : 'none' }}>
+                      <td className="px-3 py-2.5 font-bold" style={{ color: '#0D1B2A' }}>{t.turma}</td>
+                      <td className="px-3 py-2.5" style={{ color: '#6B7280' }}>{t.n}</td>
+                      <td className="px-3 py-2.5 font-mono" style={{ color: '#0D1B2A' }}>{t.avg.toFixed(1)} <span style={{ color: '#9CA3AF' }}>/ {t.max}</span></td>
+                      <td className="px-3 py-2.5 font-mono font-semibold" style={{ color: c.text }}>{t.avgPct}%</td>
+                      <td className="px-3 py-2.5 font-mono" style={{ color: t.passPct < 50 ? '#dc2626' : '#166534' }}>{t.passPct}%</td>
+                      <td className="px-3 py-2.5 font-mono" style={{ color: '#6B7280' }}>{t.min.toFixed(0)} / {t.maxV.toFixed(0)}</td>
+                      <td className="px-3 py-2.5 font-mono" style={{ color: '#6B7280' }}>± {t.sd.toFixed(1)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* ── Performance por questão ── */}
       <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#0D1B2A10' }}>
         <div className="px-5 py-3 border-b" style={{ borderColor: '#0D1B2A08' }}>
-          <h3 className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Performance por questão</h3>
+          <h3 className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Performance por questão{turmaView !== 'all' ? ` · ${turmaView}` : ''}</h3>
           <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
             Média de acerto (%) · Taxa de erro = alunos com &lt; 50% nessa questão
           </p>
@@ -942,6 +1006,7 @@ export default function GradingDashboard({
   const router = useRouter()
   const [selected, setSelected] = useState<Submission | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
+  const [turmaView, setTurmaView] = useState<'all' | string>('all')   // filtro por turma (Submissões + Análise)
   const [tab, setTab] = useState<'submissions' | 'horizontal' | 'analytics'>('submissions')
   const [regrading, setRegrading] = useState(false)
   const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
@@ -1038,17 +1103,23 @@ export default function GradingDashboard({
     finally { setRegradingOld(false) }
   }
 
-  const filtered = submissions.filter(s => {
-    if (filter === 'pending') return s.status === 'submitted' || s.status === 'grading' || s.status === 'por_corrigir'
-    if (filter === 'graded') return s.status === 'graded' || s.status === 'reviewed'
-    return true
-  })
-
   // Agrupamento por turma: etiqueta "6ºA", ordenado por (ano, turma, nome).
   // Agrupa pela turma CANÓNICA (corrige também as submissões já guardadas com
   // grafias inconsistentes — "6g"/"G", "6º G", etc.), não pelo texto em bruto.
   const fallbackYear = (testSnapshot as TestSnapshot)?.yearLevel ?? null
   const turmaLabel = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
+  const turmaOptions = Array.from(new Set(submissions.map(turmaLabel)))
+    .filter(t => t !== '—').sort((a, b) => a.localeCompare(b, 'pt'))
+
+  const filtered = submissions.filter(s => {
+    if (turmaView !== 'all' && turmaLabel(s) !== turmaView) return false
+    if (filter === 'pending') return s.status === 'submitted' || s.status === 'grading' || s.status === 'por_corrigir'
+    if (filter === 'graded') return s.status === 'graded' || s.status === 'reviewed'
+    return true
+  })
+  // Submissões da turma escolhida (sem o filtro de estado) — para a Análise.
+  const turmaScopedSubs = turmaView === 'all' ? submissions : submissions.filter(s => turmaLabel(s) === turmaView)
+
   const sorted = [...filtered].sort((a, b) => {
     const ka = turmaLabel(a).toLowerCase(), kb = turmaLabel(b).toLowerCase()
     if (ka !== kb) return ka < kb ? -1 : 1
@@ -1208,6 +1279,25 @@ export default function GradingDashboard({
         ))}
       </div>
 
+      {/* ── Filtro por turma (Submissões + Análise) ── */}
+      {(tab === 'submissions' || tab === 'analytics') && turmaOptions.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap mt-3">
+          <span className="text-xs font-medium" style={{ color: '#6B7280' }}>Turma:</span>
+          <button onClick={() => setTurmaView('all')}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: turmaView === 'all' ? '#0D1B2A' : '#0D1B2A20', background: turmaView === 'all' ? '#0D1B2A' : 'transparent', color: turmaView === 'all' ? 'white' : '#6B7280' }}>
+            Todas ({submissions.length})
+          </button>
+          {turmaOptions.map(t => (
+            <button key={t} onClick={() => setTurmaView(t)}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+              style={{ borderColor: turmaView === t ? '#0D1B2A' : '#0D1B2A20', background: turmaView === t ? '#0D1B2A' : 'transparent', color: turmaView === t ? 'white' : '#6B7280' }}>
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Tab: Correção horizontal ── */}
       {tab === 'horizontal' && (
         <HorizontalGrading
@@ -1224,7 +1314,8 @@ export default function GradingDashboard({
 
       {/* ── Tab: Análise ── */}
       {tab === 'analytics' && (
-        <AnalyticsDashboard submissions={submissions} questions={questions} />
+        <AnalyticsDashboard submissions={turmaScopedSubs} questions={questions} fallbackYear={fallbackYear}
+          turmaView={turmaView} allSubmissions={submissions} />
       )}
 
       {/* ── Tab: Submissões ── */}
