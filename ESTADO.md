@@ -361,3 +361,10 @@ Ambos ficaram **parqueados por decisão do Tiago** (2026-10-25), para reavaliar 
 
 ### Por testar com turma real
 Aluno: aviso no arranque; sair do ecrã/colar fica registado (sem bloqueio). Professor: correr "Analisar conteúdo (IA)", ver selos/linha temporal, anular com motivo e confirmar que é reversível.
+
+## 2026-10-25 (cont.) — Resultados por turma + exportação Excel das cotações
+- **Filtro por turma** (commit `e5a99f3`): na Análise e nas Submissões, botões de turma (mantém "Todas"); tabela "Resultados por turma" na Análise (média/acerto/aprovados/mín-máx/DP por turma). `AnalyticsDashboard` passou a receber `fallbackYear`/`turmaView`/`allSubmissions`.
+- **Exportar Excel** (commit `a467c81`, dependência nova `exceljs ^4.4`): `GET /api/exam/sessions/[id]/export-grades` (+`?turma=`) gera .xlsx com folha Global + 1 por turma; grelha com cada pergunta (cotação máxima), nome/ano-turma/número, **ordenada pelo número**, total/%/média, <50% a vermelho. `POST /api/exam/submissions/[id]/identity` (prof certifica/edita nome/número/turma). UI: botão "📊 Exportar Excel" → modal de certificação editável + descarregar tudo ou por turma. **Render tem de reinstalar deps** (exceljs) no próximo deploy.
+
+## PRÓXIMO — Módulo B: estudo pedagógico (por decidir âmbito com o Tiago)
+Pedido: estatística top + exportação top + conclusões → **medidas/recomendações individuais e por turma**. É grande e em parte subjectivo; âmbito a fechar antes de construir (recomendações por IA = custo). Base já existe (AnalyticsDashboard por questão/Bloom/turma). Falta: mais variáveis (dificuldade/discriminação por item, perfil por aluno em Bloom/tipo/tema, distribuição, fiabilidade), relatório exportável (Excel multi-folha e/ou PDF) e recomendações.
