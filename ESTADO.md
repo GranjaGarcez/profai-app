@@ -6,7 +6,7 @@
 ---
 
 ## Último update
-2026-10-25 — identificar o teste em uso (atalho exame→origem, "em uso"/turmas na biblioteca) + esclarecido como se alteram critérios na correção (ver secção no fim).
+2026-10-25 — identificar o teste em uso + **editar critérios de uma pergunta num exame já lançado e re-corrigir só ela** (ver secção no fim).
 2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).
 Updates anteriores relevantes no fim: 2026-10-17 (corrigenda na edição + rede de segurança), 2026-09-13 (motor por blocos, BYOK).
 
@@ -318,4 +318,17 @@ O snapshot do exame (`test_snapshot`) está **congelado** no lançamento. A corr
 - O lever real é a **nota manual**: campo numérico por questão (0..máx, passo 0,5). O `PATCH /api/exam/submissions/[id]` põe `details[qKey].auto=false`, submissão → `status: 'reviewed'`, e **limita ao máximo** da questão (`getAllQuestions(snapshot).find(...).points`). Isso marca `✓ revisto` e blinda das re-correções automáticas.
 - **Nuance:** tocar numa questão marca a submissão **inteira** como `reviewed` → fica fora do "Re-corrigir com os critérios novos" (regrade-outdated salta `reviewed`). Logo: correr o re-grade **antes** dos ajustes manuais.
 - Corrigir o **texto** dos critérios de forma permanente = no conteúdo de origem (atalho ✏️) + "↻ Actualizar critérios" (`/api/ai/refresh-criteria`). Só afecta **próximos** lançamentos.
-- Possível melhoria futura (não pedida): editar a corrigenda de um exame já lançado e re-correr só as questões afectadas, sem tocar no revisto à mão.
+- Possível melhoria futura (não pedida): editar a corrigenda de um exame já lançado e re-correr só as questões afectadas, sem tocar no revisto à mão. → **FEITO em seguida (commit `994e080`).**
+
+## 2026-10-25 (cont.) — Editar critérios de uma pergunta num exame já lançado
+Peça pedida pelo Tiago, com a condição "preservar o bom trabalho, sem destruir nada". Resolve o caso em que, a meio da correção, se descobrem critérios imprecisos numa pergunta e se quer corrigi-los só nessa pergunta sem mexer no resto. Commit `994e080`, aditivo, `cascade.ts` intocado.
+
+### Como funciona
+- **`src/lib/exam/editCriteria.ts`** (`applyCriteriaEdit`): edição **imutável** do snapshot — muda só `correctAnswer` + `markScheme` (+`bloomLevel`) de UMA pergunta; enunciado, opções, cotação, tipo, índice e figura ficam intactos; as outras perguntas idem. A corrigenda anterior é empilhada em `Question._criteriaHistory` (reversível, **sem migração** — vive no próprio JSON).
+- **`POST /api/exam/sessions/[id]/edit-criteria`**: grava o snapshot novo e re-corrige **só a pergunta editada** em cada submissão (`regradeSubmissionSelective` com predicado `onlyThis`). Preserva: as cotações dadas à mão (saltadas, nunca reescritas) e todas as outras perguntas. Status: mantém `reviewed`; só desce a `por_corrigir` se a IA falhar a nova correção numa submissão não-revista.
+- **Marcador `manual: true`** novo no `GradingDetail` (carimbado no PATCH de cotação manual) — distingue revisão do professor de falha da IA (ambas punham `auto:false`). Dados antigos sem o marcador: heurístico `auto:false && status==='reviewed'` (seguro, porque falha da IA fica em `por_corrigir`, não `reviewed`).
+- **UI** (`HorizontalGrading.tsx`): botão **"✏️ Editar critérios"** por pergunta → textareas (resposta certa + critérios) + **"↻ Regenerar com IA"** (reusa `refresh-criteria`) + confirmação que mostra quantas respostas re-corrige e quantas manuais preserva. Fecha ao navegar de questão.
+
+### Garantias de não-destruição
+1. Nunca reescreve uma cotação manual (marcador explícito + histórico). 2. Só toca na pergunta editada. 3. Guarda sempre a corrigenda antiga. 4. Immutable update (não muta o snapshot em memória). 5. tsc + eslint limpos; servidor compila sem erros.
+- **Por testar com turma real** (precisa de exame lançado + submissões): abrir a Correção horizontal, editar os critérios de uma pergunta, confirmar que só essa pergunta muda e que as revisões manuais ficam.
