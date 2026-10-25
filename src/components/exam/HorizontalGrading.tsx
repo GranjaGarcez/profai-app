@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
+import { parseIntegrity } from '@/lib/exam/integrity'
 
 interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; ai_confidence?: number }
 interface Submission {
@@ -343,6 +344,7 @@ export default function HorizontalGrading({
           const correctObj = isObjective && ans.trim().toUpperCase() === String(q.correctAnswer).trim().toUpperCase()
           const reviewedByYou = isReviewed(s)
           const aiUnsure = !reviewedByYou && typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7
+          const cFlag = parseIntegrity(s.answers)?.contentFlags?.find(f => f.qKey === qKey && f.level !== 'ok')
           // Incoerências: nota acima do máximo, ou resposta em branco com pontos.
           const incOverMax = typeof sc === 'number' && sc > q.points + 0.001
           const incBlankScored = ans.trim() === '' && typeof sc === 'number' && sc > 0
@@ -376,6 +378,15 @@ export default function HorizontalGrading({
                           : ans)
                       : <span style={{ color: '#9CA3AF' }}>(em branco)</span>}
                   </p>
+                  {cFlag && (
+                    <p className="text-xs mt-1 px-2 py-1 rounded"
+                      style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}
+                      title={cFlag.reason}>
+                      🛡️ Indício: {cFlag.level === 'above' ? 'vocabulário/conceitos acima do ano' : 'fora do tema / possível cópia'}
+                      {cFlag.terms.length > 0 && <> — <span style={{ fontStyle: 'italic' }}>{cFlag.terms.join(', ')}</span></>}
+                      <span style={{ color: '#b45309' }}> · indício para reveres, não prova</span>
+                    </p>
+                  )}
                 </div>
                 {/* Controlo de cotação */}
                 <div className="flex items-center gap-1.5 shrink-0">

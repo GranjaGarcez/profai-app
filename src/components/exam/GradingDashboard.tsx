@@ -8,6 +8,7 @@ import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 import HorizontalGrading from '@/components/exam/HorizontalGrading'
 import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
 import { findIncoherences } from '@/lib/exam/incoherence'
+import { parseIntegrity, summarizeIntegrity } from '@/lib/exam/integrity'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -888,6 +889,26 @@ export default function GradingDashboard({
     (acc, s) => acc + findIncoherences(questions, s.answers, s.grading_details).length, 0)
   const incoherentSubs = submissions.filter(s => findIncoherences(questions, s.answers, s.grading_details).length > 0).length
 
+  // ── Integridade: submissões com indícios (sinais ao vivo + análise de conteúdo) ──
+  const integritySubs = submissions.filter(s => summarizeIntegrity(parseIntegrity(s.answers)).hasAny).length
+  const anyContentFlags = submissions.some(s => (parseIntegrity(s.answers)?.contentFlags ?? []).length > 0)
+  const [contentChecking, setContentChecking] = useState(false)
+  const [contentMsg, setContentMsg] = useState<string | null>(null)
+
+  async function runContentCheck() {
+    setContentChecking(true); setContentMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/content-check`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha na análise.')
+      setContentMsg(d.analysed != null
+        ? `Analisadas ${d.analysed} submissão(ões): ${d.flagged || 0} com indícios de conteúdo acima do ano / fora do tema${d.flaggedAnswers ? ` (${d.flaggedAnswers} resposta(s))` : ''}. Vê as marcas na Correção horizontal.`
+        : (d.message ?? 'Concluído.'))
+      router.refresh()
+    } catch (e) { setContentMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setContentChecking(false) }
+  }
+
   async function regradePending() {
     setRegrading(true); setRegradeMsg(null)
     try {
@@ -1001,6 +1022,26 @@ export default function GradingDashboard({
         </div>
       )}
       {regradeMsg && <p className="text-xs mb-2" style={{ color: '#6B7280' }}>{regradeMsg}</p>}
+
+      {/* ── Integridade: análise de conteúdo (IA) + resumo de indícios ── */}
+      <div className="rounded-xl border px-4 py-3 mb-3" style={{ borderColor: integritySubs ? '#f59e0b' : '#e2e8f0', background: integritySubs ? '#fffbeb' : '#f8fafc' }}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>
+              🛡️ Integridade {integritySubs > 0 && <span style={{ color: '#b45309' }}>· {integritySubs} submissão(ões) com indícios</span>}
+            </p>
+            <p className="text-xs" style={{ color: '#6B7280' }}>
+              A análise de conteúdo sinaliza respostas com vocabulário/conceitos acima do ano ou fora do tema — indício de ajuda externa (web/IA). São <strong>indícios para reveres</strong>, não notas. Vês as marcas na Correção horizontal.
+            </p>
+          </div>
+          <button onClick={runContentCheck} disabled={contentChecking}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 shrink-0"
+            style={{ background: '#b45309' }}>
+            {contentChecking ? 'A analisar…' : anyContentFlags ? 'Reanalisar conteúdo (IA)' : 'Analisar conteúdo (IA)'}
+          </button>
+        </div>
+        {contentMsg && <p className="text-xs mt-2" style={{ color: '#92400e' }}>{contentMsg}</p>}
+      </div>
 
       {/* ── Divulgação de resultados aos alunos ── */}
       <div className="rounded-xl border px-4 py-3 mb-3"
