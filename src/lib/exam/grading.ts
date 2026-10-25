@@ -186,6 +186,98 @@ ${responseFormat}`
   }
 }
 
+// ── Correcção de "completar espaços" — determinística primeiro ─────────────────
+// Compara ESPAÇO A ESPAÇO de forma determinística (minúsculas, sem acentos) e só
+// recorre à IA para os espaços que não batem exactamente (pode ser sinónimo). Isto
+// elimina a aleatoriedade do modelo no caso comum: branco = 0, acerto exacto/caso =
+// cotação cheia, tudo sem IA. Se não conseguir alinhar os espaços, cai na IA (não
+// perde o comportamento anterior).
+function normBlank(s: string): string {
+  return String(s ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim()
+    .replace(/[.,;:!?"'()«»]/g, '')
+    .replace(/\s+/g, ' ')
+}
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+export async function gradeFillBlank(q: Question, rawAnswer: string, subject: string): Promise<GradingDetail> {
+  const points = q.points
+  const correct = String(q.correctAnswer ?? '').trim()
+  if (!correct) return gradeOpenWithAI(q, rawAnswer, subject)   // sem gabarito → IA
+
+  // Nº de espaços: conta os "____" do enunciado; alinha com o gabarito separado por vírgulas.
+  const blanksInText = (String(q.text ?? '').match(/_{2,}/g) || []).length
+  const expTokens = correct.split(/[,;]/).map(t => t.trim()).filter(Boolean)
+  let expected: string[]
+  if (blanksInText <= 1) expected = [correct]
+  else if (expTokens.length === blanksInText) expected = expTokens
+  else expected = expTokens.length > 1 ? expTokens : [correct]
+  const n = expected.length
+
+  // Divide a resposta do aluno em n tokens; se não alinhar, usa a IA (preserva tudo).
+  const ans = String(rawAnswer ?? '')
+  let given: string[] | null = null
+  if (n === 1) given = [ans.trim()]
+  else {
+    const byComma = ans.split(/[,;]/).map(t => t.trim())
+    if (byComma.length === n) given = byComma
+    else {
+      const byCommaE = ans.split(/[,;]|\s+e\s+/i).map(t => t.trim())
+      if (byCommaE.length === n) given = byCommaE
+    }
+  }
+  if (!given) return gradeOpenWithAI(q, rawAnswer, subject)
+
+  const per = points / n
+  let score = 0, exactCorrect = 0, empty = 0
+  const ambiguous: Array<{ j: number; exp: string; got: string }> = []
+  for (let i = 0; i < n; i++) {
+    const got = (given[i] ?? '').trim()
+    if (!got) { empty++; continue }                              // branco → 0 (determinístico)
+    if (normBlank(got) === normBlank(expected[i])) { score += per; exactCorrect++; continue }
+    ambiguous.push({ j: ambiguous.length + 1, exp: expected[i], got })
+  }
+
+  // Sem ambíguos → 100% determinístico (sem IA, sem aleatoriedade).
+  if (ambiguous.length === 0) {
+    return {
+      score: round2(Math.min(points, score)), max: points,
+      feedback: `${exactCorrect}/${n} espaços certos${empty ? `, ${empty} em branco` : ''}.`,
+      auto: true, ai_confidence: 1,
+    }
+  }
+
+  // Ambíguos → pergunta à IA SÓ por estes: são sinónimos aceitáveis no contexto?
+  const prompt = `Questão de "completar espaços" de ${subject}. Frase: "${q.text}".
+Para cada par [esperado → resposta do aluno], diz se a resposta do aluno é um SINÓNIMO ou equivalente ACEITÁVEL no contexto da frase (não exijas o termo exacto, salvo se for termo técnico/científico preciso sem sinónimo). Ignora maiúsculas e acentos.
+Pares:
+${ambiguous.map(a => `${a.j}. "${a.exp}" → "${a.got}"`).join('\n')}
+Responde APENAS com JSON: {"aceites": [<números dos pares aceites>]}`
+  let aiOk = false, accepted = 0
+  for (const p of gradingProviders()) {
+    const text = await callOpenAICompat(
+      p.url, p.key, p.model, prompt, 15_000, `FillSyn:${p.label}`, p.headers ?? {},
+      'Responde APENAS com JSON válido.', 300, p.extraBody,
+    )
+    const parsed = text ? parseJsonObject(text) as { aceites?: unknown } | null : null
+    if (parsed && Array.isArray(parsed.aceites)) {
+      const ok = new Set((parsed.aceites as unknown[]).map(x => Number(x)))
+      for (const a of ambiguous) if (ok.has(a.j)) { score += per; accepted++ }
+      aiOk = true
+      break
+    }
+  }
+  return {
+    score: round2(Math.min(points, score)), max: points,
+    feedback: aiOk
+      ? `${exactCorrect + accepted}/${n} espaços válidos (sinónimos aceites quando aplicável)${empty ? `, ${empty} em branco` : ''}.`
+      : `${exactCorrect}/${n} espaços certos; ${ambiguous.length} por confirmar (sinónimos) — revê.`,
+    // Se a IA não respondeu, fica por rever (não penaliza injustamente os sinónimos).
+    auto: aiOk, ai_confidence: aiOk ? 0.85 : 0,
+  }
+}
+
 // ── Limitador global de concorrência da correção por IA ────────────────────────
 // Protege a quota quando uma turma inteira submete quase ao mesmo tempo: em vez de
 // disparar dezenas de chamadas Gemini em paralelo (→ 429 em cadeia → notas a 0),
@@ -227,7 +319,9 @@ export async function gradeSubmission(
     } else {
       await acquireGradingSlot()
       try {
-        details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
+        details[key] = q.type === 'fill_blank'
+          ? await gradeFillBlank(q, raw, snapshot.subject)
+          : await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
       } finally {
         releaseGradingSlot()
       }
@@ -272,7 +366,9 @@ export async function regradeSubmissionSelective(
     } else {
       await acquireGradingSlot()
       try {
-        details[key] = await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
+        details[key] = q.type === 'fill_blank'
+          ? await gradeFillBlank(q, raw, snapshot.subject)
+          : await gradeOpenWithAI(q, raw, snapshot.subject, calcHistory)
       } finally {
         releaseGradingSlot()
       }

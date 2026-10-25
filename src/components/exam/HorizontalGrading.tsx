@@ -44,6 +44,9 @@ export default function HorizontalGrading({
   // Overrides locais (cotação/estado) para a vista ficar fluida sem recarregar a página.
   const [scores, setScores] = useState<Record<string, number>>({})   // chave `${subId}|${qKey}`
   const [saved, setSaved] = useState<Record<string, boolean>>({})
+  const [reviewed, setReviewed] = useState<Record<string, boolean>>({})   // marcado por ti nesta sessão
+  const [onlyPending, setOnlyPending] = useState(false)                   // mostrar só o que falta rever
+  const [showQ, setShowQ] = useState(true)                                // mostrar/ocultar enunciado (p/ ver respostas)
 
   const labelOf = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
   const turmas = useMemo(() => Array.from(new Set(submissions.map(labelOf))).sort((a, b) => a.localeCompare(b, 'pt')),
@@ -91,12 +94,16 @@ export default function HorizontalGrading({
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionKey: qKey, score: clamped }),
       })
-      if (res.ok) { setSaved(p => ({ ...p, [k]: true })); onChanged() }
+      if (res.ok) { setSaved(p => ({ ...p, [k]: true })); setReviewed(p => ({ ...p, [k]: true })); onChanged() }
     } catch { /* mantém o valor local; o professor pode repetir */ }
   }
 
-  const reviewedCount = rows.filter(s => curScore(s) !== undefined).length
+  // Revisto por ti = cotaste-o agora, ou já estava marcado como ajuste manual (auto:false).
+  const isReviewed = (s: Submission) => reviewed[`${s.id}|${qKey}`] || s.grading_details?.[qKey]?.auto === false
   const isObjective = q.type === 'multiple_choice' || q.type === 'true_false'
+  const visibleRows = onlyPending ? rows.filter(s => !isReviewed(s)) : rows
+  const reviewedCount = rows.filter(isReviewed).length
+  const pendingCount = rows.length - reviewedCount
 
   return (
     <div className="space-y-4">
@@ -115,7 +122,12 @@ export default function HorizontalGrading({
 
         <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>(setas ← → navegam)</span>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <button onClick={() => setOnlyPending(v => !v)}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: onlyPending ? '#b45309' : '#0D1B2A20', background: onlyPending ? '#fffbeb' : 'transparent', color: onlyPending ? '#92400e' : '#6B7280' }}>
+            {onlyPending ? '◉ Só por rever' : '○ Só por rever'}
+          </button>
           <label className="text-xs" style={{ color: '#6B7280' }}>Turma:</label>
           <select value={turma} onChange={e => setTurma(e.target.value)}
             className="px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>
@@ -125,52 +137,74 @@ export default function HorizontalGrading({
         </div>
       </div>
 
-      {/* Questão (fixa ao topo) + corrigenda de referência */}
-      <div className="sticky top-0 z-10 bg-white rounded-xl border p-4" style={{ borderColor: '#0D1B2A20', boxShadow: '0 2px 8px rgba(13,27,42,0.06)' }}>
+      {/* Questão (fixa ao topo) — altura limitada para as respostas aparecerem sempre */}
+      <div className="sticky top-0 z-10 bg-white rounded-xl border p-3" style={{ borderColor: '#0D1B2A20', boxShadow: '0 2px 8px rgba(13,27,42,0.06)' }}>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="text-xs px-2 py-0.5 rounded-md font-medium" style={{ background: '#f1f5f9', color: '#64748b' }}>
             {TYPE_LABEL[q.type] ?? q.type} · {q.points} pt
           </span>
-          <span className="text-xs" style={{ color: '#059669' }}>
-            {reviewedCount}/{rows.length} com cotação
-          </span>
+          <span className="text-xs" style={{ color: '#059669' }}>✓ revistas por ti: {reviewedCount}</span>
+          <span className="text-xs" style={{ color: pendingCount ? '#b45309' : '#9CA3AF' }}>· por rever: {pendingCount}</span>
+          <button onClick={() => setShowQ(v => !v)}
+            className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-md border"
+            style={{ borderColor: '#0D1B2A20', color: '#0369a1' }}>
+            {showQ ? 'Ocultar enunciado' : 'Mostrar enunciado'}
+          </button>
         </div>
-        <p className="text-sm font-medium mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
-        {q.options && q.options.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {q.options.map((o, i) => <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: '#f8fafc', color: '#374151' }}>{o}</span>)}
-          </div>
-        )}
+
+        {/* Resposta certa — sempre visível (curta e essencial) */}
         <p className="text-xs"><span className="font-bold" style={{ color: '#166534' }}>Resposta certa: </span><span style={{ color: '#166534' }}>{q.correctAnswer}</span></p>
-        {q.markScheme && (
-          <details className="mt-1">
-            <summary className="text-xs cursor-pointer" style={{ color: '#00B4D8' }}>Critérios</summary>
-            <p className="text-xs mt-1" style={{ color: '#374151' }}>{fixMarkSchemeSum(q.markScheme, q.points)}</p>
-          </details>
+
+        {showQ && (
+          <div className="mt-2" style={{ maxHeight: '32vh', overflowY: 'auto' }}>
+            <p className="text-sm font-medium mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
+            {q.options && q.options.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {q.options.map((o, i) => <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: '#f8fafc', color: '#374151' }}>{o}</span>)}
+              </div>
+            )}
+            {q.markScheme && (
+              <details>
+                <summary className="text-xs cursor-pointer" style={{ color: '#00B4D8' }}>Critérios</summary>
+                <p className="text-xs mt-1" style={{ color: '#374151' }}>{fixMarkSchemeSum(q.markScheme, q.points)}</p>
+              </details>
+            )}
+          </div>
         )}
       </div>
 
       {/* Lista de alunos para ESTA questão (agrupada por turma quando "Todas") */}
       <div className="space-y-2">
-        {rows.map((s, i) => {
-          const showHeader = turma === 'all' && (i === 0 || labelOf(rows[i - 1]) !== labelOf(s))
+        {visibleRows.length === 0 && (
+          <p className="text-sm text-center py-6" style={{ color: '#9CA3AF' }}>
+            {onlyPending ? 'Nada por rever nesta questão. 🎉' : 'Sem alunos.'}
+          </p>
+        )}
+        {visibleRows.map((s, i) => {
+          const showHeader = turma === 'all' && (i === 0 || labelOf(visibleRows[i - 1]) !== labelOf(s))
           const k = `${s.id}|${qKey}`
           const sc = curScore(s)
           const d = s.grading_details?.[qKey]
           const ans = s.answers?.[qKey] ?? ''
           const correctObj = isObjective && ans.trim().toUpperCase() === String(q.correctAnswer).trim().toUpperCase()
-          const lowConf = d?.auto === false || (typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7)
+          const reviewedByYou = isReviewed(s)
+          const aiUnsure = !reviewedByYou && typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7
           return (
             <div key={s.id}>
               {showHeader && (
                 <p className="text-xs font-bold mt-3 mb-1 px-1" style={{ color: '#0D1B2A' }}>📋 Turma {labelOf(s)}</p>
               )}
-              <div className="bg-white rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center gap-3" style={{ borderColor: '#0D1B2A10' }}>
+              <div className="bg-white rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center gap-3"
+                style={{ borderColor: reviewedByYou ? '#86efac' : '#0D1B2A10' }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{s.student_name}</span>
                     {turma === 'all' && <span className="text-xs" style={{ color: '#9CA3AF' }}>· {labelOf(s)}</span>}
-                    {lowConf && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fffbeb', color: '#92400e' }} title="IA incerta ou por rever">⚠︎ rever</span>}
+                    {reviewedByYou
+                      ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f0fdf4', color: '#166534' }} title="Já revisto/cotado por ti">✓ revisto</span>
+                      : aiUnsure
+                        ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fffbeb', color: '#92400e' }} title="IA incerta — convém rever">⚠︎ rever</span>
+                        : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#64748b' }} title="Cotado pela IA, por confirmar">IA</span>}
                   </div>
                   <p className="text-sm" style={{ color: '#374151', whiteSpace: 'pre-wrap' }}>
                     {ans.trim()

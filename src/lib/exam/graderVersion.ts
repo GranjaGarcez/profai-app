@@ -5,10 +5,12 @@
 //
 // Histórico:
 //   2026-10-24 — "completar espaços" corrigido por significado (aceita sinónimos).
+//   2026-10-25 — "completar espaços" determinístico espaço-a-espaço (branco=0,
+//                caso/acentos ignorados, IA só para sinónimos ambíguos).
 //
 // Módulo próprio e sem dependências (ao contrário de grading.ts, que é de servidor):
 // pode ser importado tanto no cliente (painel) como no servidor (endpoint).
-export const GRADER_IMPROVED_AT = '2026-10-24T12:30:00Z'
+export const GRADER_IMPROVED_AT = '2026-10-25T15:00:00Z'
 
 // Tipos de pergunta afectados pela última melhoria do motor — a re-correcção só
 // toca NESTES, preservando as outras perguntas (poupa tokens e não arrisca mexer
