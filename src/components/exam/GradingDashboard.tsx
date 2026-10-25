@@ -680,6 +680,7 @@ function SubmissionDetail({
               {/* Resumo dos sinais */}
               <div className="flex gap-3 flex-wrap mt-1.5 text-xs" style={{ color: '#374151' }}>
                 {integSummary.exits > 0 && <span>↩️ {integSummary.exits} saída(s) do ecrã{integSummary.awayMs > 1000 ? ` (${Math.round(integSummary.awayMs / 1000)}s fora)` : ''}</span>}
+                {integSummary.blurs > 0 && <span>🪟 {integSummary.blurs} perda(s) de foco</span>}
                 {integSummary.pastes > 0 && <span>📋 {integSummary.pastes} colagem(ns)</span>}
                 {integSummary.contentAbove > 0 && <span>🧠 {integSummary.contentAbove} resposta(s) com conteúdo acima do ano / fora do tema</span>}
                 {!integSummary.hasAny && <span>Sem sinais ao vivo.</span>}

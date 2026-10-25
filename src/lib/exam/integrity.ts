@@ -66,6 +66,7 @@ export function withIntegrity(
 
 export interface IntegritySummary {
   exits: number
+  blurs: number           // perdas de foco sem ir a 2.º plano
   pastes: number
   awayMs: number          // tempo total fora do ecrã
   suspended: boolean
@@ -79,8 +80,9 @@ export interface IntegritySummary {
 export function summarizeIntegrity(rec: IntegrityRecord | null): IntegritySummary {
   const events = rec?.events ?? []
   const exits = events.filter(e => e.kind === 'exit').length
+  const blurs = events.filter(e => e.kind === 'blur').length
   const pastes = events.filter(e => e.kind === 'paste').length
-  const awayMs = events.filter(e => e.kind === 'exit').reduce((s, e) => s + (e.durMs ?? 0), 0)
+  const awayMs = events.filter(e => e.kind === 'exit' || e.kind === 'blur').reduce((s, e) => s + (e.durMs ?? 0), 0)
   const contentAbove = (rec?.contentFlags ?? []).filter(f => f.level !== 'ok').length
   const suspended = !!rec?.suspended
   const annulled = !!rec?.annulled
@@ -89,13 +91,14 @@ export function summarizeIntegrity(rec: IntegrityRecord | null): IntegritySummar
   let pts = 0
   pts += pastes * 3
   pts += exits * 1
+  pts += blurs * 1
   if (awayMs > 30_000) pts += 2
   pts += contentAbove * 2
   if (suspended) pts += 4
   const level: IntegritySummary['level'] =
     annulled ? 'high' : pts >= 6 ? 'high' : pts >= 3 ? 'medium' : pts >= 1 ? 'low' : 'none'
 
-  return { exits, pastes, awayMs, suspended, contentAbove, annulled, level, hasAny: pts > 0 || annulled }
+  return { exits, blurs, pastes, awayMs, suspended, contentAbove, annulled, level, hasAny: pts > 0 || annulled }
 }
 
 // Filtros de ruído do registo ao vivo (no dispositivo do aluno). Não há suspensão:
