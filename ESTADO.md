@@ -366,5 +366,11 @@ Aluno: aviso no arranque; sair do ecrã/colar fica registado (sem bloqueio). Pro
 - **Filtro por turma** (commit `e5a99f3`): na Análise e nas Submissões, botões de turma (mantém "Todas"); tabela "Resultados por turma" na Análise (média/acerto/aprovados/mín-máx/DP por turma). `AnalyticsDashboard` passou a receber `fallbackYear`/`turmaView`/`allSubmissions`.
 - **Exportar Excel** (commit `a467c81`, dependência nova `exceljs ^4.4`): `GET /api/exam/sessions/[id]/export-grades` (+`?turma=`) gera .xlsx com folha Global + 1 por turma; grelha com cada pergunta (cotação máxima), nome/ano-turma/número, **ordenada pelo número**, total/%/média, <50% a vermelho. `POST /api/exam/submissions/[id]/identity` (prof certifica/edita nome/número/turma). UI: botão "📊 Exportar Excel" → modal de certificação editável + descarregar tudo ou por turma. **Render tem de reinstalar deps** (exceljs) no próximo deploy.
 
-## PRÓXIMO — Módulo B: estudo pedagógico (por decidir âmbito com o Tiago)
-Pedido: estatística top + exportação top + conclusões → **medidas/recomendações individuais e por turma**. É grande e em parte subjectivo; âmbito a fechar antes de construir (recomendações por IA = custo). Base já existe (AnalyticsDashboard por questão/Bloom/turma). Falta: mais variáveis (dificuldade/discriminação por item, perfil por aluno em Bloom/tipo/tema, distribuição, fiabilidade), relatório exportável (Excel multi-folha e/ou PDF) e recomendações.
+## 2026-10-25 (cont.) — Módulo B: estudo pedagógico (commit `833ec37`)
+Âmbito escolhido pelo Tiago: recomendações **por regras + IA a pedido**; exportação **Excel + PDF**. Aditivo, `cascade.ts` intocado.
+- **`src/lib/exam/pedagogy.ts`** (motor puro): por item — dificuldade, **discriminação** (27% sup vs inf), taxa de erro; global — média/mediana/DP/mín-máx, distribuição por nível 1-5, **alfa de Cronbach**; por Bloom e por tipo; **perfil por aluno** (forças/fraquezas por Bloom/tipo); recomendações por regras (turma + individuais).
+- **Excel** multi-folha: `GET /api/exam/sessions/[id]/export-study` (Resumo, Por questão, Por turma, Por aluno, Recomendações).
+- **IA a pedido**: `POST /api/exam/sessions/[id]/study-ai` redige medidas (turma + alunos em risco) ancoradas só nas estatísticas; custo só ao carregar no botão.
+- **Página/PDF**: `/dashboard/exams/[sessionId]/estudo` mostra o relatório e serve de fonte do PDF (botão "Guardar PDF" via impressão, reusa `.no-print`); botões Excel e "Aprofundar com IA". Link "📈 Estudo pedagógico" no painel de correção.
+- **Por testar com turma real**: abrir o Estudo, confirmar estatística/discriminação, exportar Excel e PDF, e correr o aprofundamento por IA.
+- Nota: discriminação/alfa precisam de nº razoável de alunos (≥10 p/ discriminação) — com poucos, ficam indicativos.
