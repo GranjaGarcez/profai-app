@@ -41,14 +41,15 @@ export async function PATCH(
   const safeScore = Math.max(0, Math.min(Number(score) || 0, typeof qMax === 'number' ? qMax : Number(score) || 0))
 
   // Atualiza detalhe da questão
-  const details = (sub.grading_details ?? {}) as Record<string, { score: number; max: number; feedback: string; auto: boolean }>
+  const details = (sub.grading_details ?? {}) as Record<string, { score: number; max: number; feedback: string; auto: boolean; manual?: boolean }>
   const oldScore = details[questionKey]?.score ?? 0
   details[questionKey] = {
     ...(details[questionKey] ?? {}),
     score: safeScore,
     max: typeof qMax === 'number' ? qMax : details[questionKey]?.max,
     feedback: feedback ?? details[questionKey]?.feedback ?? '',
-    auto: false, // marcado como revisão manual
+    auto: false,    // marcado como revisão manual
+    manual: true,   // explícito: foi o professor (distingue de uma falha da IA, que também põe auto:false)
   }
 
   // Recalcula total (com a nota já limitada ao máximo)

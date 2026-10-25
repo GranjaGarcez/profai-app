@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 
-interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; ai_confidence?: number }
+interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; ai_confidence?: number }
 interface Submission {
   id: string
   student_name: string
@@ -24,6 +24,8 @@ interface Question {
   correctAnswer: string
   points: number
   markScheme?: string
+  bloomLevel?: string
+  figure?: unknown
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -32,12 +34,16 @@ const TYPE_LABEL: Record<string, string> = {
 }
 
 export default function HorizontalGrading({
-  submissions, questions, fallbackYear, onChanged,
+  submissions, questions, fallbackYear, onChanged, sessionId, subject, yearLevel, topic,
 }: {
   submissions: Submission[]
   questions: Question[]
   fallbackYear: number | null
   onChanged: () => void
+  sessionId: string
+  subject: string
+  yearLevel: number
+  topic: string
 }) {
   const [qi, setQi] = useState(0)
   const [turma, setTurma] = useState<'all' | string>('all')
@@ -48,6 +54,15 @@ export default function HorizontalGrading({
   const [onlyPending, setOnlyPending] = useState(false)                   // mostrar só o que falta rever
   const [showQ, setShowQ] = useState(true)                                // mostrar/ocultar enunciado (p/ ver respostas)
 
+  // ── Editar critérios desta pergunta (exame já lançado) + re-corrigir só ela ──
+  const [editing, setEditing] = useState(false)
+  const [editAnswer, setEditAnswer] = useState('')
+  const [editMark, setEditMark] = useState('')
+  const [regenerating, setRegenerating] = useState(false)
+  const [savingCrit, setSavingCrit] = useState(false)
+  const [confirmSave, setConfirmSave] = useState(false)
+  const [critMsg, setCritMsg] = useState<string | null>(null)
+
   const labelOf = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
   const turmas = useMemo(() => Array.from(new Set(submissions.map(labelOf))).sort((a, b) => a.localeCompare(b, 'pt')),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,13 +71,20 @@ export default function HorizontalGrading({
   const q = questions[qi]
   const qKey = q ? String(q.index) : ''
 
+  // Fecha o editor de critérios ao mudar de questão (evita editar a errada).
+  function closeEditor() { setEditing(false); setConfirmSave(false); setCritMsg(null) }
+  function changeQi(next: number) {
+    setQi(Math.max(0, Math.min(questions.length - 1, next)))
+    closeEditor()
+  }
+
   // Navegação por teclado entre questões (quando não se está a escrever num campo).
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
-      if (e.key === 'ArrowRight') setQi(i => Math.min(questions.length - 1, i + 1))
-      if (e.key === 'ArrowLeft') setQi(i => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') { setQi(i => Math.min(questions.length - 1, i + 1)); closeEditor() }
+      if (e.key === 'ArrowLeft') { setQi(i => Math.max(0, i - 1)); closeEditor() }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
@@ -105,18 +127,70 @@ export default function HorizontalGrading({
   const reviewedCount = rows.filter(isReviewed).length
   const pendingCount = rows.length - reviewedCount
 
+  // ── Editor de critérios: pré-visualização do impacto (sobre TODAS as submissões,
+  // não só a turma filtrada — o servidor re-corrige o exame inteiro) ──────────────
+  const gradedSubs = submissions.filter(s => s.grading_details?.[qKey])
+  const preservedSubs = gradedSubs.filter(s => {
+    const d = s.grading_details![qKey]
+    return d?.manual === true || (d?.auto === false && s.status === 'reviewed')
+  })
+  const regradableCount = gradedSubs.length - preservedSubs.length
+
+  function openEditor() {
+    setEditAnswer(q.correctAnswer ?? '')
+    setEditMark(q.markScheme ?? '')
+    setConfirmSave(false); setCritMsg(null); setEditing(true)
+  }
+
+  async function regenerateCriteria() {
+    setRegenerating(true); setCritMsg(null)
+    try {
+      const res = await fetch('/api/ai/refresh-criteria', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject, yearLevel, topic, type: q.type, points: q.points,
+          text: q.text, options: q.options ?? null, figure: q.figure ?? null,
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok || !d.criteria) throw new Error(d.error || 'Falha ao regenerar.')
+      setEditAnswer(String(d.criteria.correctAnswer ?? ''))
+      setEditMark(String(d.criteria.markScheme ?? ''))
+      setCritMsg('Critérios regenerados pela IA — revê e ajusta antes de guardar.')
+    } catch (e) { setCritMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setRegenerating(false) }
+  }
+
+  async function saveCriteria() {
+    setSavingCrit(true); setCritMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/edit-criteria`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionKey: qKey, correctAnswer: editAnswer, markScheme: editMark }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha ao guardar.')
+      setCritMsg(`Critérios guardados. ${d.regraded} resposta(s) re-corrigida(s)` +
+        `${d.preserved ? `, ${d.preserved} revisão(ões) manual(ais) preservada(s)` : ''}` +
+        `${d.stillPending ? `, ${d.stillPending} ficaram por confirmar` : ''}.`)
+      setConfirmSave(false); setEditing(false)
+      onChanged()   // recarrega snapshot (critérios novos) + notas
+    } catch (e) { setCritMsg(e instanceof Error ? e.message : 'Erro.'); setConfirmSave(false) }
+    finally { setSavingCrit(false) }
+  }
+
   return (
     <div className="space-y-4">
       {/* Controlos */}
       <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border px-3 py-2" style={{ borderColor: '#0D1B2A10' }}>
-        <button onClick={() => setQi(i => Math.max(0, i - 1))} disabled={qi === 0}
+        <button onClick={() => changeQi(qi - 1)} disabled={qi === 0}
           className="px-3 py-1.5 rounded-lg text-sm font-semibold border disabled:opacity-40"
           style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>◀</button>
-        <select value={qi} onChange={e => setQi(Number(e.target.value))}
+        <select value={qi} onChange={e => changeQi(Number(e.target.value))}
           className="px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>
           {questions.map((qq, i) => <option key={i} value={i}>Questão {i + 1} de {questions.length}</option>)}
         </select>
-        <button onClick={() => setQi(i => Math.min(questions.length - 1, i + 1))} disabled={qi === questions.length - 1}
+        <button onClick={() => changeQi(qi + 1)} disabled={qi === questions.length - 1}
           className="px-3 py-1.5 rounded-lg text-sm font-semibold border disabled:opacity-40"
           style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>▶</button>
 
@@ -145,8 +219,14 @@ export default function HorizontalGrading({
           </span>
           <span className="text-xs" style={{ color: '#059669' }}>✓ revistas por ti: {reviewedCount}</span>
           <span className="text-xs" style={{ color: pendingCount ? '#b45309' : '#9CA3AF' }}>· por rever: {pendingCount}</span>
-          <button onClick={() => setShowQ(v => !v)}
+          <button onClick={() => (editing ? setEditing(false) : openEditor())}
             className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-md border"
+            style={{ borderColor: editing ? '#b45309' : '#C8A84B', background: editing ? '#fffbeb' : '#fdf6e3', color: '#92400e' }}
+            title="Corrigir a resposta certa / os critérios desta pergunta e re-corrigir só esta pergunta">
+            {editing ? '✕ Fechar critérios' : '✏️ Editar critérios'}
+          </button>
+          <button onClick={() => setShowQ(v => !v)}
+            className="text-xs font-semibold px-2 py-0.5 rounded-md border"
             style={{ borderColor: '#0D1B2A20', color: '#0369a1' }}>
             {showQ ? 'Ocultar enunciado' : 'Mostrar enunciado'}
           </button>
@@ -172,6 +252,79 @@ export default function HorizontalGrading({
           </div>
         )}
       </div>
+
+      {/* ── Editor de critérios (exame já lançado) ── */}
+      {editing && (
+        <div className="bg-white rounded-xl border-2 p-4 space-y-3" style={{ borderColor: '#C8A84B' }}>
+          <div className="flex items-start gap-2">
+            <span className="text-lg">✏️</span>
+            <div>
+              <p className="text-sm font-bold" style={{ color: '#92400e' }}>Corrigir critérios da Questão {qi + 1}</p>
+              <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
+                Muda só a corrigenda desta pergunta. O enunciado, as opções e a cotação ficam iguais; as outras
+                perguntas e as cotações que já deste à mão <strong>não são tocadas</strong>. Os critérios anteriores
+                ficam guardados (reversíveis).
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold" style={{ color: '#374151' }}>Resposta certa</label>
+            <textarea value={editAnswer} onChange={e => setEditAnswer(e.target.value)} rows={2}
+              className="w-full mt-1 px-2.5 py-1.5 rounded-lg border text-sm"
+              style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: '#374151' }}>Critérios de correção ({q.points} pt)</label>
+            <textarea value={editMark} onChange={e => setEditMark(e.target.value)} rows={4}
+              placeholder="Ex.: Identifica a causa (3pt) + Justifica com o conceito (2pt)"
+              className="w-full mt-1 px-2.5 py-1.5 rounded-lg border text-sm"
+              style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
+            <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Os pontos parcelares são reajustados para somarem {q.points}.</p>
+          </div>
+
+          {critMsg && <p className="text-xs" style={{ color: '#92400e' }}>{critMsg}</p>}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={regenerateCriteria} disabled={regenerating || savingCrit}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-50"
+              style={{ borderColor: '#00B4D8', color: '#0369a1' }}>
+              {regenerating ? 'A regenerar…' : '↻ Regenerar com IA'}
+            </button>
+            <span className="text-xs ml-auto" style={{ color: '#6B7280' }}>
+              Re-corrige {regradableCount} resposta(s){preservedSubs.length ? ` · preserva ${preservedSubs.length} manual(ais)` : ''}
+            </span>
+          </div>
+
+          {!confirmSave ? (
+            <button onClick={() => setConfirmSave(true)} disabled={!editAnswer.trim() || savingCrit}
+              className="w-full text-sm font-bold px-4 py-2 rounded-lg text-white disabled:opacity-50"
+              style={{ background: '#C8A84B' }}>
+              Guardar e re-corrigir esta pergunta
+            </button>
+          ) : (
+            <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: '#C8A84B', background: '#fffbeb' }}>
+              <p className="text-xs" style={{ color: '#92400e' }}>
+                Vais re-corrigir <strong>{regradableCount}</strong> resposta(s) a esta pergunta com os critérios novos.
+                {preservedSubs.length > 0 && <> As <strong>{preservedSubs.length}</strong> que já cotaste à mão ficam intactas.</>}
+                {' '}Confirmas?
+              </p>
+              <div className="flex gap-2">
+                <button onClick={saveCriteria} disabled={savingCrit}
+                  className="flex-1 text-sm font-bold px-4 py-2 rounded-lg text-white disabled:opacity-50"
+                  style={{ background: '#C8A84B' }}>
+                  {savingCrit ? 'A guardar e re-corrigir…' : 'Sim, re-corrigir'}
+                </button>
+                <button onClick={() => setConfirmSave(false)} disabled={savingCrit}
+                  className="text-sm font-semibold px-4 py-2 rounded-lg border"
+                  style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Lista de alunos para ESTA questão (agrupada por turma quando "Todas") */}
       <div className="space-y-2">

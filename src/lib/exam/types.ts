@@ -16,6 +16,9 @@ export interface Question {
   markScheme?: string
   bloomLevel?: string
   allowCalculator?: boolean   // IA define; professor pode sobrepor
+  // Histórico de critérios editados num exame já lançado (aditivo, reversível).
+  // Cada entrada guarda a corrigenda ANTERIOR à edição — nunca se perde o original.
+  _criteriaHistory?: Array<{ at: string; correctAnswer: string; markScheme?: string; bloomLevel?: string }>
 }
 
 export interface TestGroup {
@@ -60,7 +63,8 @@ export interface GradingDetail {
   score: number
   max: number
   feedback: string
-  auto: boolean          // true = automático (MCQ/TF) ou IA; false = manual do prof
+  auto: boolean          // true = automático (MCQ/TF) ou IA; false = NÃO automático
+  manual?: boolean       // true = cotação definida à mão pelo prof (≠ falha da IA, que também põe auto:false)
   ai_confidence?: number // 0-1, só para open answers
   rubric?: RubricCriterion[] // só em long_answer — decomposição por critério
 }

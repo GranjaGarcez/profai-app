@@ -1069,6 +1069,10 @@ export default function GradingDashboard({
           questions={questions}
           fallbackYear={fallbackYear}
           onChanged={() => router.refresh()}
+          sessionId={sessionId}
+          subject={(testSnapshot as TestSnapshot).subject}
+          yearLevel={(testSnapshot as TestSnapshot).yearLevel}
+          topic={(testSnapshot as TestSnapshot).topic}
         />
       )}
 
