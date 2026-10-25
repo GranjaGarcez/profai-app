@@ -6,7 +6,7 @@
 ---
 
 ## Último update
-2026-10-25 — identificar o teste em uso + **editar critérios de uma pergunta num exame já lançado e re-corrigir só ela** (ver secção no fim).
+2026-10-25 — **integridade do exame** (análise de conteúdo + sinais ao vivo, só registar; prof decide/anula) + regeneração de critérios ancorada + editar critérios num exame lançado (ver secções no fim).
 2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).
 Updates anteriores relevantes no fim: 2026-10-17 (corrigenda na edição + rede de segurança), 2026-09-13 (motor por blocos, BYOK).
 
@@ -332,3 +332,28 @@ Peça pedida pelo Tiago, com a condição "preservar o bom trabalho, sem destrui
 ### Garantias de não-destruição
 1. Nunca reescreve uma cotação manual (marcador explícito + histórico). 2. Só toca na pergunta editada. 3. Guarda sempre a corrigenda antiga. 4. Immutable update (não muta o snapshot em memória). 5. tsc + eslint limpos; servidor compila sem erros.
 - **Por testar com turma real** (precisa de exame lançado + submissões): abrir a Correção horizontal, editar os critérios de uma pergunta, confirmar que só essa pergunta muda e que as revisões manuais ficam.
+
+## 2026-10-25 (cont.) — Regeneração de critérios ancorada (commit `c42d630`)
+A regeneração (`refresh-criteria`) reinventava a resposta do zero e não impunha o ano. Agora aceita `currentAnswer`/`currentMarkScheme` (opcionais): mantém a resposta certa do professor como âncora e constrói os critérios à volta dela; regra nova impõe linguagem/exigência do 2.º ciclo (sem termos acima do ano). O editor de critérios do exame envia a resposta/critérios actuais. Retrocompatível (editor de conteúdo sem âncora = comportamento antigo).
+
+## 2026-10-25 (cont.) — Integridade do exame (anti-batota) — commits `05f519f` + `4471d2a`
+Pedido do Tiago (2 alunas pesquisaram na net termos não dados). Decisão final: **só registar, NÃO bloquear o aluno; o professor vê e decide** (anulação sempre humana). Tudo aditivo, `cascade.ts` intocado, **zero migração** (registo em `answers.__integrity`, chave reservada ignorada pela correção como as `calc_`).
+
+### Limites técnicos (honestos, ditos ao Tiago)
+É um site no browser do aluno: **impossível** ler SMS, histórico do telemóvel, outras apps/páginas, ou ver um 2.º aparelho. Captura de ecrã exige consentimento do aluno (inútil contra batota). Por isso o proctoring do lado do cliente só apanha o que acontece **na própria página**.
+
+### Peça 1 — Análise de conteúdo/nível (`content-check`, `src/lib/exam/integrity.ts`)
+Botão no painel → IA (cascata validada) classifica cada resposta aberta: `above` (vocabulário/conceitos acima do 2.º ciclo), `off_topic` (fora do tema/cara de IA) ou `ok`; conservadora; lista termos. Só anexa **indícios** (`contentFlags`), não mexe em notas. **Apanha o caso real mesmo que pesquisem noutro aparelho** (analisa o texto, não o dispositivo). Marcas na Correção horizontal, sempre "indício para reveres, não prova".
+
+### Peça 2 — Sinais ao vivo (`useExamIntegrity.ts`) — só registar
+Na prova regista saídas do ecrã (com duração), colagens (com pergunta + excerto) e cópias; anexa à entrega. Sem overlay/suspensão/aviso a meio (decisão pedagógica). Aviso-prévio honesto no arranque (transparência = legitimidade). `data-qkey` nas respostas abertas atribui a colagem à pergunta.
+- **Professor** (`SubmissionDetail`): selo `🛡️ indícios`/`⛔ anulado` na lista; painel com resumo + **linha temporal** dos eventos + indícios de conteúdo; botão **"Anular exame"** (motivo obrigatório, prova anexa, **reversível**, não mexe na nota) via `POST /api/exam/submissions/[id]/annul`. Privacidade: a API de resultados do aluno nunca devolve o `__integrity`.
+
+### Câmara — NÃO implementada (decisão legal pendente)
+Tiago abriu a porta ("se não for contra a lei"; EEs assinam captura de imagem na matrícula). **Não** foi construída: não posso afirmar que é legal; o consentimento genérico da matrícula quase de certeza **não cobre** videovigilância comportamental de menores por app externa (RGPD exige finalidade específica; responsável = escola). A fazer-se, só com OK escrito da direção/EPD da escola, e no modo mínimo (deteção de *presença* no próprio dispositivo, zero imagens guardadas, sem reconhecimento). Fica desligada e para decisão da escola.
+
+### Nota de método (tokens)
+`/polvo` não é inútil, mas é para trabalho-lixo (gerar questões, rascunhos), não para cirurgia neste código ao vivo (a própria regra manda Claude directo para arquitectura/delicado). Poupança sem perder qualidade: leituras dirigidas, verificação agrupada no fim de cada peça, decisões fechadas à cabeça.
+
+### Por testar com turma real
+Aluno: aviso no arranque; sair do ecrã/colar fica registado (sem bloqueio). Professor: correr "Analisar conteúdo (IA)", ver selos/linha temporal, anular com motivo e confirmar que é reversível.
