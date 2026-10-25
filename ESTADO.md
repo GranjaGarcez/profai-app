@@ -6,6 +6,7 @@
 ---
 
 ## Último update
+2026-10-25 — identificar o teste em uso (atalho exame→origem, "em uso"/turmas na biblioteca) + esclarecido como se alteram critérios na correção (ver secção no fim).
 2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).
 Updates anteriores relevantes no fim: 2026-10-17 (corrigenda na edição + rede de segurança), 2026-09-13 (motor por blocos, BYOK).
 
@@ -304,3 +305,17 @@ Sessão longa de melhorias para uso real com alunos. Tudo aditivo; `cascade.ts` 
 - Aplicar a migração `20261022_student_results.sql` (resultados ao aluno).
 - Email por Resend congelado (limite de env vars do Render / plano).
 - Alíneas (subquestões) como tipo novo — adiado (toca na página de exame ao vivo).
+
+## 2026-10-25 — Identificar o teste em uso + como se alteram critérios na correção
+Problema do Tiago: com vários testes do mesmo nome, não conseguia saber qual estava a ser usado num exame (nome cortado na biblioteca, sem indicador de "em uso"), nem como corrigir critérios imprecisos de um exame já a decorrer.
+
+### Identificação do teste (commit `571b05f`, aditivo)
+- **Correção do exame** (`src/app/(dashboard)/dashboard/exams/[sessionId]/page.tsx`): atalho `✏️ Teste de origem #xxxxxx` que abre o conteúdo de onde o exame foi lançado (a sessão guarda `content_item_id`). Tooltip avisa que editar aí vale para lançamentos futuros, não para o exame já lançado.
+- **Biblioteca** (`content/page.tsx` + `ContentLibraryClient.tsx`): cada cartão mostra agora badge verde `📣 Em uso (N) · CÓDIGO` (query a `exam_sessions` por `teacher_id`), linha `👥 Turmas: 6ºG, 6ºH` (turma canónica via `turmaLabel` sobre `exam_submissions`), **nome completo** em 2 linhas com tooltip (fim do corte que impedia distinguir homónimos), e ref `#xxxxxx` igual à do exame. `tsc` limpo; páginas compilam (307 → login).
+
+### Esclarecimento importante — critérios na correção (NÃO é editável no exame lançado)
+O snapshot do exame (`test_snapshot`) está **congelado** no lançamento. A corrigenda (correctAnswer + markScheme) aparece na correção **só como guia read-only** (`HorizontalGrading.tsx` linhas ~156/169). **Não** há campo para reescrever o texto nem re-correr a IA sobre critérios novos dentro de um exame já lançado.
+- O lever real é a **nota manual**: campo numérico por questão (0..máx, passo 0,5). O `PATCH /api/exam/submissions/[id]` põe `details[qKey].auto=false`, submissão → `status: 'reviewed'`, e **limita ao máximo** da questão (`getAllQuestions(snapshot).find(...).points`). Isso marca `✓ revisto` e blinda das re-correções automáticas.
+- **Nuance:** tocar numa questão marca a submissão **inteira** como `reviewed` → fica fora do "Re-corrigir com os critérios novos" (regrade-outdated salta `reviewed`). Logo: correr o re-grade **antes** dos ajustes manuais.
+- Corrigir o **texto** dos critérios de forma permanente = no conteúdo de origem (atalho ✏️) + "↻ Actualizar critérios" (`/api/ai/refresh-criteria`). Só afecta **próximos** lançamentos.
+- Possível melhoria futura (não pedida): editar a corrigenda de um exame já lançado e re-correr só as questões afectadas, sem tocar no revisto à mão.
