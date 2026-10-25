@@ -7,6 +7,7 @@ import type { TestSnapshot, Question, GradingDetail, RubricCriterion } from '@/l
 import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 import HorizontalGrading from '@/components/exam/HorizontalGrading'
 import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
+import { findIncoherences } from '@/lib/exam/incoherence'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -881,6 +882,11 @@ export default function GradingDashboard({
   const outdated = !testHasAffected ? [] : submissions.filter(s =>
     s.status === 'graded' && s.graded_at && new Date(s.graded_at) < new Date(GRADER_IMPROVED_AT))
   const [regradingOld, setRegradingOld] = useState(false)
+  // Incoerências de cotação (nota acima do máximo, ou branco com pontos) — para o
+  // professor não as deixar passar; corrigem-se na Correção horizontal (a vermelho).
+  const incoherenceCount = submissions.reduce(
+    (acc, s) => acc + findIncoherences(questions, s.answers, s.grading_details).length, 0)
+  const incoherentSubs = submissions.filter(s => findIncoherences(questions, s.answers, s.grading_details).length > 0).length
 
   async function regradePending() {
     setRegrading(true); setRegradeMsg(null)
@@ -951,6 +957,18 @@ export default function GradingDashboard({
           onReassigned={() => { setSelected(null); router.refresh() }}
           onClose={() => setSelected(null)}
         />
+      )}
+
+      {/* Incoerências de cotação — bem visível, para não passarem */}
+      {incoherenceCount > 0 && (
+        <div className="rounded-xl border-2 px-4 py-3 mb-3" style={{ borderColor: '#dc2626', background: '#fef2f2' }}>
+          <p className="text-sm font-bold" style={{ color: '#991b1b' }}>
+            ⚠ {incoherenceCount} incoerência(s) de cotação em {incoherentSubs} submissão(ões)
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: '#b91c1c' }}>
+            Notas acima do máximo da pergunta, ou respostas em branco com pontos. Abre a <strong>Correção horizontal</strong>: ficam marcadas a vermelho, com o botão <strong>“corrigir”</strong> para pôr o valor correcto (0 ou o máximo).
+          </p>
+        </div>
       )}
 
       {/* Aviso + re-correção de pendentes (quota de IA esgotada no momento) */}

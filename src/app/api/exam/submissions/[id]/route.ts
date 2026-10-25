@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getAllQuestions } from '@/lib/exam/types'
+import type { TestSnapshot } from '@/lib/exam/types'
 
 // PATCH — professor substitui a cotação de uma questão específica
 export async function PATCH(
@@ -25,7 +27,7 @@ export async function PATCH(
   // Verifica propriedade via session
   const { data: sess } = await supabase
     .from('exam_sessions')
-    .select('teacher_id')
+    .select('teacher_id, test_snapshot')
     .eq('id', sub.session_id)
     .single()
 
@@ -33,18 +35,24 @@ export async function PATCH(
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
+  // Máximo autoritário desta pergunta (do snapshot) — nunca deixar a nota passar dele.
+  const qMax = getAllQuestions(sess.test_snapshot as TestSnapshot)
+    .find(q => String(q.index) === String(questionKey))?.points
+  const safeScore = Math.max(0, Math.min(Number(score) || 0, typeof qMax === 'number' ? qMax : Number(score) || 0))
+
   // Atualiza detalhe da questão
   const details = (sub.grading_details ?? {}) as Record<string, { score: number; max: number; feedback: string; auto: boolean }>
   const oldScore = details[questionKey]?.score ?? 0
   details[questionKey] = {
     ...(details[questionKey] ?? {}),
-    score: Number(score),
+    score: safeScore,
+    max: typeof qMax === 'number' ? qMax : details[questionKey]?.max,
     feedback: feedback ?? details[questionKey]?.feedback ?? '',
     auto: false, // marcado como revisão manual
   }
 
-  // Recalcula total
-  const newTotal = (sub.total_score ?? 0) - oldScore + Number(score)
+  // Recalcula total (com a nota já limitada ao máximo)
+  const newTotal = (sub.total_score ?? 0) - oldScore + safeScore
 
   const updates: Record<string, unknown> = {
     grading_details: details,

@@ -189,15 +189,19 @@ export default function HorizontalGrading({
           const correctObj = isObjective && ans.trim().toUpperCase() === String(q.correctAnswer).trim().toUpperCase()
           const reviewedByYou = isReviewed(s)
           const aiUnsure = !reviewedByYou && typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7
+          // Incoerências: nota acima do máximo, ou resposta em branco com pontos.
+          const incOverMax = typeof sc === 'number' && sc > q.points + 0.001
+          const incBlankScored = ans.trim() === '' && typeof sc === 'number' && sc > 0
+          const incoherent = incOverMax || incBlankScored
           return (
             <div key={s.id}>
               {showHeader && (
                 <p className="text-xs font-bold mt-3 mb-1 px-1" style={{ color: '#0D1B2A' }}>📋 Turma {labelOf(s)}</p>
               )}
-              <div className="bg-white rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center gap-3"
-                style={{ borderColor: reviewedByYou ? '#86efac' : '#0D1B2A10' }}>
+              <div className="bg-white rounded-xl border-2 p-3 flex flex-col sm:flex-row sm:items-center gap-3"
+                style={{ borderColor: incoherent ? '#dc2626' : reviewedByYou ? '#86efac' : '#0D1B2A10', background: incoherent ? '#fef2f2' : 'white' }}>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{s.student_name}</span>
                     {turma === 'all' && <span className="text-xs" style={{ color: '#9CA3AF' }}>· {labelOf(s)}</span>}
                     {reviewedByYou
@@ -205,6 +209,11 @@ export default function HorizontalGrading({
                       : aiUnsure
                         ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fffbeb', color: '#92400e' }} title="IA incerta — convém rever">⚠︎ rever</span>
                         : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#64748b' }} title="Cotado pela IA, por confirmar">IA</span>}
+                    {incoherent && (
+                      <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: '#fee2e2', color: '#991b1b' }}>
+                        ⚠ {incOverMax ? `nota ${sc} acima do máximo (${q.points})` : 'em branco mas com pontos'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm" style={{ color: '#374151', whiteSpace: 'pre-wrap' }}>
                     {ans.trim()
@@ -239,6 +248,14 @@ export default function HorizontalGrading({
                         style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
                       <span className="text-xs" style={{ color: '#9CA3AF' }}>/ {q.points}</span>
                     </>
+                  )}
+                  {incoherent && (
+                    <button onClick={() => save(s, incBlankScored ? 0 : q.points)}
+                      title={incBlankScored ? 'Pôr a 0 (resposta em branco)' : `Cortar ao máximo (${q.points})`}
+                      className="px-2 py-1 rounded-md text-xs font-bold text-white"
+                      style={{ background: '#dc2626' }}>
+                      corrigir → {incBlankScored ? 0 : q.points}
+                    </button>
                   )}
                   <span className="text-xs w-4 text-center" style={{ color: '#059669' }}>{saved[k] ? '✓' : (k in scores ? '…' : '')}</span>
                 </div>
