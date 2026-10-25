@@ -1396,6 +1396,12 @@ export default function GradingDashboard({
               title="Certificar os dados dos alunos e exportar as grelhas de cotações para Excel">
               📊 Exportar Excel
             </button>
+            <a href={`/dashboard/exams/${sessionId}/estudo`}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border"
+              style={{ borderColor: '#7C3AED40', color: '#5b21b6' }}
+              title="Estudo pedagógico: estatística, item analysis, recomendações e exportação (Excel/PDF)">
+              📈 Estudo pedagógico
+            </a>
             <a href={`/dashboard/exams/${sessionId}/folha`}
               className="px-4 py-2 rounded-lg text-sm font-semibold border"
               style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}
