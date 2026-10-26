@@ -374,3 +374,16 @@ Aluno: aviso no arranque; sair do ecrã/colar fica registado (sem bloqueio). Pro
 - **Página/PDF**: `/dashboard/exams/[sessionId]/estudo` mostra o relatório e serve de fonte do PDF (botão "Guardar PDF" via impressão, reusa `.no-print`); botões Excel e "Aprofundar com IA". Link "📈 Estudo pedagógico" no painel de correção.
 - **Por testar com turma real**: abrir o Estudo, confirmar estatística/discriminação, exportar Excel e PDF, e correr o aprofundamento por IA.
 - Nota: discriminação/alfa precisam de nº razoável de alunos (≥10 p/ discriminação) — com poucos, ficam indicativos.
+
+## 2026-10-26 — Exportação Word do estudo (commit `d62ead7`)
+`GET /api/exam/sessions/[id]/export-study-docx` (reusa a lib `docx` já instalada, server-side `Packer.toBuffer`): relatório editável (resumo, tabelas por questão/turma/Bloom, recomendações). Botão "⬇️ Word (relatório)" na página do estudo.
+
+## PRÓXIMO (autorizado para mais tarde pelo Tiago) — Acompanhamento ao longo do tempo
+Decisão do Tiago (2026-10-26): **implementar AMBAS as versões** (mínima + gráficos de progresso), identidade por **escrita livre + correspondência automática + correção manual** (não muda o ecrã do aluno). Barato em IA (determinístico); dificuldade = identidade do aluno entre testes. Caminho: lista de turma persistente (semeada do roster certificado) → ligar submissões por número+turma (com correção manual que já existe) → histórico por aluno/turma + gráficos de evolução. Precisa de migração nova (tabelas de alunos). **Só avançar quando o Tiago autorizar o arranque.**
+
+## 2026-10-26 — INVESTIGAÇÃO (em curso): correções manuais alteradas?
+Tiago reportou: correções que já tinha confirmado apareceram alteradas e com incoerências. Pediu investigação **sem alterar nada** até autorizar.
+- **Auditoria ao código** (todos os writers de `grading_details`/`status` em `src/app/api/exam/**`): submit e paper/grade **inserem** submissões novas (não reescrevem); PATCH manual põe `reviewed`+`manual:true`+clamp ao máximo; `regrade` (pendentes, reescreve tudo) só toca `por_corrigir/grading/submitted`; `regrade-outdated` só `graded` desactualizadas + tipo afectado; `edit-criteria` re-corrige SÓ a pergunta editada e salta as manuais, mantém `reviewed`. Nenhum clamp deixa passar score>max; brancos→0.
+- **Hipótese principal**: o "Editar critérios → re-corrigir" **toca submissões `reviewed`** na pergunta editada (não-manual), recalcula total e `graded_at` — o Tiago pode ter sentido isso como "o que confirmei mudou". As incoerências (score>max / branco com pontos) **não podem ser criadas por re-correções** (todas limitam) → são provavelmente **pré-existentes** de correções antigas, só agora notadas.
+- **Supabase MCP desta sessão só vê o projecto `tribo`**, não o PROF.IA → não dá para consultar os dados daqui; diagnóstico fica por SQL que o Tiago corre no SQL editor (fornecido no chat).
+- **Correção proposta (por autorizar, não-destrutiva)**: tratar `auto:false` como "não tocar" em TODAS as re-correções (manual OU falha), e fazer o `edit-criteria` **saltar submissões `reviewed`** por defeito (ou perguntar). Nada se implementa sem OK do Tiago.
