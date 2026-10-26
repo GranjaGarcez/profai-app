@@ -9,9 +9,9 @@ export default function StudyActions({ sessionId }: { sessionId: string }) {
   const [ai, setAi] = useState<AiOut | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
-  function dl() {
+  function dl(kind: 'xlsx' | 'docx') {
     const a = document.createElement('a')
-    a.href = `/api/exam/sessions/${sessionId}/export-study`
+    a.href = `/api/exam/sessions/${sessionId}/export-study${kind === 'docx' ? '-docx' : ''}`
     document.body.appendChild(a); a.click(); a.remove()
   }
 
@@ -32,8 +32,11 @@ export default function StudyActions({ sessionId }: { sessionId: string }) {
         <button onClick={() => window.print()} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0D1B2A' }}>
           🖨️ Guardar PDF
         </button>
-        <button onClick={dl} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#166534' }}>
+        <button onClick={() => dl('xlsx')} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#166534' }}>
           ⬇️ Excel (multi-folha)
+        </button>
+        <button onClick={() => dl('docx')} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#1e40af' }}>
+          ⬇️ Word (relatório)
         </button>
         <button onClick={deepen} disabled={loading} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#7C3AED' }}>
           {loading ? 'A IA está a analisar…' : '✨ Aprofundar com IA'}
