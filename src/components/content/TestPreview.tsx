@@ -723,6 +723,25 @@ export default function TestPreview({
     return qi
   }, [editableTest, markDirty])
 
+  // Duplicar uma questão: cópia exacta (enunciado, opções, corrigenda, figura,
+  // ilustração…) com NOVO index único, inserida logo a seguir, no mesmo grupo. Limpa
+  // o _bankId (é uma cópia, não a mesma questão do banco). Recalcula as cotações.
+  const duplicateQuestion = useCallback((gi: number, qi: number) => {
+    setEditableTest(t => {
+      const groups = deepClone(t.groups ?? [])
+      const src = groups[gi]?.questions[qi]
+      if (!src) return t
+      const maxIdx = groups.flatMap(g => g.questions).reduce((m, q) => Math.max(m, q.index ?? 0), 0)
+      const copy = { ...src, index: maxIdx + 1 } as Question & Record<string, unknown>
+      delete copy._bankId
+      delete copy._criteriaStale
+      groups[gi].questions.splice(qi + 1, 0, copy)
+      groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
+      const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
+      return { ...t, groups, totalPoints: total }
+    }); markDirty()
+  }, [markDirty])
+
   // Mover uma questão (−1 = para cima, +1 = para baixo). Dentro do grupo troca com
   // a vizinha; na fronteira do grupo passa para o fim do grupo anterior ou o início
   // do seguinte. Move o objecto inteiro (enunciado, opções, corrigenda, figura,
@@ -1577,6 +1596,7 @@ export default function TestPreview({
                       onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
                       onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
                       onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
+                      onDuplicate={() => duplicateQuestion(gi, qi)}
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
                       onMoveUp={(qi > 0 || gi > 0) ? () => moveQuestion(gi, qi, -1) : undefined}
                       onMoveDown={(qi < group.questions.length - 1 || gi < groups.length - 1) ? () => moveQuestion(gi, qi, 1) : undefined}
@@ -1804,6 +1824,7 @@ interface QuestionBlockProps {
   onChangeOption: (oi: number, v: string) => void
   onChangeCalculator: (v: boolean) => void
   onDelete?: () => void
+  onDuplicate?: () => void
   onMoveUp?: () => void
   onMoveDown?: () => void
   onRegenerate?: () => void
@@ -1822,7 +1843,7 @@ interface QuestionBlockProps {
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
-  onDelete, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
+  onDelete, onDuplicate, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure, onSplitAlineas, isSplitting,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
@@ -1967,6 +1988,19 @@ function QuestionBlock({
                       }}
                     />
                   </label>
+                )}
+                {/* Duplicar */}
+                {onDuplicate && (
+                  <button
+                    onClick={onDuplicate}
+                    title="Duplicar esta questão (cópia logo a seguir)"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all"
+                    style={{ color: '#0D1B2A', background: 'transparent', border: '1px solid #e2e8f0' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
+                    ⧉ Duplicar
+                  </button>
                 )}
                 {/* Eliminar */}
                 {onDelete && (
