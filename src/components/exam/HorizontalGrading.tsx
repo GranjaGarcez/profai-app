@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fixMarkSchemeSum } from '@/lib/exam/markScheme'
 import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 import { parseIntegrity } from '@/lib/exam/integrity'
+import QuestionMedia from '@/components/exam/QuestionMedia'
 
 interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; ai_confidence?: number }
 interface Submission {
@@ -27,6 +28,8 @@ interface Question {
   markScheme?: string
   bloomLevel?: string
   figure?: unknown
+  illustration?: string
+  illustrationCredit?: string
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -240,6 +243,7 @@ export default function HorizontalGrading({
         {showQ && (
           <div className="mt-2" style={{ maxHeight: '32vh', overflowY: 'auto' }}>
             <p className="text-sm font-medium mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
+            <QuestionMedia figure={q.figure} illustration={q.illustration} credit={q.illustrationCredit} />
             {q.options && q.options.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {q.options.map((o, i) => <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: '#f8fafc', color: '#374151' }}>{o}</span>)}

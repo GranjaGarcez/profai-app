@@ -16,6 +16,8 @@ export interface Question {
   markScheme?: string
   bloomLevel?: string
   allowCalculator?: boolean   // IA define; professor pode sobrepor
+  illustration?: string       // imagem/ilustração (data URL base64 ou URL) — Estúdio de Imagens / upload
+  illustrationCredit?: string // atribuição (quando vem de pesquisa, ex.: Wikimedia)
   // Histórico de critérios editados num exame já lançado (aditivo, reversível).
   // Cada entrada guarda a corrigenda ANTERIOR à edição — nunca se perde o original.
   _criteriaHistory?: Array<{ at: string; correctAnswer: string; markScheme?: string; bloomLevel?: string }>

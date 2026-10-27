@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState, use } from 'react'
+import QuestionMedia from '@/components/exam/QuestionMedia'
 
 interface QResult {
   n: number; type: string; text: string; options: string[] | null
+  figure?: unknown; illustration?: string | null; illustrationCredit?: string | null
   studentAnswer: string; correctAnswer: string; points: number; earned: number; feedback: string
 }
 interface ResultData {
@@ -100,15 +102,21 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f1f5f9', color: '#64748b' }}>{TYPE_LABEL[q.type] ?? q.type}</span>
               <span className="ml-auto text-sm font-black" style={{ color }}>{q.earned} / {q.points}</span>
             </div>
-            <p className="text-sm mb-3" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
-
-            {q.options && q.options.length > 0 && (
-              <div className="space-y-1 mb-3">
-                {q.options.map((opt, i) => (
-                  <p key={i} className="text-xs px-2 py-1 rounded" style={{ color: '#374151', background: '#f8fafc' }}>{opt}</p>
-                ))}
-              </div>
-            )}
+            <details open className="mb-3 group">
+              <summary className="text-xs font-semibold cursor-pointer mb-2 list-none flex items-center gap-1" style={{ color: '#0369a1' }}>
+                <span className="group-open:hidden">▸ Ver pergunta{q.figure || q.illustration ? ' e imagem' : ''}</span>
+                <span className="hidden group-open:inline">▾ Pergunta</span>
+              </summary>
+              <p className="text-sm mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
+              <QuestionMedia figure={q.figure} illustration={q.illustration ?? undefined} credit={q.illustrationCredit ?? undefined} />
+              {q.options && q.options.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {q.options.map((opt, i) => (
+                    <p key={i} className="text-xs px-2 py-1 rounded" style={{ color: '#374151', background: '#f8fafc' }}>{opt}</p>
+                  ))}
+                </div>
+              )}
+            </details>
 
             <div className="space-y-1.5 text-sm">
               <p>

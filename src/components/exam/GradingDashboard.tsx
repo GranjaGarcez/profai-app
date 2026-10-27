@@ -9,6 +9,7 @@ import HorizontalGrading from '@/components/exam/HorizontalGrading'
 import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
 import { findIncoherences } from '@/lib/exam/incoherence'
 import { parseIntegrity, summarizeIntegrity } from '@/lib/exam/integrity'
+import QuestionMedia from '@/components/exam/QuestionMedia'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -979,6 +980,24 @@ function SubmissionDetail({
                     </span>
                   )}
                 </div>
+
+                {/* Pergunta completa + imagem (colapsável) */}
+                <details className="group pl-1">
+                  <summary className="text-xs font-semibold cursor-pointer list-none" style={{ color: '#0369a1' }}>
+                    <span className="group-open:hidden">▸ Ver pergunta{q.figure || q.illustration ? ' e imagem' : ''}</span>
+                    <span className="hidden group-open:inline">▾ Ocultar pergunta</span>
+                  </summary>
+                  <p className="text-sm mt-1.5" style={{ color: '#0D1B2A', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{q.text}</p>
+                  <QuestionMedia figure={q.figure} illustration={q.illustration} credit={q.illustrationCredit} />
+                  {q.options && q.options.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {q.options.map((o, i) => <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: '#f8fafc', color: '#374151' }}>{o}</span>)}
+                    </div>
+                  )}
+                  {q.markScheme && (
+                    <p className="text-xs mt-1.5" style={{ color: '#6B7280' }}><strong>Critérios:</strong> {q.markScheme}</p>
+                  )}
+                </details>
 
                 {/* Resposta do aluno */}
                 <div className="pl-1">
