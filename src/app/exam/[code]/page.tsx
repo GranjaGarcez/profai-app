@@ -8,6 +8,7 @@ import { getAllQuestions } from '@/lib/exam/types'
 import { INTEGRITY_KEY } from '@/lib/exam/integrity'
 import { useExamIntegrity } from '@/lib/exam/useExamIntegrity'
 import { TRANSLATION_LANGS } from '@/lib/exam/languages'
+import { speak, ttsAvailable } from '@/lib/a11y/speech'
 import Calculator from '@/components/exam/Calculator'
 import MathFigure from '@/components/math/MathFigure'
 
@@ -166,6 +167,16 @@ export default function ExamPage() {
 
   // Sinais ao vivo de integridade (só registar; o professor é que vê e decide).
   const integ = useExamIntegrity(phase === 'exam')
+
+  // Acessibilidade: tamanho da letra (1 = normal, 1.25 = grande, 1.5 = muito grande).
+  // Guardado no dispositivo; aplica-se ao enunciado, opções e campo de resposta.
+  const [fontScale, setFontScale] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem('profai_fontscale')); return v >= 1 && v <= 1.5 ? v : 1 } catch { return 1 }
+  })
+  function changeFontScale(v: number) {
+    setFontScale(v)
+    try { localStorage.setItem('profai_fontscale', String(v)) } catch { /* noop */ }
+  }
 
   // Tradução (LPNM) — só visualização; o professor tem de ter ligado no exame.
   const [lang, setLang] = useState('')   // '' = português original
@@ -646,6 +657,26 @@ export default function ExamPage() {
         </div>
       </div>
 
+      {/* Acessibilidade: tamanho da letra */}
+      <div className="px-4 py-2 rounded-2xl flex items-center gap-2 flex-wrap"
+        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <span className="text-sm" style={{ color: '#6B7280' }}>Tamanho da letra:</span>
+        {[{ s: 1, l: 'A', fs: 13 }, { s: 1.25, l: 'A+', fs: 16 }, { s: 1.5, l: 'A++', fs: 19 }].map(o => (
+          <button key={o.s} onClick={() => changeFontScale(o.s)}
+            className="px-2.5 py-1 rounded-lg font-bold border"
+            style={{
+              fontSize: o.fs,
+              lineHeight: 1,
+              borderColor: fontScale === o.s ? '#0369a1' : '#e2e8f0',
+              background: fontScale === o.s ? '#e0f7fc' : 'white',
+              color: '#0D1B2A',
+            }}>
+            {o.l}
+          </button>
+        ))}
+        {ttsAvailable() && <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>🔊 Toca em “Ouvir” numa questão para a ouvir</span>}
+      </div>
+
       {/* Tradução (LPNM) — só visualização; não muda a tua resposta */}
       {allowTranslation && (
         <div className="px-4 py-2.5 rounded-2xl flex items-center gap-2 flex-wrap"
@@ -680,6 +711,7 @@ export default function ExamPage() {
           key={q.index} q={q} n={i + 1} total={questions.length}
           tText={translations[String(q.index)]?.text}
           tOptions={translations[String(q.index)]?.options}
+          fontScale={fontScale}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
           onCalcEntry={(entry: CalcEntry) => setCalcHistories(h => ({
@@ -731,18 +763,28 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, total, answer, onChange, onCalcEntry, tText, tOptions,
+  q, n, total, answer, onChange, onCalcEntry, tText, tOptions, fontScale = 1,
 }: {
   q: Question; n: number; total: number; answer: string
   onChange: (v: string) => void
   onCalcEntry: (entry: CalcEntry) => void
   tText?: string
   tOptions?: string[]
+  fontScale?: number
 }) {
   // Tradução (LPNM) — só o que se MOSTRA muda; as opções continuam a valer pela
   // posição/letra, por isso a resposta guardada não depende da língua.
   const displayText = tText ?? q.text
   const displayOptions = tOptions && tOptions.length === (q.options?.length ?? 0) ? tOptions : q.options
+  // Acessibilidade: escala da letra aplicada ao enunciado, opções e resposta.
+  const fz = (base: number) => Math.round(base * fontScale)
+  const [speaking, setSpeaking] = useState(false)
+  function readAloud() {
+    const parts = [displayText]
+    if (displayOptions && displayOptions.length) parts.push(...displayOptions)
+    const ok = speak(parts.join('. '))
+    if (ok) { setSpeaking(true); setTimeout(() => setSpeaking(false), 1500) }
+  }
   const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank']
   const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
   const isMulti = q.type === 'multiple_choice'
@@ -785,7 +827,7 @@ function QuestionCard({
           <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f1f5f9', color: '#64748b' }}>Texto</span>
         </div>
         <div className="px-5 py-4">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>{displayText}</p>
+          <p className="leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14) }}>{displayText}</p>
         </div>
       </div>
     )
@@ -811,6 +853,15 @@ function QuestionCard({
           style={{ background: '#f1f5f9', color: '#64748b' }}>
           {TYPE_LABEL[q.type] ?? q.type}
         </span>
+        {/* Ouvir (leitura por voz) */}
+        {ttsAvailable() && (
+          <button onClick={readAloud}
+            className="text-xs px-2.5 py-1 rounded-full font-medium transition-all"
+            style={{ background: speaking ? '#0D1B2A' : '#e0f7fc', color: speaking ? '#00B4D8' : '#0369a1', border: '1px solid #bae6fd' }}
+            title="Ouvir a leitura desta pergunta">
+            🔊 Ouvir
+          </button>
+        )}
         {/* Calculadora */}
         {q.allowCalculator && (
           <button onClick={() => setShowCalc(c => !c)}
@@ -839,7 +890,7 @@ function QuestionCard({
       {/* Corpo da questão */}
       <div className="px-5 py-4 space-y-4">
         {/* Enunciado */}
-        <p className="text-sm font-medium leading-relaxed" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>
+        <p className="font-medium leading-relaxed" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14) }}>
           {displayText}
         </p>
 
@@ -881,7 +932,7 @@ function QuestionCard({
                     }}>
                     {letter}
                   </span>
-                  <span className="text-sm flex-1" style={{ color: selected ? '#0D1B2A' : '#374151', fontWeight: selected ? 600 : 400 }}>
+                  <span className="flex-1" style={{ color: selected ? '#0D1B2A' : '#374151', fontWeight: selected ? 600 : 400, fontSize: fz(14) }}>
                     {optText}
                   </span>
                   {selected && (
@@ -914,8 +965,8 @@ function QuestionCard({
                     style={{ color: selected ? '#0369a1' : '#9CA3AF' }}>
                     {opt.icon}
                   </span>
-                  <span className="text-sm font-bold"
-                    style={{ color: selected ? '#0D1B2A' : '#374151' }}>
+                  <span className="font-bold"
+                    style={{ color: selected ? '#0D1B2A' : '#374151', fontSize: fz(14) }}>
                     {opt.label}
                   </span>
                 </label>
@@ -996,13 +1047,14 @@ function QuestionCard({
               data-qkey={String(q.index)}
               rows={q.type === 'long_answer' ? 8 : 4}
               placeholder="Escreve a tua resposta aqui..."
-              className="w-full px-4 py-3 rounded-xl text-sm resize-none transition-all"
+              className="w-full px-4 py-3 rounded-xl resize-none transition-all"
               style={{
                 border: `1.5px solid ${answer.trim() ? '#bbf7d0' : '#e2e8f0'}`,
                 outline: 'none',
                 lineHeight: 1.75,
                 color: '#0D1B2A',
                 background: 'white',
+                fontSize: fz(14),
               }}
               onFocus={e => (e.target.style.borderColor = '#00B4D8')}
               onBlur={e => (e.target.style.borderColor = answer.trim() ? '#bbf7d0' : '#e2e8f0')}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import QuestionMedia from '@/components/exam/QuestionMedia'
+import { speak, ttsAvailable } from '@/lib/a11y/speech'
 
 interface QResult {
   n: number; type: string; text: string; options: string[] | null
@@ -23,6 +24,15 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const [data, setData] = useState<ResultData | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  // Acessibilidade: tamanho da letra (partilha a preferência com o exame).
+  const [fontScale, setFontScale] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem('profai_fontscale')); return v >= 1 && v <= 1.5 ? v : 1 } catch { return 1 }
+  })
+  const fz = (base: number) => Math.round(base * fontScale)
+  function changeFontScale(v: number) {
+    setFontScale(v)
+    try { localStorage.setItem('profai_fontscale', String(v)) } catch { /* noop */ }
+  }
 
   useEffect(() => {
     fetch(`/api/exam/result/${id}`)
@@ -89,6 +99,17 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
+      {/* Acessibilidade: tamanho da letra */}
+      <div className="px-4 py-2 rounded-2xl flex items-center gap-2 flex-wrap" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <span className="text-sm" style={{ color: '#6B7280' }}>Tamanho da letra:</span>
+        {[{ s: 1, l: 'A', f: 13 }, { s: 1.25, l: 'A+', f: 16 }, { s: 1.5, l: 'A++', f: 19 }].map(o => (
+          <button key={o.s} onClick={() => changeFontScale(o.s)} className="px-2.5 py-1 rounded-lg font-bold border"
+            style={{ fontSize: o.f, lineHeight: 1, borderColor: fontScale === o.s ? '#0369a1' : '#e2e8f0', background: fontScale === o.s ? '#e0f7fc' : 'white', color: '#0D1B2A' }}>
+            {o.l}
+          </button>
+        ))}
+      </div>
+
       {/* Questões */}
       {(data.questions ?? []).map(q => {
         const full = q.earned >= q.points && q.points > 0
@@ -100,6 +121,11 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0"
                 style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{q.n}</span>
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f1f5f9', color: '#64748b' }}>{TYPE_LABEL[q.type] ?? q.type}</span>
+              {ttsAvailable() && (
+                <button onClick={() => speak([q.text, ...(q.options ?? [])].join('. '))}
+                  className="text-xs px-2 py-0.5 rounded-md font-medium" style={{ background: '#e0f7fc', color: '#0369a1', border: '1px solid #bae6fd' }}
+                  title="Ouvir a leitura desta pergunta">🔊 Ouvir</button>
+              )}
               <span className="ml-auto text-sm font-black" style={{ color }}>{q.earned} / {q.points}</span>
             </div>
             <details open className="mb-3 group">
@@ -107,18 +133,18 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 <span className="group-open:hidden">▸ Ver pergunta{q.figure || q.illustration ? ' e imagem' : ''}</span>
                 <span className="hidden group-open:inline">▾ Pergunta</span>
               </summary>
-              <p className="text-sm mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6 }}>{q.text}</p>
+              <p className="mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6, fontSize: fz(14) }}>{q.text}</p>
               <QuestionMedia figure={q.figure} illustration={q.illustration ?? undefined} credit={q.illustrationCredit ?? undefined} />
               {q.options && q.options.length > 0 && (
                 <div className="space-y-1 mt-2">
                   {q.options.map((opt, i) => (
-                    <p key={i} className="text-xs px-2 py-1 rounded" style={{ color: '#374151', background: '#f8fafc' }}>{opt}</p>
+                    <p key={i} className="px-2 py-1 rounded" style={{ color: '#374151', background: '#f8fafc', fontSize: fz(12) }}>{opt}</p>
                   ))}
                 </div>
               )}
             </details>
 
-            <div className="space-y-1.5 text-sm">
+            <div className="space-y-1.5" style={{ fontSize: fz(14) }}>
               <p>
                 <span className="font-semibold" style={{ color }}>A tua resposta: </span>
                 <span style={{ color: '#374151' }}>{q.studentAnswer.trim() || '(em branco)'}</span>

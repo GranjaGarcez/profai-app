@@ -411,3 +411,10 @@ Pedido do Tiago: ao editar critérios, por defeito mantém-se a re-correção da
 - `GradingDetail` ganhou `overrodeManual?` e `prevManual?` (aditivo).
 - UI (HorizontalGrading): no painel de confirmação, checkbox "Re-corrigir também as N que revi à mão" (só aparece se houver manuais) com aviso vermelho; mensagem final diz quantas foram substituídas; na linha do aluno, selo "↻ IA substituiu a tua revisão (antes: X)".
 - Não-destrutivo: opt-in, nota manual anterior guardada (reversível), outras perguntas intactas.
+
+## 2026-10-27 — Inclusão: tamanho da letra + leitura por voz (custo zero)
+Pedido do Tiago (alunos com dificuldades visuais / leitura). Aditivo, sem servidor, sem custo de IA.
+- **Tamanho da letra** A / A+ / A++ (×1, ×1.25, ×1.5) no **exame** e nos **resultados**; aplica-se ao enunciado, opções e campo de resposta (não ao resto). Guardado no dispositivo (localStorage, chave partilhada `profai_fontscale`). Inicializador lazy (evita setState-in-effect e mismatch de hidratação).
+- **Ouvir (TTS)**: `src/lib/a11y/speech.ts` usa `window.speechSynthesis` (nativo, grátis, voz pt-PT se instalada). Botão "🔊 Ouvir" por questão no exame e nos resultados (lê enunciado + opções).
+- **Gravação pela voz do professor**: NÃO feita — precisa de storage de áudio (custo/canalização). A voz AI nativa já cobre a necessidade de graça; só avançar se o Tiago quiser mesmo a própria voz.
+- Ideias de inclusão de baixo custo a considerar: modo "letra mais legível" (espaçamento), ditado de resposta por voz (speech-to-text, fiabilidade pt-PT variável), tempo extra por aluno (precisa de identidade do aluno). Alto contraste é mais trabalhoso (estilos inline).
