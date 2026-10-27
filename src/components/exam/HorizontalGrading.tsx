@@ -6,7 +6,7 @@ import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 import { parseIntegrity } from '@/lib/exam/integrity'
 import QuestionMedia from '@/components/exam/QuestionMedia'
 
-interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; ai_confidence?: number }
+interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; overrodeManual?: boolean; prevManual?: { score: number; feedback?: string }; ai_confidence?: number }
 interface Submission {
   id: string
   student_name: string
@@ -65,6 +65,7 @@ export default function HorizontalGrading({
   const [regenerating, setRegenerating] = useState(false)
   const [savingCrit, setSavingCrit] = useState(false)
   const [confirmSave, setConfirmSave] = useState(false)
+  const [overrideManual, setOverrideManual] = useState(false)
   const [critMsg, setCritMsg] = useState<string | null>(null)
 
   const labelOf = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
@@ -76,7 +77,7 @@ export default function HorizontalGrading({
   const qKey = q ? String(q.index) : ''
 
   // Fecha o editor de critérios ao mudar de questão (evita editar a errada).
-  function closeEditor() { setEditing(false); setConfirmSave(false); setCritMsg(null) }
+  function closeEditor() { setEditing(false); setConfirmSave(false); setCritMsg(null); setOverrideManual(false) }
   function changeQi(next: number) {
     setQi(Math.max(0, Math.min(questions.length - 1, next)))
     closeEditor()
@@ -143,7 +144,7 @@ export default function HorizontalGrading({
   function openEditor() {
     setEditAnswer(q.correctAnswer ?? '')
     setEditMark(q.markScheme ?? '')
-    setConfirmSave(false); setCritMsg(null); setEditing(true)
+    setConfirmSave(false); setCritMsg(null); setOverrideManual(false); setEditing(true)
   }
 
   async function regenerateCriteria() {
@@ -171,12 +172,13 @@ export default function HorizontalGrading({
     try {
       const res = await fetch(`/api/exam/sessions/${sessionId}/edit-criteria`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionKey: qKey, correctAnswer: editAnswer, markScheme: editMark }),
+        body: JSON.stringify({ questionKey: qKey, correctAnswer: editAnswer, markScheme: editMark, overrideManual }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Falha ao guardar.')
       setCritMsg(`Critérios guardados. ${d.regraded} resposta(s) re-corrigida(s)` +
         `${d.preserved ? `, ${d.preserved} revisão(ões) manual(ais) preservada(s)` : ''}` +
+        `${d.overridden ? `, ${d.overridden} revisão(ões) manual(ais) SUBSTITUÍDA(s) pela IA (nota anterior guardada)` : ''}` +
         `${d.stillPending ? `, ${d.stillPending} ficaram por confirmar` : ''}.`)
       setConfirmSave(false); setEditing(false)
       onChanged()   // recarrega snapshot (critérios novos) + notas
@@ -312,9 +314,19 @@ export default function HorizontalGrading({
             <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: '#C8A84B', background: '#fffbeb' }}>
               <p className="text-xs" style={{ color: '#92400e' }}>
                 Vais re-corrigir <strong>{regradableCount}</strong> resposta(s) a esta pergunta com os critérios novos.
-                {preservedSubs.length > 0 && <> As <strong>{preservedSubs.length}</strong> que já cotaste à mão ficam intactas.</>}
+                {preservedSubs.length > 0 && !overrideManual && <> As <strong>{preservedSubs.length}</strong> que já cotaste à mão ficam intactas.</>}
                 {' '}Confirmas?
               </p>
+              {preservedSubs.length > 0 && (
+                <label className="flex items-start gap-2 text-xs px-2 py-1.5 rounded-md cursor-pointer"
+                  style={{ background: overrideManual ? '#fef2f2' : '#fff', border: `1px solid ${overrideManual ? '#dc2626' : '#fde68a'}` }}>
+                  <input type="checkbox" checked={overrideManual} onChange={e => setOverrideManual(e.target.checked)} className="mt-0.5" />
+                  <span style={{ color: overrideManual ? '#991b1b' : '#92400e' }}>
+                    Re-corrigir <strong>também</strong> as {preservedSubs.length} que revi à mão
+                    {overrideManual && <> — <strong>⚠ a IA vai substituir essas {preservedSubs.length} cotação(ões) tua(s)</strong>; a nota anterior fica guardada (reversível) e marcada.</>}
+                  </span>
+                </label>
+              )}
               <div className="flex gap-2">
                 <button onClick={saveCriteria} disabled={savingCrit}
                   className="flex-1 text-sm font-bold px-4 py-2 rounded-lg text-white disabled:opacity-50"
@@ -372,6 +384,12 @@ export default function HorizontalGrading({
                     {incoherent && (
                       <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: '#fee2e2', color: '#991b1b' }}>
                         ⚠ {incOverMax ? `nota ${sc} acima do máximo (${q.points})` : 'em branco mas com pontos'}
+                      </span>
+                    )}
+                    {d?.overrodeManual && (
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef3c7', color: '#92400e' }}
+                        title={d.prevManual ? `A IA substituiu a tua revisão manual (nota anterior: ${d.prevManual.score}). Confirma.` : 'A IA substituiu a tua revisão manual. Confirma.'}>
+                        ↻ IA substituiu a tua revisão{typeof d.prevManual?.score === 'number' ? ` (antes: ${d.prevManual.score})` : ''}
                       </span>
                     )}
                   </div>
