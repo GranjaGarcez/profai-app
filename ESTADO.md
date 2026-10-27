@@ -390,3 +390,9 @@ Tiago reportou: correções que já tinha confirmado apareceram alteradas e com 
 
 ## 2026-10-27 — Pergunta completa + imagem nas correções (commit `32434f0`)
 Componente partilhado `QuestionMedia` (figura MathFigure + ilustração/imagem). No resultado do aluno a pergunta+imagem fica num bloco colapsável (a API `result/[id]` passou a enviar figure/illustration); na Correção horizontal a imagem entra no enunciado; no detalhe da submissão (prof) há agora bloco colapsável "Ver pergunta e imagem" (antes só texto truncado). `Question` ganhou `illustration`/`illustrationCredit`. Aditivo; não mexe na correção.
+
+## 2026-10-27 — Alíneas (versão A) — dividir questão de resposta aberta
+Resolução escolhida pelo Tiago: **versão A** (alíneas DENTRO da mesma questão — uma cotação, uma resposta; não subperguntas independentes). Aditivo, no editor, não toca no exame ao vivo.
+- `POST /api/ai/split-alineas`: reescreve o enunciado em a), b), c)… (2-4 conforme cotação), mantém o tema, e devolve markScheme com parcela POR ALÍNEA a somar a cotação (via `fixMarkSchemeSum`) + resposta-modelo rotulada. Só aceita `long_answer`/`short_answer`.
+- `TestPreview`: botão **"➗ Dividir em alíneas"** por questão, só visível em resposta aberta (`canSplit`); actualiza text+markScheme+correctAnswer+bloom e limpa `_criteriaStale`. Encaixa no que já existe: markScheme parcelar + rubrica na correção por IA mostram a decomposição por alínea.
+- Versão B (subperguntas independentes, cada uma cotável/respondível em separado) continua adiada — mexeria no modelo de dados, na entrada do aluno, correção, snapshot, grelha e estatística.

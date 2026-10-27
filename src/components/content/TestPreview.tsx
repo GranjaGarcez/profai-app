@@ -616,6 +616,7 @@ export default function TestPreview({
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null)
   const [regeneratingFigureIdx, setRegeneratingFigureIdx] = useState<number | null>(null)
   const [refreshingCriteriaIdx, setRefreshingCriteriaIdx] = useState<number | null>(null)
+  const [splittingIdx, setSplittingIdx] = useState<number | null>(null)
   const [showSchoolModal, setShowSchoolModal] = useState(false)
   const [showLauncher, setShowLauncher] = useState(false)
   const [showStaleGuard, setShowStaleGuard] = useState(false)
@@ -968,6 +969,45 @@ export default function TestPreview({
       setRefreshingAll(false)
     }
   }, [staleRefs, handleRefreshCriteria, contentItemId, handleSaveEdits])
+
+  // Dividir uma questão de resposta aberta em alíneas a), b), c)… (versão A): mantém
+  // o tema, estrutura o enunciado e repõe a corrigenda com cotação parcelar por alínea.
+  const handleSplitAlineas = useCallback(async (gi: number, qi: number) => {
+    const globalIdx = (editableTest.groups ?? [])
+      .slice(0, gi).flatMap(g => g.questions).length + qi
+    setSplittingIdx(globalIdx)
+    try {
+      const q = (editableTest.groups ?? [])[gi].questions[qi]
+      const res = await fetch('/api/ai/split-alineas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject:   editableTest.subject,
+          yearLevel: editableTest.yearLevel,
+          topic:     editableTest.topic,
+          type:      q.type,
+          points:    q.points,
+          text:      q.text,
+          figure:    q.figure ?? null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.question) return
+      setEditableTest(t => {
+        const groups = deepClone(t.groups ?? [])
+        const tq = groups[gi].questions[qi] as unknown as Record<string, unknown>
+        tq.text = data.question.text
+        if (data.question.markScheme)    tq.markScheme = data.question.markScheme
+        if (data.question.correctAnswer) tq.correctAnswer = data.question.correctAnswer
+        if (data.question.bloomLevel)    tq.bloomLevel = data.question.bloomLevel
+        tq._criteriaStale = false   // enunciado e corrigenda refeitos em conjunto, já coerentes
+        return { ...t, groups }
+      })
+      markDirty()
+    } finally {
+      setSplittingIdx(null)
+    }
+  }, [editableTest, markDirty])
 
   const handleRegenerateFigure = useCallback(async (gi: number, qi: number) => {
     const globalIdx = (editableTest.groups ?? [])
@@ -1555,6 +1595,8 @@ export default function TestPreview({
                       }}
                       onRegenerateFigure={() => handleRegenerateFigure(gi, qi)}
                       isRegeneratingFigure={regeneratingFigureIdx === gIdx}
+                      onSplitAlineas={() => handleSplitAlineas(gi, qi)}
+                      isSplitting={splittingIdx === gIdx}
                     />
                   )
                 })}
@@ -1773,16 +1815,19 @@ interface QuestionBlockProps {
   onRemoveIllustration?: () => void
   onRegenerateFigure?: () => void
   isRegeneratingFigure?: boolean
+  onSplitAlineas?: () => void
+  isSplitting?: boolean
 }
 
 function QuestionBlock({
   q, globalIndex, editing,
   onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
   onDelete, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
-  onRegenerateFigure, isRegeneratingFigure,
+  onRegenerateFigure, isRegeneratingFigure, onSplitAlineas, isSplitting,
 }: QuestionBlockProps) {
   const answerLines = ANSWER_LINES[q.type] ?? 0
   const isMulti = q.type === 'multiple_choice' || q.type === 'true_false'
+  const canSplit = q.type === 'long_answer' || q.type === 'short_answer'
 
   return (
     <div className="question-block">
@@ -2085,6 +2130,18 @@ function QuestionBlock({
 
           {/* ── Corrigenda (no-print — só no ecrã, colapsável) ── */}
           <div className="no-print mt-3">
+            {editing && canSplit && onSplitAlineas && (
+              <div className="mb-2">
+                <button
+                  onClick={onSplitAlineas}
+                  disabled={isSplitting}
+                  title="Reescreve esta questão em alíneas a), b), c)… com cotação parcelar — continua a ser uma questão"
+                  className="text-xs font-semibold px-2.5 py-1 rounded-md border disabled:opacity-50"
+                  style={{ borderColor: '#C8A84B', color: '#92400e', background: '#fdf6e3' }}>
+                  {isSplitting ? 'A dividir…' : '➗ Dividir em alíneas'}
+                </button>
+              </div>
+            )}
             {editing && q._criteriaStale && (
               <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-lg"
                 style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
