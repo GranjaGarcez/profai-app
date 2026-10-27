@@ -1196,6 +1196,20 @@ export default function GradingDashboard({
     finally { setReleasing(false) }
   }
 
+  const [allowTrans, setAllowTrans] = useState(!!(testSnapshot as TestSnapshot)._allowTranslation)
+  const [togglingTrans, setTogglingTrans] = useState(false)
+  async function toggleTranslation() {
+    setTogglingTrans(true)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/allow-translation`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allow: !allowTrans }),
+      })
+      const d = await res.json()
+      if (res.ok) setAllowTrans(!!d.allow)
+    } finally { setTogglingTrans(false) }
+  }
+
   async function sendEmails() {
     setEmailing(true); setResultMsg(null)
     try {
@@ -1421,6 +1435,12 @@ export default function GradingDashboard({
               title="Estudo pedagógico: estatística, item analysis, recomendações e exportação (Excel/PDF)">
               📈 Estudo pedagógico
             </a>
+            <button onClick={toggleTranslation} disabled={togglingTrans}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border disabled:opacity-50"
+              style={{ borderColor: allowTrans ? '#0369a1' : '#0D1B2A20', background: allowTrans ? '#e0f7fc' : 'transparent', color: '#0369a1' }}
+              title="Permitir que alunos LPNM vejam o enunciado traduzido na sua língua (não altera o teste nem as respostas)">
+              {togglingTrans ? '…' : allowTrans ? '🌐 Tradução ligada (LPNM)' : '🌐 Permitir tradução (LPNM)'}
+            </button>
             <a href={`/dashboard/exams/${sessionId}/folha`}
               className="px-4 py-2 rounded-lg text-sm font-semibold border"
               style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}

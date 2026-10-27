@@ -396,3 +396,11 @@ Resolução escolhida pelo Tiago: **versão A** (alíneas DENTRO da mesma quest�
 - `POST /api/ai/split-alineas`: reescreve o enunciado em a), b), c)… (2-4 conforme cotação), mantém o tema, e devolve markScheme com parcela POR ALÍNEA a somar a cotação (via `fixMarkSchemeSum`) + resposta-modelo rotulada. Só aceita `long_answer`/`short_answer`.
 - `TestPreview`: botão **"➗ Dividir em alíneas"** por questão, só visível em resposta aberta (`canSplit`); actualiza text+markScheme+correctAnswer+bloom e limpa `_criteriaStale`. Encaixa no que já existe: markScheme parcelar + rubrica na correção por IA mostram a decomposição por alínea.
 - Versão B (subperguntas independentes, cada uma cotável/respondível em separado) continua adiada — mexeria no modelo de dados, na entrada do aluno, correção, snapshot, grelha e estatística.
+
+## 2026-10-27 — Duplicar questão + Tradução LPNM (Fase 1)
+- **Duplicar questão** (commit `4903a9c`): botão "⧉ Duplicar" no editor; cópia exacta com índice novo, a seguir à original. (Reverter edições já existia: ↩️/↪️ desfazer/refazer no editor.)
+- **Tradução LPNM — Fase 1 (só visualização), controlada pelo professor.** Decisão do Tiago. Aditivo, **zero migração** (flag e cache no snapshot).
+  - `POST /api/exam/sessions/[id]/allow-translation` (prof liga/desliga → `snapshot._allowTranslation`). Botão "🌐 Permitir tradução (LPNM)" no painel.
+  - `POST /api/exam/translate` (público; só funciona se ligado): traduz enunciados+opções para uma língua da lista curada (`src/lib/exam/languages.ts`), **cache por língua** em `snapshot._translations[lang]` (1 chamada de IA por língua/exame). O fetch público `session/[code]` remove `_translations` do payload.
+  - Exame do aluno: selector "🌐 Ver o enunciado em:" (só aparece se o prof ligar); mostra enunciado+opções traduzidos; **a resposta é na mesma** (opções valem por letra/posição, independentes da língua). Não altera o teste nem as respostas guardadas.
+  - **Fase 2 (adiada)**: responder em L1 com tradução para PT-PT na submissão (decisão de avaliação do prof).

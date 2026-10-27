@@ -40,6 +40,11 @@ export interface TestSnapshot {
   instructions?: string
   groups?: TestGroup[]
   questions?: Question[]
+  // Tradução para alunos LPNM (Fase 1 — só visualização; controlada pelo professor).
+  _allowTranslation?: boolean
+  // Cache de traduções por língua → índice da questão → enunciado/opções traduzidos.
+  // NÃO é enviado ao aluno no fetch público (só via /api/exam/translate).
+  _translations?: Record<string, Record<string, { text: string; options?: string[] }>>
 }
 
 export interface ExamSession {

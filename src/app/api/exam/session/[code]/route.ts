@@ -23,5 +23,12 @@ export async function GET(
     return NextResponse.json({ error: 'Este exame já foi encerrado.' }, { status: 410 })
   }
 
+  // Não enviar o cache de traduções ao aluno (pode ser grande) — só a flag; as
+  // traduções vêm, sob pedido, de /api/exam/translate.
+  const snap = session.test_snapshot as Record<string, unknown> | null
+  if (snap && typeof snap === 'object' && '_translations' in snap) {
+    delete (snap as Record<string, unknown>)._translations
+  }
+
   return NextResponse.json({ session })
 }

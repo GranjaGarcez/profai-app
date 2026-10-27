@@ -7,6 +7,7 @@ import type { CalcEntry, ExamSession, Question, TestSnapshot } from '@/lib/exam/
 import { getAllQuestions } from '@/lib/exam/types'
 import { INTEGRITY_KEY } from '@/lib/exam/integrity'
 import { useExamIntegrity } from '@/lib/exam/useExamIntegrity'
+import { TRANSLATION_LANGS } from '@/lib/exam/languages'
 import Calculator from '@/components/exam/Calculator'
 import MathFigure from '@/components/math/MathFigure'
 
@@ -165,6 +166,30 @@ export default function ExamPage() {
 
   // Sinais ao vivo de integridade (só registar; o professor é que vê e decide).
   const integ = useExamIntegrity(phase === 'exam')
+
+  // Tradução (LPNM) — só visualização; o professor tem de ter ligado no exame.
+  const [lang, setLang] = useState('')   // '' = português original
+  const [translations, setTranslations] = useState<Record<string, { text: string; options?: string[] }>>({})
+  const [translating, setTranslating] = useState(false)
+  const [transErr, setTransErr] = useState<string | null>(null)
+  const allowTranslation = !!(session?.test_snapshot as TestSnapshot | undefined)?._allowTranslation
+
+  async function applyLang(code: string) {
+    setTransErr(null)
+    if (!code) { setLang(''); setTranslations({}); return }
+    setTranslating(true)
+    try {
+      const res = await fetch('/api/exam/translate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session!.id, lang: code }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha na tradução.')
+      setTranslations((d.questions ?? {}) as Record<string, { text: string; options?: string[] }>)
+      setLang(code)
+    } catch (e) { setTransErr(e instanceof Error ? e.message : 'Erro.'); setLang('') }
+    finally { setTranslating(false) }
+  }
 
   // Grava o rascunho no SERVIDOR (para retomar noutro dispositivo). Best-effort:
   // se falhar (offline ou migração por aplicar), o localStorage continua a cobrir.
@@ -621,6 +646,23 @@ export default function ExamPage() {
         </div>
       </div>
 
+      {/* Tradução (LPNM) — só visualização; não muda a tua resposta */}
+      {allowTranslation && (
+        <div className="px-4 py-2.5 rounded-2xl flex items-center gap-2 flex-wrap"
+          style={{ background: '#e0f7fc', border: '1px solid #bae6fd' }}>
+          <span className="text-sm" style={{ color: '#0369a1' }}>🌐 Ver o enunciado em:</span>
+          <select value={lang} disabled={translating}
+            onChange={e => applyLang(e.target.value)}
+            className="px-2 py-1 rounded-lg text-sm border" style={{ borderColor: '#bae6fd', color: '#0D1B2A', background: 'white' }}>
+            <option value="">Português (original)</option>
+            {TRANSLATION_LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          {translating && <span className="text-xs" style={{ color: '#0369a1' }}>a traduzir…</span>}
+          {lang && !translating && <span className="text-xs" style={{ color: '#0369a1' }}>Respondes na mesma; a tradução é só para perceberes.</span>}
+          {transErr && <span className="text-xs" style={{ color: '#dc2626' }}>{transErr}</span>}
+        </div>
+      )}
+
       {/* Instruções */}
       {session!.test_snapshot.instructions && (
         <div className="px-4 py-3.5 rounded-2xl text-sm"
@@ -636,6 +678,8 @@ export default function ExamPage() {
       {questions.map((q, i) => (
         <QuestionCard
           key={q.index} q={q} n={i + 1} total={questions.length}
+          tText={translations[String(q.index)]?.text}
+          tOptions={translations[String(q.index)]?.options}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
           onCalcEntry={(entry: CalcEntry) => setCalcHistories(h => ({
@@ -687,12 +731,18 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, total, answer, onChange, onCalcEntry,
+  q, n, total, answer, onChange, onCalcEntry, tText, tOptions,
 }: {
   q: Question; n: number; total: number; answer: string
   onChange: (v: string) => void
   onCalcEntry: (entry: CalcEntry) => void
+  tText?: string
+  tOptions?: string[]
 }) {
+  // Tradução (LPNM) — só o que se MOSTRA muda; as opções continuam a valer pela
+  // posição/letra, por isso a resposta guardada não depende da língua.
+  const displayText = tText ?? q.text
+  const displayOptions = tOptions && tOptions.length === (q.options?.length ?? 0) ? tOptions : q.options
   const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank']
   const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
   const isMulti = q.type === 'multiple_choice'
@@ -735,7 +785,7 @@ function QuestionCard({
           <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f1f5f9', color: '#64748b' }}>Texto</span>
         </div>
         <div className="px-5 py-4">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>{q.text}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>{displayText}</p>
         </div>
       </div>
     )
@@ -790,7 +840,7 @@ function QuestionCard({
       <div className="px-5 py-4 space-y-4">
         {/* Enunciado */}
         <p className="text-sm font-medium leading-relaxed" style={{ color: '#0D1B2A', lineHeight: 1.75 }}>
-          {q.text}
+          {displayText}
         </p>
 
         {/* Figura */}
@@ -808,9 +858,9 @@ function QuestionCard({
         )}
 
         {/* ── Escolha múltipla ── */}
-        {isMulti && q.options && (
+        {isMulti && displayOptions && (
           <div className="space-y-2">
-            {q.options.map((opt, j) => {
+            {displayOptions.map((opt, j) => {
               const letter = LETTERS[j] ?? String.fromCharCode(65 + j)
               const selected = answer === letter || answer === opt
               const optText = opt.replace(/^[A-E][).]\s*/, '').trim() || opt
