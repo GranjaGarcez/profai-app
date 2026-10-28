@@ -33,6 +33,13 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
     setFontScale(v)
     try { localStorage.setItem('profai_fontscale', String(v)) } catch { /* noop */ }
   }
+  const [legible, setLegible] = useState<boolean>(() => {
+    try { return localStorage.getItem('profai_legible') === '1' } catch { return false }
+  })
+  const legibleStyle = legible ? { letterSpacing: '0.04em', wordSpacing: '0.08em', lineHeight: 2 } : null
+  function toggleLegible() {
+    setLegible(v => { const nv = !v; try { localStorage.setItem('profai_legible', nv ? '1' : '0') } catch { /* noop */ } return nv })
+  }
 
   useEffect(() => {
     fetch(`/api/exam/result/${id}`)
@@ -108,6 +115,11 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
             {o.l}
           </button>
         ))}
+        <button onClick={toggleLegible} className="px-2.5 py-1 rounded-lg text-sm font-semibold border"
+          style={{ borderColor: legible ? '#0369a1' : '#e2e8f0', background: legible ? '#e0f7fc' : 'white', color: '#0D1B2A' }}
+          title="Mais espaço entre letras e linhas (ajuda a leitura)">
+          Aa {legible ? 'Legível ✓' : 'Mais legível'}
+        </button>
       </div>
 
       {/* Questões */}
@@ -133,7 +145,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 <span className="group-open:hidden">▸ Ver pergunta{q.figure || q.illustration ? ' e imagem' : ''}</span>
                 <span className="hidden group-open:inline">▾ Pergunta</span>
               </summary>
-              <p className="mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6, fontSize: fz(14) }}>{q.text}</p>
+              <p className="mb-2" style={{ color: '#0D1B2A', lineHeight: 1.6, fontSize: fz(14), ...(legibleStyle ?? {}) }}>{q.text}</p>
               <QuestionMedia figure={q.figure} illustration={q.illustration ?? undefined} credit={q.illustrationCredit ?? undefined} />
               {q.options && q.options.length > 0 && (
                 <div className="space-y-1 mt-2">

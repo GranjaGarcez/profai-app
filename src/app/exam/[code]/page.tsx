@@ -8,7 +8,7 @@ import { getAllQuestions } from '@/lib/exam/types'
 import { INTEGRITY_KEY } from '@/lib/exam/integrity'
 import { useExamIntegrity } from '@/lib/exam/useExamIntegrity'
 import { TRANSLATION_LANGS } from '@/lib/exam/languages'
-import { speak, ttsAvailable } from '@/lib/a11y/speech'
+import { speak, ttsAvailable, dictationAvailable, startDictation } from '@/lib/a11y/speech'
 import Calculator from '@/components/exam/Calculator'
 import MathFigure from '@/components/math/MathFigure'
 
@@ -176,6 +176,13 @@ export default function ExamPage() {
   function changeFontScale(v: number) {
     setFontScale(v)
     try { localStorage.setItem('profai_fontscale', String(v)) } catch { /* noop */ }
+  }
+  // Modo "letra mais legível" (espaçamento maior — ajuda dislexia/baixa visão).
+  const [legible, setLegible] = useState<boolean>(() => {
+    try { return localStorage.getItem('profai_legible') === '1' } catch { return false }
+  })
+  function toggleLegible() {
+    setLegible(v => { const nv = !v; try { localStorage.setItem('profai_legible', nv ? '1' : '0') } catch { /* noop */ } return nv })
   }
 
   // Tradução (LPNM) — só visualização; o professor tem de ter ligado no exame.
@@ -674,6 +681,12 @@ export default function ExamPage() {
             {o.l}
           </button>
         ))}
+        <button onClick={toggleLegible}
+          className="px-2.5 py-1 rounded-lg text-sm font-semibold border"
+          style={{ borderColor: legible ? '#0369a1' : '#e2e8f0', background: legible ? '#e0f7fc' : 'white', color: '#0D1B2A', letterSpacing: legible ? '0.06em' : undefined }}
+          title="Mais espaço entre letras e linhas (ajuda a leitura)">
+          Aa {legible ? 'Legível ✓' : 'Mais legível'}
+        </button>
         {ttsAvailable() && <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>🔊 Toca em “Ouvir” numa questão para a ouvir</span>}
       </div>
 
@@ -712,6 +725,7 @@ export default function ExamPage() {
           tText={translations[String(q.index)]?.text}
           tOptions={translations[String(q.index)]?.options}
           fontScale={fontScale}
+          legible={legible}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
           onCalcEntry={(entry: CalcEntry) => setCalcHistories(h => ({
@@ -763,7 +777,7 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, total, answer, onChange, onCalcEntry, tText, tOptions, fontScale = 1,
+  q, n, total, answer, onChange, onCalcEntry, tText, tOptions, fontScale = 1, legible = false,
 }: {
   q: Question; n: number; total: number; answer: string
   onChange: (v: string) => void
@@ -771,19 +785,32 @@ function QuestionCard({
   tText?: string
   tOptions?: string[]
   fontScale?: number
+  legible?: boolean
 }) {
   // Tradução (LPNM) — só o que se MOSTRA muda; as opções continuam a valer pela
   // posição/letra, por isso a resposta guardada não depende da língua.
   const displayText = tText ?? q.text
   const displayOptions = tOptions && tOptions.length === (q.options?.length ?? 0) ? tOptions : q.options
-  // Acessibilidade: escala da letra aplicada ao enunciado, opções e resposta.
+  // Acessibilidade: escala da letra + modo legível (espaçamento maior).
   const fz = (base: number) => Math.round(base * fontScale)
+  const legibleStyle = legible ? { letterSpacing: '0.04em', wordSpacing: '0.08em', lineHeight: 2 } : null
   const [speaking, setSpeaking] = useState(false)
   function readAloud() {
     const parts = [displayText]
     if (displayOptions && displayOptions.length) parts.push(...displayOptions)
     const ok = speak(parts.join('. '))
     if (ok) { setSpeaking(true); setTimeout(() => setSpeaking(false), 1500) }
+  }
+  // Ditado por voz (speech-to-text) — acrescenta o texto reconhecido à resposta.
+  const [listening, setListening] = useState(false)
+  const stopDictRef = useRef<(() => void) | null>(null)
+  function toggleDictation() {
+    if (listening) { stopDictRef.current?.(); setListening(false); return }
+    const stop = startDictation(
+      (t) => onChange((answer.trim() ? answer.trim() + ' ' : '') + t),
+      () => { setListening(false); stopDictRef.current = null },
+    )
+    if (stop) { stopDictRef.current = stop; setListening(true) }
   }
   const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank']
   const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
@@ -827,7 +854,7 @@ function QuestionCard({
           <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#f1f5f9', color: '#64748b' }}>Texto</span>
         </div>
         <div className="px-5 py-4">
-          <p className="leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14) }}>{displayText}</p>
+          <p className="leading-relaxed whitespace-pre-wrap" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14), ...(legibleStyle ?? {}) }}>{displayText}</p>
         </div>
       </div>
     )
@@ -890,7 +917,7 @@ function QuestionCard({
       {/* Corpo da questão */}
       <div className="px-5 py-4 space-y-4">
         {/* Enunciado */}
-        <p className="font-medium leading-relaxed" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14) }}>
+        <p className="font-medium leading-relaxed" style={{ color: '#0D1B2A', lineHeight: 1.75, fontSize: fz(14), ...(legibleStyle ?? {}) }}>
           {displayText}
         </p>
 
@@ -990,6 +1017,18 @@ function QuestionCard({
               {showKeyboard ? 'Fechar teclado matemático' : 'Teclado matemático'}
             </button>
 
+            {/* Ditar por voz (speech-to-text) */}
+            {dictationAvailable() && (
+              <>
+                <button onClick={toggleDictation}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ml-2"
+                  style={{ borderColor: listening ? '#dc2626' : '#e2e8f0', background: listening ? '#fef2f2' : '#f8fafc', color: listening ? '#dc2626' : '#6B7280' }}>
+                  {listening ? '● A ouvir… (toca para parar)' : '🎤 Ditar resposta'}
+                </button>
+                <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>revê sempre o que for transcrito</span>
+              </>
+            )}
+
             {/* Teclado */}
             {showKeyboard && (
               <div className="rounded-2xl border overflow-hidden" style={{ borderColor: '#e2e8f0' }}>
@@ -1055,6 +1094,7 @@ function QuestionCard({
                 color: '#0D1B2A',
                 background: 'white',
                 fontSize: fz(14),
+                ...(legibleStyle ?? {}),
               }}
               onFocus={e => (e.target.style.borderColor = '#00B4D8')}
               onBlur={e => (e.target.style.borderColor = answer.trim() ? '#bbf7d0' : '#e2e8f0')}
