@@ -10,6 +10,7 @@ import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
 import { findIncoherences } from '@/lib/exam/incoherence'
 import { parseIntegrity, summarizeIntegrity } from '@/lib/exam/integrity'
 import QuestionMedia from '@/components/exam/QuestionMedia'
+import LanguageTab from '@/components/exam/LanguageTab'
 
 // ── Tipos locais ────────────────────────────────────────────────────────────────
 interface Submission {
@@ -1172,7 +1173,7 @@ export default function GradingDashboard({
   const [filter, setFilter] = useState<'all' | 'pending' | 'graded'>('all')
   const [turmaView, setTurmaView] = useState<'all' | string>('all')   // filtro por turma (Submissões + Análise)
   const [rosterOpen, setRosterOpen] = useState(false)                 // modal certificar + exportar Excel
-  const [tab, setTab] = useState<'submissions' | 'horizontal' | 'analytics'>('submissions')
+  const [tab, setTab] = useState<'submissions' | 'horizontal' | 'analytics' | 'lingua'>('submissions')
   const [regrading, setRegrading] = useState(false)
   const [regradeMsg, setRegradeMsg] = useState<string | null>(null)
   const [released, setReleased] = useState(!!resultsReleased)
@@ -1470,6 +1471,7 @@ export default function GradingDashboard({
           { key: 'submissions', label: `Submissões (${submissions.length})` },
           { key: 'horizontal',  label: 'Correção horizontal' },
           { key: 'analytics',   label: `Análise${gradedCount > 0 ? ` (${gradedCount} corrigidas)` : ''}` },
+          { key: 'lingua',      label: 'Língua' },
         ] as const).map(({ key, label }) => (
           <button
             key={key}
@@ -1486,8 +1488,8 @@ export default function GradingDashboard({
         ))}
       </div>
 
-      {/* ── Filtro por turma (Submissões + Análise) ── */}
-      {(tab === 'submissions' || tab === 'analytics') && turmaOptions.length > 1 && (
+      {/* ── Filtro por turma (Submissões + Análise + Língua) ── */}
+      {(tab === 'submissions' || tab === 'analytics' || tab === 'lingua') && turmaOptions.length > 1 && (
         <div className="flex items-center gap-2 flex-wrap mt-3">
           <span className="text-xs font-medium" style={{ color: '#6B7280' }}>Turma:</span>
           <button onClick={() => setTurmaView('all')}
@@ -1523,6 +1525,12 @@ export default function GradingDashboard({
       {tab === 'analytics' && (
         <AnalyticsDashboard submissions={turmaScopedSubs} questions={questions} fallbackYear={fallbackYear}
           turmaView={turmaView} allSubmissions={submissions} />
+      )}
+
+      {/* ── Tab: Língua ── */}
+      {tab === 'lingua' && (
+        <LanguageTab sessionId={sessionId} submissions={submissions} fallbackYear={fallbackYear}
+          turmaView={turmaView} onChanged={() => router.refresh()} />
       )}
 
       {/* ── Tab: Submissões ── */}

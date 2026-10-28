@@ -418,3 +418,11 @@ Pedido do Tiago (alunos com dificuldades visuais / leitura). Aditivo, sem servid
 - **Ouvir (TTS)**: `src/lib/a11y/speech.ts` usa `window.speechSynthesis` (nativo, grátis, voz pt-PT se instalada). Botão "🔊 Ouvir" por questão no exame e nos resultados (lê enunciado + opções).
 - **Gravação pela voz do professor**: NÃO feita — precisa de storage de áudio (custo/canalização). A voz AI nativa já cobre a necessidade de graça; só avançar se o Tiago quiser mesmo a própria voz.
 - Ideias de inclusão de baixo custo a considerar: modo "letra mais legível" (espaçamento), ditado de resposta por voz (speech-to-text, fiabilidade pt-PT variável), tempo extra por aluno (precisa de identidade do aluno). Alto contraste é mais trabalhoso (estilos inline).
+
+## 2026-10-28 — Inclusão (legível + ditado) + Análise de Língua
+- **Modo "letra mais legível"** (espaçamento) + **ditar resposta por voz** (speech-to-text nativo) no exame; legível também nos resultados. Custo zero. Commit `cb3d381`.
+- **Análise dedicada ao uso da Língua** (desafio do Tiago, barra de qualidade alta). Aditivo, pós-correcção, NÃO altera notas, zero migração (`answers.__integrity.language`).
+  - `src/lib/exam/language.ts`: `analyzeLanguage` (IA) diagnostica por 8 categorias (ortografia, acentuação, pontuação, gramática/concordância, construção frásica, vocabulário, interpretação, coerência), conta erros, dá exemplos wrong→correct, virtudes, diagnóstico e recomendações **coerentes com o % do aluno**, e `reliability` (suspeita = cópia/IA, reforçada pelos `contentFlags`). **Normaliza por 100 palavras** (comparação justa). `aggregateLanguage` faz o perfil da turma; `langColor` dá o código de cores (verde ≤1 · âmbar ≤3 · vermelho >3 por 100 palavras).
+  - `POST /api/exam/sessions/[id]/lang-check`: corre sobre as corrigidas, guarda por submissão, accionado por botão.
+  - Separador **"Língua"** no painel (`LanguageTab.tsx`): perfil da turma (barras por categoria, cores, recomendações, nº não-fidedignas) + por aluno (erros/100, tira de cores por categoria, exemplos, virtudes, diagnóstico, recomendações, selo "não fidedigno"). Respeita o filtro de turma.
+  - Nota: escrita pouco fidedigna é marcada como **não servindo para avaliar a língua** (não se avalia um texto que o aluno não escreveu).

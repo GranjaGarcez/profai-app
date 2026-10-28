@@ -42,6 +42,9 @@ export interface IntegrityRecord {
   suspended?: boolean
   contentFlags?: ContentFlag[]
   annulled?: { at: string; reason: string }
+  // Análise dedicada ao uso da língua (pós-correcção). Tipo em src/lib/exam/language.ts;
+  // guardado como unknown aqui para não acoplar os módulos.
+  language?: unknown
 }
 
 /** Lê o registo de integridade de um objecto de respostas (tolerante a tudo). */
