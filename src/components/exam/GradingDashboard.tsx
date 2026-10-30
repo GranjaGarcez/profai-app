@@ -992,7 +992,7 @@ function SubmissionDetail({
                     Q{q.index}. {q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text}
                   </span>
                   {detail?.manual === true
-                    ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534' }} title="Corrigido à mão por ti">✓ revisto à mão</span>
+                    ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534' }} title={`Corrigido à mão por ti${detail.rev && detail.rev > 1 ? ` — ${detail.rev} revisões` : ''}`}>✓ revisto à mão{detail.rev && detail.rev > 1 ? ` ·${detail.rev}×` : ''}</span>
                     : detail && detail.auto === false
                       ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#b91c1c' }} title="A IA não avaliou — por corrigir">⚠ IA não avaliou</span>
                       : detail

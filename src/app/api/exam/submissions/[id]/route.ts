@@ -38,35 +38,40 @@ export async function PATCH(
   // Máximo autoritário desta pergunta (do snapshot) — nunca deixar a nota passar dele.
   const qMax = getAllQuestions(sess.test_snapshot as TestSnapshot)
     .find(q => String(q.index) === String(questionKey))?.points
-  const safeScore = Math.max(0, Math.min(Number(score) || 0, typeof qMax === 'number' ? qMax : Number(score) || 0))
+  const maxN = typeof qMax === 'number' ? qMax : (Number(score) || 0)
+  const safeScore = Math.max(0, Math.min(Number(score) || 0, maxN))
 
-  // Atualiza detalhe da questão
-  const details = (sub.grading_details ?? {}) as Record<string, { score: number; max: number; feedback: string; auto: boolean; manual?: boolean }>
-  const oldScore = details[questionKey]?.score ?? 0
+  // 1) Caminho ATÓMICO (função SQL): um único UPDATE com bloqueio da linha — evita a
+  // corrida que revertia alterações; recalcula o total pela SOMA; conta a revisão.
+  const { data: rpcTotal, error: rpcErr } = await supabase.rpc('profai_set_question_grade', {
+    p_id: id, p_qkey: String(questionKey), p_score: safeScore, p_max: maxN,
+    p_feedback: feedback ?? null, p_notes: teacherNotes ?? null,
+  })
+  if (!rpcErr) return NextResponse.json({ ok: true, newTotal: rpcTotal })
+
+  // 2) Recurso (migração 20261030 ainda não aplicada): ler-modificar-gravar, MAS com o
+  // total recalculado pela soma de todas as perguntas (sem deriva) + contador de revisão.
+  type Det = { score: number; max?: number; feedback?: string; auto?: boolean; manual?: boolean; rev?: number }
+  const details = (sub.grading_details ?? {}) as Record<string, Det>
+  const prev = details[questionKey] ?? ({} as Det)
   details[questionKey] = {
-    ...(details[questionKey] ?? {}),
+    ...prev,
     score: safeScore,
-    max: typeof qMax === 'number' ? qMax : details[questionKey]?.max,
-    feedback: feedback ?? details[questionKey]?.feedback ?? '',
-    auto: false,    // marcado como revisão manual
-    manual: true,   // explícito: foi o professor (distingue de uma falha da IA, que também põe auto:false)
+    max: typeof qMax === 'number' ? qMax : prev.max,
+    feedback: feedback ?? prev.feedback ?? '',
+    auto: false,
+    manual: true,
+    rev: (prev.rev ?? 0) + 1,
   }
-
-  // Recalcula total (com a nota já limitada ao máximo)
-  const newTotal = (sub.total_score ?? 0) - oldScore + safeScore
+  // Total = soma das notas de todas as perguntas (fonte de verdade).
+  const newTotal = Object.values(details).reduce((s, d) => s + (Number(d?.score) || 0), 0)
 
   const updates: Record<string, unknown> = {
-    grading_details: details,
-    total_score: newTotal,
-    status: 'reviewed',
+    grading_details: details, total_score: newTotal, status: 'reviewed', graded_at: new Date().toISOString(),
   }
   if (teacherNotes !== undefined) updates.teacher_notes = teacherNotes
 
-  const { error } = await supabase
-    .from('exam_submissions')
-    .update(updates)
-    .eq('id', id)
-
+  const { error } = await supabase.from('exam_submissions').update(updates).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, newTotal })
 }

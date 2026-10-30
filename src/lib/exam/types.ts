@@ -75,6 +75,7 @@ export interface GradingDetail {
   feedback: string
   auto: boolean          // true = automático (MCQ/TF) ou IA; false = NÃO automático
   manual?: boolean       // true = cotação definida à mão pelo prof (≠ falha da IA, que também põe auto:false)
+  rev?: number           // nº de revisões manuais desta pergunta (cada gravação à mão incrementa)
   overrodeManual?: boolean // true = esta correcção da IA SUBSTITUIU uma revisão manual (a pedido do prof)
   prevManual?: { score: number; feedback?: string } // cópia da revisão manual substituída — nada se perde (reversível)
   teacherComment?: string            // comentário do professor a esta resposta (visível ao aluno); não mexe na nota

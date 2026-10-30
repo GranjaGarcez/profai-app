@@ -6,7 +6,7 @@ import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 import { parseIntegrity } from '@/lib/exam/integrity'
 import QuestionMedia from '@/components/exam/QuestionMedia'
 
-interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; overrodeManual?: boolean; prevManual?: { score: number; feedback?: string }; ai_confidence?: number; teacherComment?: string; highlight?: 'exemplar' | 'falha' }
+interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; rev?: number; overrodeManual?: boolean; prevManual?: { score: number; feedback?: string }; ai_confidence?: number; teacherComment?: string; highlight?: 'exemplar' | 'falha' }
 interface Submission {
   id: string
   student_name: string
@@ -418,7 +418,7 @@ export default function HorizontalGrading({
                     <span className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{s.student_name}</span>
                     {turma === 'all' && <span className="text-xs" style={{ color: '#9CA3AF' }}>· {labelOf(s)}</span>}
                     {reviewedByYou
-                      ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }} title="Corrigido À MÃO por ti (verificação manual)">✓ revisto à mão</span>
+                      ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }} title={`Corrigido À MÃO por ti (verificação manual)${d?.rev && d.rev > 1 ? ` — ${d.rev} revisões` : ''}`}>✓ revisto à mão{d?.rev && d.rev > 1 ? ` ·${d.rev}×` : ''}</span>
                       : aiFailed
                         ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#b91c1c' }} title="A IA não conseguiu avaliar — por corrigir">⚠ IA não avaliou</span>
                         : aiUnsure
