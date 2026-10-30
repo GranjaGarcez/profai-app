@@ -8,7 +8,7 @@ import { turmaLabel as turmaLabelOf, canonicalTurma } from '@/lib/exam/turma'
 import HorizontalGrading from '@/components/exam/HorizontalGrading'
 import { GRADER_IMPROVED_AT, GRADER_AFFECTS } from '@/lib/exam/graderVersion'
 import { findIncoherences } from '@/lib/exam/incoherence'
-import { parseIntegrity, summarizeIntegrity } from '@/lib/exam/integrity'
+import { parseIntegrity, summarizeIntegrity, strongSuspicion } from '@/lib/exam/integrity'
 import QuestionMedia from '@/components/exam/QuestionMedia'
 import LanguageTab from '@/components/exam/LanguageTab'
 
@@ -1229,7 +1229,10 @@ export default function GradingDashboard({
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Falha.')
       setReleased(!!d.released)
-      setResultMsg(d.released ? 'Resultados divulgados — os alunos já podem ver a sua correcção.' : 'Resultados ocultados dos alunos.')
+      setResultMsg(d.released
+        ? `Resultados divulgados${typeof d.freed === 'number' ? `: ${d.freed} libertado(s)` : ''}${d.held ? `, ${d.held} retido(s) sob suspeita (por certificar)` : ''}.`
+        : 'Resultados ocultados dos alunos.')
+      router.refresh()
     } catch (e) { setResultMsg(e instanceof Error ? e.message : 'Erro.') }
     finally { setReleasing(false) }
   }
@@ -1260,6 +1263,23 @@ export default function GradingDashboard({
       const d = await res.json()
       if (res.ok) setAllowAids(!!d.allow)
     } finally { setTogglingAids(false) }
+  }
+
+  // Retenção na divulgação: suspeitos fortes (por certificar) e os já retidos.
+  const suspectList = submissions
+    .map(s => ({ s, rec: parseIntegrity(s.answers), sus: strongSuspicion(parseIntegrity(s.answers)) }))
+    .filter(x => x.sus.suspect && !x.rec?.cleared)
+  const heldList = suspectList.filter(x => x.rec?.held)
+  const [holdingId, setHoldingId] = useState<string | null>(null)
+  async function setHold(subId: string, action: 'release' | 'hold') {
+    setHoldingId(subId)
+    try {
+      const res = await fetch(`/api/exam/submissions/${subId}/hold`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (res.ok) router.refresh()
+    } finally { setHoldingId(null) }
   }
 
   async function sendEmails() {
@@ -1520,6 +1540,44 @@ export default function GradingDashboard({
           </div>
         </div>
         {resultMsg && <p className="text-xs mt-2" style={{ color: '#374151' }}>{resultMsg}</p>}
+
+        {/* Suspeitos → retidos na divulgação (o professor certifica para libertar) */}
+        {suspectList.length > 0 && (
+          <div className="mt-3 rounded-lg border p-3" style={{ borderColor: '#f59e0b', background: '#fffbeb' }}>
+            <p className="text-sm font-bold" style={{ color: '#92400e' }}>
+              🔒 {released
+                ? `${heldList.length} correção(ões) retida(s) sob suspeita`
+                : `${suspectList.length} com fortes indícios — ficam retidas ao divulgar`}
+            </p>
+            <p className="text-xs mb-2" style={{ color: '#b45309' }}>
+              {released
+                ? 'Os alunos NÃO as veem. Verifica cada uma (abre o nome) e certifica para libertar, ou mantém retida / anula.'
+                : 'Ao divulgares, o resto é libertado e estas ficam retidas; certificas-las depois, uma a uma.'}
+            </p>
+            <div className="space-y-1.5">
+              {(released ? heldList : suspectList).map(({ s, sus }) => (
+                <div key={s.id} className="flex items-center justify-between gap-2 flex-wrap rounded-md px-2.5 py-1.5"
+                  style={{ background: 'white', border: '1px solid #fde68a' }}>
+                  <div className="min-w-0">
+                    <button onClick={() => setSelected(s)} className="text-sm font-semibold hover:underline" style={{ color: '#0D1B2A' }}>
+                      {s.student_name}
+                    </button>
+                    <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>{turmaLabel(s)}</span>
+                    <p className="text-xs" style={{ color: '#b45309' }}>{sus.reasons.join(' · ')}</p>
+                  </div>
+                  {released && (
+                    <button onClick={() => setHold(s.id, 'release')} disabled={holdingId === s.id}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-md text-white disabled:opacity-50 shrink-0"
+                      style={{ background: '#166534' }}
+                      title="Verifiquei e certifico — libertar esta correcção ao aluno">
+                      {holdingId === s.id ? '…' : '✓ Certifiquei — libertar'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Tabs ── */}

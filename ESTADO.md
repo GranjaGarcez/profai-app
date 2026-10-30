@@ -438,3 +438,11 @@ Aditivo, NÃO mexe na nota/estado/revisão manual (endpoint próprio `annotate`)
 - **Correção horizontal**: por resposta, botões ⭐ Exemplar / ⚠ Falha reveladora + 💬 Comentar (input), com overrides locais; filtro novo "★ Só destaques".
 - **Detalhe da submissão**: os mesmos controlos por questão (⭐/⚠ + comentário), com actualização optimista em `localDetails`.
 - **Resultado do aluno**: vê o 👩‍🏫 comentário do professor e, se for o caso, "⭐ Resposta destacada" (a "falha reveladora" é interna, NÃO chega ao aluno). API `result/[id]` devolve `teacherComment` e `exemplar`.
+
+## 2026-10-30 (cont.) — Divulgação selectiva: reter suspeitos, certificar e libertar
+Pedido do Tiago: ao divulgar, libertar só os limpos e reter os de fortes indícios, com certificação do professor. Aditivo, zero migração (flags em integrity).
+- `integrity.strongSuspicion(rec)`: junta anulado + conteúdo acima/fora do tema (`contentFlags`) + escrita pouco fidedigna (`language.reliability`) + prova suspensa + colagens + ≥4 saídas de ecrã → `{ suspect, reasons }`. Campos novos `held?`/`cleared?` no registo.
+- `POST /release` (divulgar): além do interruptor da sessão, ao divulgar **retém automaticamente** os suspeitos ainda não certificados (`held:true`); devolve `{freed, held}`. Não retém os `cleared`.
+- `GET result/[id]`: se `held && !cleared`, devolve pendente mesmo com a sessão divulgada (aluno não vê; mensagem neutra, não revela suspeita).
+- `POST /api/exam/submissions/[id]/hold` { action: 'release'|'hold' }: "release" = certifico (grava `cleared`, liberta e nunca mais retém auto); "hold" = manter retida. Não mexe na nota.
+- Painel: antes de divulgar avisa quantas ficam retidas; depois mostra a lista "🔒 retidas" com motivos e "✓ Certifiquei — libertar" (abre o nome → detalhe para inspeccionar/anular). Nota: correr content-check/lang-check antes aumenta os indícios detectados (colagens/saídas/anulado já contam sem isso).

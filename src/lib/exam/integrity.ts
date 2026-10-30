@@ -45,6 +45,11 @@ export interface IntegrityRecord {
   // Análise dedicada ao uso da língua (pós-correcção). Tipo em src/lib/exam/language.ts;
   // guardado como unknown aqui para não acoplar os módulos.
   language?: unknown
+  // Divulgação: submissão RETIDA (não libertada ao aluno mesmo com a sessão divulgada),
+  // tipicamente por fortes indícios; `cleared` = o professor certificou → liberta e nunca
+  // mais é retida automaticamente.
+  held?: boolean
+  cleared?: { at: string }
 }
 
 /** Lê o registo de integridade de um objecto de respostas (tolerante a tudo). */
@@ -102,6 +107,23 @@ export function summarizeIntegrity(rec: IntegrityRecord | null): IntegritySummar
     annulled ? 'high' : pts >= 6 ? 'high' : pts >= 3 ? 'medium' : pts >= 1 ? 'low' : 'none'
 
   return { exits, blurs, pastes, awayMs, suspended, contentAbove, annulled, level, hasAny: pts > 0 || annulled }
+}
+
+// Fortes indícios de plágio/batota — para reter na divulgação (o professor decide).
+// Junta os sinais que já temos: anulado, conteúdo acima do ano/fora do tema, escrita
+// pouco fidedigna (cópia/IA), prova suspensa, colagens, ou muitas saídas do ecrã.
+export function strongSuspicion(rec: IntegrityRecord | null): { suspect: boolean; reasons: string[] } {
+  const reasons: string[] = []
+  if (!rec) return { suspect: false, reasons }
+  if (rec.annulled) reasons.push('exame anulado')
+  if ((rec.contentFlags ?? []).some(f => f.level !== 'ok')) reasons.push('conteúdo acima do ano / fora do tema')
+  const lang = rec.language as { reliability?: string } | undefined
+  if (lang?.reliability === 'suspeita') reasons.push('escrita pouco fidedigna (cópia/IA)')
+  const s = summarizeIntegrity(rec)
+  if (s.suspended) reasons.push('prova suspensa')
+  if (s.pastes > 0) reasons.push(`${s.pastes} colagem(ns)`)
+  if (s.exits >= 4) reasons.push(`${s.exits} saídas do ecrã`)
+  return { suspect: reasons.length > 0, reasons }
 }
 
 // Filtros de ruído do registo ao vivo (no dispositivo do aluno). Não há suspensão:

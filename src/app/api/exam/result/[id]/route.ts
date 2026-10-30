@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAllQuestions } from '@/lib/exam/types'
 import type { TestSnapshot, GradingDetail } from '@/lib/exam/types'
+import { parseIntegrity } from '@/lib/exam/integrity'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -28,6 +29,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   // Ainda não divulgado, ou ainda por corrigir → não revelar nada da correcção.
   if (!session.results_released) {
     return NextResponse.json({ released: false, title, studentName: sub.student_name })
+  }
+  // Submissão RETIDA (fortes indícios, por certificar) → não libertar, mesmo com a
+  // sessão divulgada. O professor tem de a certificar primeiro.
+  const integ = parseIntegrity((sub.answers ?? {}) as Record<string, string>)
+  if (integ?.held && !integ?.cleared) {
+    return NextResponse.json({ released: true, pending: true, held: true, title, studentName: sub.student_name })
   }
   if (sub.status !== 'graded' && sub.status !== 'reviewed') {
     return NextResponse.json({ released: true, pending: true, title, studentName: sub.student_name })
