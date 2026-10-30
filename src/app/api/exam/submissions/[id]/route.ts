@@ -43,17 +43,22 @@ export async function PATCH(
 
   // 1) Caminho ATÓMICO (função SQL): um único UPDATE com bloqueio da linha — evita a
   // corrida que revertia alterações; recalcula o total pela SOMA; conta a revisão.
+  const by = user.email ?? null
   const { data: rpcTotal, error: rpcErr } = await supabase.rpc('profai_set_question_grade', {
     p_id: id, p_qkey: String(questionKey), p_score: safeScore, p_max: maxN,
-    p_feedback: feedback ?? null, p_notes: teacherNotes ?? null,
+    p_feedback: feedback ?? null, p_notes: teacherNotes ?? null, p_by: by,
   })
   if (!rpcErr) return NextResponse.json({ ok: true, newTotal: rpcTotal })
 
   // 2) Recurso (migração 20261030 ainda não aplicada): ler-modificar-gravar, MAS com o
-  // total recalculado pela soma de todas as perguntas (sem deriva) + contador de revisão.
-  type Det = { score: number; max?: number; feedback?: string; auto?: boolean; manual?: boolean; rev?: number }
+  // total recalculado pela soma de todas as perguntas (sem deriva) + revisão + histórico.
+  type LogEntry = { at: string; by?: string; from: number | null; to: number }
+  type Det = { score: number; max?: number; feedback?: string; auto?: boolean; manual?: boolean; rev?: number; log?: LogEntry[] }
   const details = (sub.grading_details ?? {}) as Record<string, Det>
   const prev = details[questionKey] ?? ({} as Det)
+  const entry: LogEntry = { at: new Date().toISOString(), from: typeof prev.score === 'number' ? prev.score : null, to: safeScore }
+  if (by) entry.by = by
+  const log = [...(prev.log ?? []), entry].slice(-20)
   details[questionKey] = {
     ...prev,
     score: safeScore,
@@ -62,6 +67,7 @@ export async function PATCH(
     auto: false,
     manual: true,
     rev: (prev.rev ?? 0) + 1,
+    log,
   }
   // Total = soma das notas de todas as perguntas (fonte de verdade).
   const newTotal = Object.values(details).reduce((s, d) => s + (Number(d?.score) || 0), 0)

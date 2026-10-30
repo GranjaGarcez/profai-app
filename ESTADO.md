@@ -454,3 +454,6 @@ Tiago: depois de rever tudo e mostrar notas, várias alterações manuais tinham
 - **Revisões**: `GradingDetail.rev`; selo "✓ revisto à mão ·N×" na correção horizontal e no detalhe.
 - **Multi-turma (resposta ao Tiago)**: um exame = **uma sessão** (um código) partilhada pelas turmas. Uma turma submeter MAIS TARDE **não** re-corrige os exames anteriores (o submit só corrige a nova submissão). O efeito retroactivo vem das **acções do professor** session-wide (Editar critérios, Re-corrigir) que abrangem todas as turmas — e essas preservam o manual (`manual`/`reviewed`); o que estragava era a corrida acima, agora corrigida.
 - **Nota honesta**: valores manuais já revertidos NÃO têm histórico para recuperar automaticamente (exceto override, que guarda `prevManual`) — há que rever essas perguntas de novo (agora é atómico e contado). A migração também permite reparar os TOTAIS pela soma.
+
+## 2026-10-30 (cont.) — Registo de alterações por pergunta (quem/quando/de→para)
+Em cima da gravação atómica: cada correcção manual acrescenta uma entrada ao histórico da pergunta (`GradingDetail.log`: {at, by, from, to}, últimas 20). A função `profai_set_question_grade` (migração `20261030_atomic_grade.sql`, actualizada) regista o log; o recurso pré-migração também. Detalhe da submissão mostra "🕓 Histórico de revisões (N)" por pergunta. `by` = email do professor.

@@ -1140,6 +1140,23 @@ function SubmissionDetail({
                   </div>
                 </div>
 
+                {/* Histórico de revisões manuais desta pergunta */}
+                {detail?.log && detail.log.length > 0 && (
+                  <details className="pl-1">
+                    <summary className="text-xs cursor-pointer" style={{ color: '#6B7280' }}>
+                      🕓 Histórico de revisões ({detail.log.length})
+                    </summary>
+                    <ul className="mt-1 space-y-0.5">
+                      {[...detail.log].reverse().map((e, i) => (
+                        <li key={i} className="text-xs font-mono" style={{ color: '#6B7280' }}>
+                          {new Date(e.at).toLocaleString('pt-PT')} · {e.from ?? '—'} → <strong style={{ color: '#0D1B2A' }}>{e.to}</strong>
+                          {e.by ? ` · ${e.by}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
                 {/* Comentar + destacar (não mexe na nota) */}
                 <div className="flex items-center gap-1.5 pt-1 flex-wrap">
                   <button onClick={() => annotateQ(qKey, { highlight: detail?.highlight === 'exemplar' ? null : 'exemplar' })}
