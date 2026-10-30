@@ -62,6 +62,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     studentName: sub.student_name,
     totalScore: sub.total_score,
     maxScore: sub.max_score ?? snapshot.totalPoints ?? 100,
+    allowAids: !!snapshot._allowAids,
     questions,
   })
 }

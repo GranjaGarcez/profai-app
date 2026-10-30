@@ -125,11 +125,18 @@ export default function HorizontalGrading({
     } catch { /* mantém o valor local; o professor pode repetir */ }
   }
 
-  // Revisto por ti = cotaste-o agora, ou já estava marcado como ajuste manual (auto:false).
-  const isReviewed = (s: Submission) => reviewed[`${s.id}|${qKey}`] || s.grading_details?.[qKey]?.auto === false
+  // Revisto À MÃO por ti = cotaste-o agora, ou tem o marcador de revisão manual.
+  // auto:false SOZINHO já NÃO conta como "revisto" — pode ser a IA que não avaliou, ou
+  // uma recorreção automática (mudança de critérios). Só o toque humano é "revisto".
+  const isManual = (s: Submission) => reviewed[`${s.id}|${qKey}`] || s.grading_details?.[qKey]?.manual === true
+  // IA não conseguiu avaliar (por corrigir): auto:false sem ser manual.
+  const isAiFailed = (s: Submission) => {
+    const d = s.grading_details?.[qKey]
+    return !!d && d.auto === false && d.manual !== true && !reviewed[`${s.id}|${qKey}`]
+  }
   const isObjective = q.type === 'multiple_choice' || q.type === 'true_false'
-  const visibleRows = onlyPending ? rows.filter(s => !isReviewed(s)) : rows
-  const reviewedCount = rows.filter(isReviewed).length
+  const visibleRows = onlyPending ? rows.filter(s => !isManual(s)) : rows
+  const reviewedCount = rows.filter(isManual).length
   const pendingCount = rows.length - reviewedCount
 
   // ── Editor de critérios: pré-visualização do impacto (sobre TODAS as submissões,
@@ -358,8 +365,9 @@ export default function HorizontalGrading({
           const d = s.grading_details?.[qKey]
           const ans = s.answers?.[qKey] ?? ''
           const correctObj = isObjective && ans.trim().toUpperCase() === String(q.correctAnswer).trim().toUpperCase()
-          const reviewedByYou = isReviewed(s)
-          const aiUnsure = !reviewedByYou && typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7
+          const reviewedByYou = isManual(s)
+          const aiFailed = isAiFailed(s)
+          const aiUnsure = !reviewedByYou && !aiFailed && typeof d?.ai_confidence === 'number' && d.ai_confidence < 0.7
           const cFlag = parseIntegrity(s.answers)?.contentFlags?.find(f => f.qKey === qKey && f.level !== 'ok')
           // Incoerências: nota acima do máximo, ou resposta em branco com pontos.
           const incOverMax = typeof sc === 'number' && sc > q.points + 0.001
@@ -377,10 +385,12 @@ export default function HorizontalGrading({
                     <span className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{s.student_name}</span>
                     {turma === 'all' && <span className="text-xs" style={{ color: '#9CA3AF' }}>· {labelOf(s)}</span>}
                     {reviewedByYou
-                      ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f0fdf4', color: '#166534' }} title="Já revisto/cotado por ti">✓ revisto</span>
-                      : aiUnsure
-                        ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fffbeb', color: '#92400e' }} title="IA incerta — convém rever">⚠︎ rever</span>
-                        : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#64748b' }} title="Cotado pela IA, por confirmar">IA</span>}
+                      ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }} title="Corrigido À MÃO por ti (verificação manual)">✓ revisto à mão</span>
+                      : aiFailed
+                        ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#b91c1c' }} title="A IA não conseguiu avaliar — por corrigir">⚠ IA não avaliou</span>
+                        : aiUnsure
+                          ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fffbeb', color: '#92400e' }} title="Cotado pela IA, confiança baixa — convém rever">⚠︎ IA · rever</span>
+                          : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#64748b' }} title="Cotado pela IA (inclui recorreções por mudança de critérios) — por confirmar à mão">IA · por confirmar</span>}
                     {incoherent && (
                       <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: '#fee2e2', color: '#991b1b' }}>
                         ⚠ {incOverMax ? `nota ${sc} acima do máximo (${q.points})` : 'em branco mas com pontos'}

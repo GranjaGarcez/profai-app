@@ -42,6 +42,9 @@ export interface TestSnapshot {
   questions?: Question[]
   // Tradução para alunos LPNM (Fase 1 — só visualização; controlada pelo professor).
   _allowTranslation?: boolean
+  // Ajudas de voz (ouvir a pergunta, responder por voz) — desligadas por defeito; o
+  // professor liga-as por exame. O tamanho da letra e a legibilidade estão sempre.
+  _allowAids?: boolean
   // Cache de traduções por língua → índice da questão → enunciado/opções traduzidos.
   // NÃO é enviado ao aluno no fetch público (só via /api/exam/translate).
   _translations?: Record<string, Record<string, { text: string; options?: string[] }>>

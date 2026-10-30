@@ -11,7 +11,7 @@ interface QResult {
 }
 interface ResultData {
   released: boolean; pending?: boolean; title: string; studentName?: string
-  totalScore?: number | null; maxScore?: number; questions?: QResult[]
+  totalScore?: number | null; maxScore?: number; questions?: QResult[]; allowAids?: boolean
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -133,7 +133,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0"
                 style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{q.n}</span>
               <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f1f5f9', color: '#64748b' }}>{TYPE_LABEL[q.type] ?? q.type}</span>
-              {ttsAvailable() && (
+              {data.allowAids && ttsAvailable() && (
                 <button onClick={() => speak([q.text, ...(q.options ?? [])].join('. '))}
                   className="text-xs px-2 py-0.5 rounded-md font-medium" style={{ background: '#e0f7fc', color: '#0369a1', border: '1px solid #bae6fd' }}
                   title="Ouvir a leitura desta pergunta">🔊 Ouvir</button>

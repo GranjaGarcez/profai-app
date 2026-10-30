@@ -191,6 +191,9 @@ export default function ExamPage() {
   const [translating, setTranslating] = useState(false)
   const [transErr, setTransErr] = useState<string | null>(null)
   const allowTranslation = !!(session?.test_snapshot as TestSnapshot | undefined)?._allowTranslation
+  // Ajudas de voz (ouvir / ditar) — só se o professor as ligou. Tamanho da letra e
+  // legibilidade estão sempre disponíveis, independentemente disto.
+  const allowAids = !!(session?.test_snapshot as TestSnapshot | undefined)?._allowAids
 
   async function applyLang(code: string) {
     setTransErr(null)
@@ -687,7 +690,7 @@ export default function ExamPage() {
           title="Mais espaço entre letras e linhas (ajuda a leitura)">
           Aa {legible ? 'Legível ✓' : 'Mais legível'}
         </button>
-        {ttsAvailable() && <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>🔊 Toca em “Ouvir” numa questão para a ouvir</span>}
+        {allowAids && ttsAvailable() && <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>🔊 Toca em “Ouvir” numa questão para a ouvir</span>}
       </div>
 
       {/* Tradução (LPNM) — só visualização; não muda a tua resposta */}
@@ -726,6 +729,7 @@ export default function ExamPage() {
           tOptions={translations[String(q.index)]?.options}
           fontScale={fontScale}
           legible={legible}
+          allowAids={allowAids}
           answer={answers[String(q.index)] ?? ''}
           onChange={v => setAnswers(a => ({ ...a, [String(q.index)]: v }))}
           onCalcEntry={(entry: CalcEntry) => setCalcHistories(h => ({
@@ -777,7 +781,7 @@ export default function ExamPage() {
 
 // ── Cartão de questão ──────────────────────────────────────────────────────────
 function QuestionCard({
-  q, n, total, answer, onChange, onCalcEntry, tText, tOptions, fontScale = 1, legible = false,
+  q, n, total, answer, onChange, onCalcEntry, tText, tOptions, fontScale = 1, legible = false, allowAids = false,
 }: {
   q: Question; n: number; total: number; answer: string
   onChange: (v: string) => void
@@ -786,6 +790,7 @@ function QuestionCard({
   tOptions?: string[]
   fontScale?: number
   legible?: boolean
+  allowAids?: boolean
 }) {
   // Tradução (LPNM) — só o que se MOSTRA muda; as opções continuam a valer pela
   // posição/letra, por isso a resposta guardada não depende da língua.
@@ -880,8 +885,8 @@ function QuestionCard({
           style={{ background: '#f1f5f9', color: '#64748b' }}>
           {TYPE_LABEL[q.type] ?? q.type}
         </span>
-        {/* Ouvir (leitura por voz) */}
-        {ttsAvailable() && (
+        {/* Ouvir (leitura por voz) — só se o professor ligou as ajudas */}
+        {allowAids && ttsAvailable() && (
           <button onClick={readAloud}
             className="text-xs px-2.5 py-1 rounded-full font-medium transition-all"
             style={{ background: speaking ? '#0D1B2A' : '#e0f7fc', color: speaking ? '#00B4D8' : '#0369a1', border: '1px solid #bae6fd' }}
@@ -1017,8 +1022,8 @@ function QuestionCard({
               {showKeyboard ? 'Fechar teclado matemático' : 'Teclado matemático'}
             </button>
 
-            {/* Ditar por voz (speech-to-text) */}
-            {dictationAvailable() && (
+            {/* Ditar por voz (speech-to-text) — só se o professor ligou as ajudas */}
+            {allowAids && dictationAvailable() && (
               <>
                 <button onClick={toggleDictation}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ml-2"

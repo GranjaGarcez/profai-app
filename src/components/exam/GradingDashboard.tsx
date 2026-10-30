@@ -962,8 +962,8 @@ function SubmissionDetail({
             return (
               <div key={qKey} className="border rounded-xl p-4 space-y-2"
                 style={{
-                  borderColor: detail?.auto === false ? '#c4b5fd' : '#0D1B2A10',
-                  background: detail?.auto === false ? '#faf5ff' : 'white',
+                  borderColor: detail?.manual === true ? '#86efac' : '#0D1B2A10',
+                  background: detail?.manual === true ? '#f0fdf4' : 'white',
                 }}>
 
                 {/* Topo */}
@@ -975,11 +975,13 @@ function SubmissionDetail({
                   <span className="text-xs font-medium flex-1 line-clamp-1" style={{ color: '#374151' }}>
                     Q{q.index}. {q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text}
                   </span>
-                  {detail?.auto === false && (
-                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f3e8ff', color: '#7c3aed' }}>
-                      revisto
-                    </span>
-                  )}
+                  {detail?.manual === true
+                    ? <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: '#dcfce7', color: '#166534' }} title="Corrigido à mão por ti">✓ revisto à mão</span>
+                    : detail && detail.auto === false
+                      ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#b91c1c' }} title="A IA não avaliou — por corrigir">⚠ IA não avaliou</span>
+                      : detail
+                        ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#f1f5f9', color: '#64748b' }} title="Cotado pela IA (inclui recorreções) — por confirmar">IA</span>
+                        : null}
                 </div>
 
                 {/* Pergunta completa + imagem (colapsável) */}
@@ -1209,6 +1211,20 @@ export default function GradingDashboard({
       const d = await res.json()
       if (res.ok) setAllowTrans(!!d.allow)
     } finally { setTogglingTrans(false) }
+  }
+
+  const [allowAids, setAllowAids] = useState(!!(testSnapshot as TestSnapshot)._allowAids)
+  const [togglingAids, setTogglingAids] = useState(false)
+  async function toggleAids() {
+    setTogglingAids(true)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/allow-aids`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allow: !allowAids }),
+      })
+      const d = await res.json()
+      if (res.ok) setAllowAids(!!d.allow)
+    } finally { setTogglingAids(false) }
   }
 
   async function sendEmails() {
@@ -1441,6 +1457,12 @@ export default function GradingDashboard({
               style={{ borderColor: allowTrans ? '#0369a1' : '#0D1B2A20', background: allowTrans ? '#e0f7fc' : 'transparent', color: '#0369a1' }}
               title="Permitir que alunos LPNM vejam o enunciado traduzido na sua língua (não altera o teste nem as respostas)">
               {togglingTrans ? '…' : allowTrans ? '🌐 Tradução ligada (LPNM)' : '🌐 Permitir tradução (LPNM)'}
+            </button>
+            <button onClick={toggleAids} disabled={togglingAids}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border disabled:opacity-50"
+              style={{ borderColor: allowAids ? '#0369a1' : '#0D1B2A20', background: allowAids ? '#e0f7fc' : 'transparent', color: '#0369a1' }}
+              title="Permitir ouvir a pergunta e responder por voz (desligado por defeito). O tamanho da letra e a legibilidade estão sempre disponíveis.">
+              {togglingAids ? '…' : allowAids ? '🔊 Ajudas de voz ligadas' : '🔊 Permitir ajudas de voz'}
             </button>
             <a href={`/dashboard/exams/${sessionId}/folha`}
               className="px-4 py-2 rounded-lg text-sm font-semibold border"
