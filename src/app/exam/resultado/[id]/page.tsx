@@ -8,6 +8,7 @@ interface QResult {
   n: number; type: string; text: string; options: string[] | null
   figure?: unknown; illustration?: string | null; illustrationCredit?: string | null
   studentAnswer: string; correctAnswer: string; points: number; earned: number; feedback: string
+  teacherComment?: string; exemplar?: boolean
 }
 interface ResultData {
   released: boolean; pending?: boolean; title: string; studentName?: string
@@ -165,6 +166,16 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 <span className="font-semibold" style={{ color: '#059669' }}>Resposta certa: </span>
                 <span style={{ color: '#166534' }}>{q.correctAnswer}</span>
               </p>
+              {q.exemplar && (
+                <p className="text-xs mt-1 px-3 py-2 rounded-lg font-semibold" style={{ background: '#dcfce7', color: '#166534' }}>
+                  ⭐ Resposta destacada pelo teu professor
+                </p>
+              )}
+              {q.teacherComment && (
+                <p className="mt-1 px-3 py-2 rounded-lg" style={{ background: '#eef2ff', color: '#3730a3', fontSize: fz(13), ...(legibleStyle ?? {}) }}>
+                  👩‍🏫 <strong>Professor:</strong> {q.teacherComment}
+                </p>
+              )}
               {q.feedback && (
                 <p className="text-xs mt-1 px-3 py-2 rounded-lg" style={{ background: '#f0f9ff', color: '#0369a1' }}>
                   💬 {q.feedback}

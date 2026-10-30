@@ -787,6 +787,22 @@ function SubmissionDetail({
     }
   }
 
+  // Comentar/destacar uma resposta — NÃO mexe na nota nem no estado (endpoint annotate).
+  async function annotateQ(qKey: string, patch: { comment?: string; highlight?: 'exemplar' | 'falha' | null }) {
+    setLocalDetails(prev => {
+      const cur = { ...(prev[qKey] ?? {}) } as GradingDetail
+      if (patch.highlight !== undefined) { if (patch.highlight) cur.highlight = patch.highlight; else delete cur.highlight }
+      if (patch.comment !== undefined) { const c = patch.comment.trim(); if (c) cur.teacherComment = c; else delete cur.teacherComment }
+      return { ...prev, [qKey]: cur }
+    })
+    try {
+      await fetch(`/api/exam/submissions/${submission.id}/annotate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionKey: qKey, ...patch }),
+      })
+    } catch { /* mantém o valor local */ }
+  }
+
   async function handleSaveNotes() {
     setSavingNotes(true)
     // Save notes via any question key (or a special endpoint — we use Q0 as dummy)
@@ -1123,6 +1139,25 @@ function SubmissionDetail({
                     </button>
                   </div>
                 </div>
+
+                {/* Comentar + destacar (não mexe na nota) */}
+                <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                  <button onClick={() => annotateQ(qKey, { highlight: detail?.highlight === 'exemplar' ? null : 'exemplar' })}
+                    className="text-xs px-1.5 py-0.5 rounded border" title="Destacar como resposta exemplar"
+                    style={{ borderColor: detail?.highlight === 'exemplar' ? '#16a34a' : '#e2e8f0', background: detail?.highlight === 'exemplar' ? '#dcfce7' : 'transparent', color: detail?.highlight === 'exemplar' ? '#166534' : '#9CA3AF' }}>⭐ Exemplar</button>
+                  <button onClick={() => annotateQ(qKey, { highlight: detail?.highlight === 'falha' ? null : 'falha' })}
+                    className="text-xs px-1.5 py-0.5 rounded border" title="Destacar como falha reveladora"
+                    style={{ borderColor: detail?.highlight === 'falha' ? '#dc2626' : '#e2e8f0', background: detail?.highlight === 'falha' ? '#fee2e2' : 'transparent', color: detail?.highlight === 'falha' ? '#991b1b' : '#9CA3AF' }}>⚠ Falha reveladora</button>
+                </div>
+                <input
+                  key={`${qKey}:${detail?.teacherComment ?? ''}`}
+                  defaultValue={detail?.teacherComment ?? ''}
+                  placeholder="💬 Comentário ao aluno sobre esta resposta (ele vê-o na correção)…"
+                  onBlur={e => { if (e.target.value !== (detail?.teacherComment ?? '')) annotateQ(qKey, { comment: e.target.value }) }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                  className="w-full px-3 py-1.5 rounded-lg border text-sm"
+                  style={{ borderColor: detail?.teacherComment ? '#0369a1' : '#0D1B2A20', outline: 'none', color: '#0D1B2A' }}
+                />
               </div>
             )
           })}

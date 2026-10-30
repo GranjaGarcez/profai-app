@@ -53,6 +53,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       points: q.points,
       earned: d?.score ?? 0,
       feedback: d?.feedback ?? '',
+      teacherComment: d?.teacherComment ?? '',
+      exemplar: d?.highlight === 'exemplar',   // só o destaque positivo chega ao aluno
     }
   })
 

@@ -6,7 +6,7 @@ import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 import { parseIntegrity } from '@/lib/exam/integrity'
 import QuestionMedia from '@/components/exam/QuestionMedia'
 
-interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; overrodeManual?: boolean; prevManual?: { score: number; feedback?: string }; ai_confidence?: number }
+interface GradingDetail { score: number; max: number; feedback?: string; auto?: boolean; manual?: boolean; overrodeManual?: boolean; prevManual?: { score: number; feedback?: string }; ai_confidence?: number; teacherComment?: string; highlight?: 'exemplar' | 'falha' }
 interface Submission {
   id: string
   student_name: string
@@ -56,7 +56,34 @@ export default function HorizontalGrading({
   const [saved, setSaved] = useState<Record<string, boolean>>({})
   const [reviewed, setReviewed] = useState<Record<string, boolean>>({})   // marcado por ti nesta sessão
   const [onlyPending, setOnlyPending] = useState(false)                   // mostrar só o que falta rever
+  const [onlyHighlights, setOnlyHighlights] = useState(false)             // mostrar só os destaques (⭐/⚠)
   const [showQ, setShowQ] = useState(true)                                // mostrar/ocultar enunciado (p/ ver respostas)
+  // Anotações (comentário + destaque) — overrides locais para fluidez.
+  const [hl, setHl] = useState<Record<string, 'exemplar' | 'falha' | null>>({})
+  const [comments, setComments] = useState<Record<string, string>>({})
+  const [commentOpen, setCommentOpen] = useState<Record<string, boolean>>({})
+
+  const curHighlight = (s: Submission): 'exemplar' | 'falha' | undefined => {
+    const k = `${s.id}|${qKey}`
+    if (k in hl) return hl[k] ?? undefined
+    return s.grading_details?.[qKey]?.highlight
+  }
+  const curComment = (s: Submission): string => {
+    const k = `${s.id}|${qKey}`
+    if (k in comments) return comments[k]
+    return s.grading_details?.[qKey]?.teacherComment ?? ''
+  }
+  async function annotate(s: Submission, patch: { comment?: string; highlight?: 'exemplar' | 'falha' | null }) {
+    const k = `${s.id}|${qKey}`
+    if (patch.highlight !== undefined) setHl(p => ({ ...p, [k]: patch.highlight ?? null }))
+    if (patch.comment !== undefined) setComments(p => ({ ...p, [k]: patch.comment! }))
+    try {
+      await fetch(`/api/exam/submissions/${s.id}/annotate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionKey: qKey, ...patch }),
+      })
+    } catch { /* mantém o valor local */ }
+  }
 
   // ── Editar critérios desta pergunta (exame já lançado) + re-corrigir só ela ──
   const [editing, setEditing] = useState(false)
@@ -135,7 +162,8 @@ export default function HorizontalGrading({
     return !!d && d.auto === false && d.manual !== true && !reviewed[`${s.id}|${qKey}`]
   }
   const isObjective = q.type === 'multiple_choice' || q.type === 'true_false'
-  const visibleRows = onlyPending ? rows.filter(s => !isManual(s)) : rows
+  let visibleRows = onlyPending ? rows.filter(s => !isManual(s)) : rows
+  if (onlyHighlights) visibleRows = visibleRows.filter(s => !!curHighlight(s))
   const reviewedCount = rows.filter(isManual).length
   const pendingCount = rows.length - reviewedCount
 
@@ -215,6 +243,11 @@ export default function HorizontalGrading({
             className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
             style={{ borderColor: onlyPending ? '#b45309' : '#0D1B2A20', background: onlyPending ? '#fffbeb' : 'transparent', color: onlyPending ? '#92400e' : '#6B7280' }}>
             {onlyPending ? '◉ Só por rever' : '○ Só por rever'}
+          </button>
+          <button onClick={() => setOnlyHighlights(v => !v)}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: onlyHighlights ? '#C8A84B' : '#0D1B2A20', background: onlyHighlights ? '#fffdf5' : 'transparent', color: onlyHighlights ? '#92400e' : '#6B7280' }}>
+            {onlyHighlights ? '★ Só destaques' : '☆ Só destaques'}
           </button>
           <label className="text-xs" style={{ color: '#6B7280' }}>Turma:</label>
           <select value={turma} onChange={e => setTurma(e.target.value)}
@@ -418,6 +451,32 @@ export default function HorizontalGrading({
                       {cFlag.terms.length > 0 && <> — <span style={{ fontStyle: 'italic' }}>{cFlag.terms.join(', ')}</span></>}
                       <span style={{ color: '#b45309' }}> · indício para reveres, não prova</span>
                     </p>
+                  )}
+                  {/* Destacar + comentar (não mexe na nota) */}
+                  {(() => {
+                    const k = `${s.id}|${qKey}`
+                    const curHl = curHighlight(s)
+                    const hasComment = !!curComment(s)
+                    return (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <button onClick={() => annotate(s, { highlight: curHl === 'exemplar' ? null : 'exemplar' })}
+                          className="text-xs px-1.5 py-0.5 rounded border" title="Destacar como resposta exemplar"
+                          style={{ borderColor: curHl === 'exemplar' ? '#16a34a' : '#e2e8f0', background: curHl === 'exemplar' ? '#dcfce7' : 'transparent', color: curHl === 'exemplar' ? '#166534' : '#9CA3AF' }}>⭐ Exemplar</button>
+                        <button onClick={() => annotate(s, { highlight: curHl === 'falha' ? null : 'falha' })}
+                          className="text-xs px-1.5 py-0.5 rounded border" title="Destacar como falha reveladora"
+                          style={{ borderColor: curHl === 'falha' ? '#dc2626' : '#e2e8f0', background: curHl === 'falha' ? '#fee2e2' : 'transparent', color: curHl === 'falha' ? '#991b1b' : '#9CA3AF' }}>⚠ Falha</button>
+                        <button onClick={() => setCommentOpen(o => ({ ...o, [k]: !o[k] }))}
+                          className="text-xs px-1.5 py-0.5 rounded border" title="Comentar esta resposta (o aluno vê)"
+                          style={{ borderColor: hasComment ? '#0369a1' : '#e2e8f0', background: hasComment ? '#e0f7fc' : 'transparent', color: hasComment ? '#0369a1' : '#9CA3AF' }}>💬 {hasComment ? 'Comentário ✓' : 'Comentar'}</button>
+                      </div>
+                    )
+                  })()}
+                  {commentOpen[`${s.id}|${qKey}`] && (
+                    <input defaultValue={curComment(s)} placeholder="Comentário ao aluno sobre esta resposta…"
+                      onBlur={e => annotate(s, { comment: e.target.value })}
+                      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                      className="w-full mt-1 px-2 py-1 rounded-md border text-xs"
+                      style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
                   )}
                 </div>
                 {/* Controlo de cotação */}

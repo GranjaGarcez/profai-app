@@ -430,3 +430,11 @@ Pedido do Tiago (alunos com dificuldades visuais / leitura). Aditivo, sem servid
 ## 2026-10-30 — Revisto à mão vs IA (distinção clara) + ajudas de voz desligadas por defeito
 - **Problema**: o verde "revisto" aparecia em perguntas corrigidas/recorrigidas pela IA (baseava-se em `auto===false`, que também é falha da IA/recorreção). **Agora** o verde é SÓ `manual===true` (ou cotado à mão nesta sessão). Selos novos na Correção horizontal e no detalhe da submissão: `✓ revisto à mão` (verde), `⚠ IA não avaliou` (vermelho, por corrigir), `⚠︎ IA · rever` (confiança baixa), `IA · por confirmar` (cinza, inclui recorreções). O filtro "Só por rever" e a borda verde passaram a usar o critério manual.
 - **Ajudas de voz desligadas por defeito**: ouvir a pergunta (TTS) e responder por voz (ditado) só aparecem se o professor ligar `🔊 Permitir ajudas de voz` no painel (`_allowAids` no snapshot, rota `allow-aids`, zero migração). **Sempre disponíveis**: tamanho da letra (A/A+/A++) e "mais legível". Vale no exame e nos resultados (a API `result/[id]` devolve `allowAids`).
+
+## 2026-10-30 (cont.) — Comentar e destacar respostas
+Aditivo, NÃO mexe na nota/estado/revisão manual (endpoint próprio `annotate`).
+- `GradingDetail` + `teacherComment?` e `highlight?: 'exemplar'|'falha'`.
+- `POST /api/exam/submissions/[id]/annotate` { questionKey, comment?, highlight? } — só escreve a anotação no detalhe, sem tocar em score/auto/manual/status.
+- **Correção horizontal**: por resposta, botões ⭐ Exemplar / ⚠ Falha reveladora + 💬 Comentar (input), com overrides locais; filtro novo "★ Só destaques".
+- **Detalhe da submissão**: os mesmos controlos por questão (⭐/⚠ + comentário), com actualização optimista em `localDetails`.
+- **Resultado do aluno**: vê o 👩‍🏫 comentário do professor e, se for o caso, "⭐ Resposta destacada" (a "falha reveladora" é interna, NÃO chega ao aluno). API `result/[id]` devolve `teacherComment` e `exemplar`.

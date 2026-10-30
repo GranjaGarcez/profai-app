@@ -77,6 +77,8 @@ export interface GradingDetail {
   manual?: boolean       // true = cotação definida à mão pelo prof (≠ falha da IA, que também põe auto:false)
   overrodeManual?: boolean // true = esta correcção da IA SUBSTITUIU uma revisão manual (a pedido do prof)
   prevManual?: { score: number; feedback?: string } // cópia da revisão manual substituída — nada se perde (reversível)
+  teacherComment?: string            // comentário do professor a esta resposta (visível ao aluno); não mexe na nota
+  highlight?: 'exemplar' | 'falha'   // destaque: resposta exemplar, ou falha reveladora (pedagógico)
   ai_confidence?: number // 0-1, só para open answers
   rubric?: RubricCriterion[] // só em long_answer — decomposição por critério
 }
