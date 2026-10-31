@@ -4,6 +4,8 @@ import Link from 'next/link'
 import GradingDashboard from '@/components/exam/GradingDashboard'
 import PaperCorrection from '@/components/exam/PaperCorrection'
 import PrintAnswerSheet from '@/components/exam/PrintAnswerSheet'
+import LinkAltTests from '@/components/exam/LinkAltTests'
+import type { TestSnapshot } from '@/lib/exam/types'
 
 interface Props {
   params: Promise<{ sessionId: string }>
@@ -36,6 +38,16 @@ export default async function ExamDetailPage({ params }: Props) {
   const total = subs.length
   const graded = subs.filter(s => s.status === 'graded' || s.status === 'reviewed').length
   const isActive = session.status === 'active'
+
+  // Outras sessões do professor (para ligar testes alternativos/de medida do mesmo momento).
+  const { data: otherSessions } = await supabase
+    .from('exam_sessions')
+    .select('id, title, access_code, created_at')
+    .eq('teacher_id', user.id)
+    .neq('id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(40)
+  const altLinked = ((session.test_snapshot as TestSnapshot)?._altSessions ?? []) as string[]
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -113,6 +125,9 @@ export default async function ExamDetailPage({ params }: Props) {
       {/* Prova em papel: imprimir folha otimizada + corrigir por foto */}
       <PrintAnswerSheet title={session.title} accessCode={session.access_code} snapshot={session.test_snapshot} />
       <PaperCorrection sessionId={sessionId} testSnapshot={session.test_snapshot} />
+
+      {/* Ligar testes alternativos / de medida do mesmo momento (para a grelha Excel) */}
+      <LinkAltTests sessionId={sessionId} current={altLinked} others={otherSessions ?? []} />
 
       {/* Dashboard de correcção */}
       <GradingDashboard

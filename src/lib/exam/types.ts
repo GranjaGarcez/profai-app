@@ -48,6 +48,10 @@ export interface TestSnapshot {
   // Cache de traduções por língua → índice da questão → enunciado/opções traduzidos.
   // NÃO é enviado ao aluno no fetch público (só via /api/exam/translate).
   _translations?: Record<string, Record<string, { text: string; options?: string[] }>>
+  // Testes ALTERNATIVOS / de medida do MESMO momento de avaliação (ids de outras
+  // sessões do professor). A grelha Excel desta sessão inclui esses alunos num bloco
+  // separado e assinalado, com as cotações do teste alternativo. Só ligação; aditivo.
+  _altSessions?: string[]
 }
 
 export interface ExamSession {
