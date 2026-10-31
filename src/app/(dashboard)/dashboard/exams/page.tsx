@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ExamSessionList from '@/components/exam/ExamSessionList'
+import OverviewExport from '@/components/exam/OverviewExport'
 
 export default async function ExamsPage() {
   const supabase = await createClient()
@@ -26,13 +27,18 @@ export default async function ExamsPage() {
             Sessões de avaliação lançadas com código de acesso
           </p>
         </div>
-        <Link
-          href="/dashboard/content"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
-          style={{ background: '#00B4D8' }}
-        >
-          + Novo teste
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {sessions && sessions.length > 0 && (
+            <OverviewExport sessions={sessions.map(s => ({ id: s.id, title: s.title, access_code: s.access_code, created_at: s.created_at }))} />
+          )}
+          <Link
+            href="/dashboard/content"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: '#00B4D8' }}
+          >
+            + Novo teste
+          </Link>
+        </div>
       </div>
 
       {/* Lista */}
