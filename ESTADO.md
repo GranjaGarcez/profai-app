@@ -462,3 +462,9 @@ Em cima da gravação atómica: cada correcção manual acrescenta uma entrada a
 Duas causas possíveis, tratadas:
 - **Bug de sincronização (corrigido)**: o `SubmissionDetail` guardava `localDetails`/`localTotal` em `useState` só no arranque e era renderizado **sem `key`** → ao reabrir/actualizar mostrava critérios/notas antigos. Agora o detalhe lê SEMPRE a submissão fresca da lista (`submissions.find(id)`) e tem `key={id:graded_at}` → arranque limpo quando os dados mudam. A edição de critérios actualiza o snapshot e, após `router.refresh`, a vista individual reflecte os novos critérios e a nova nota.
 - **Por design (não é bug)**: se a pergunta foi cotada À MÃO, editar os critérios NÃO a re-corrige (preserva-se); para reaplicar aos manuais, usar a opção "Re-corrigir também as que revi à mão" no passo de confirmação.
+
+## 2026-10-31 (cont.) — Correção individual: gravar ao fechar + sincronizar com a horizontal
+Tiago perdia cotações: na correção individual, mudar o número NÃO gravava sem clicar "Guardar"; ao fechar, revertia.
+- **Gravação automática**: o campo de nota grava ao sair (onBlur) e com Enter; "Guardar" só aparece se houver alteração pendente, senão mostra "✓ gravado".
+- **Fechar grava**: o X e o clique no fundo passam por `flushAndClose` — grava as alterações pendentes ANTES de fechar (não se perde a última revisão).
+- **Horizontal ↔ individual conectadas**: ambas gravam no MESMO endpoint `PATCH /api/exam/submissions/[id]` (escrita atómica) → a última cotação à mão vence nas duas. A horizontal já actualizava a lista a cada gravação; a individual passa a actualizar ao fechar (`onClose` faz `router.refresh`), por isso as vistas deixam de mostrar valores antigos uma da outra.

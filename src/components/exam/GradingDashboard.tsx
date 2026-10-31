@@ -787,6 +787,21 @@ function SubmissionDetail({
     }
   }
 
+  // Fechar a prova GRAVANDO primeiro as alterações de cotação pendentes (evita perder a
+  // última revisão por fechar sem clicar em Guardar).
+  const [flushing, setFlushing] = useState(false)
+  async function flushAndClose() {
+    const pend = Object.entries(overrides).filter(([, v]) => v !== undefined)
+    if (pend.length === 0) { onClose(); return }
+    setFlushing(true)
+    try {
+      for (const [qk] of pend) {
+        const mx = questions.find(q => String(q.index) === qk)?.points ?? 0
+        await handleSaveScore(qk, mx)
+      }
+    } finally { setFlushing(false); onClose() }
+  }
+
   // Comentar/destacar uma resposta — NÃO mexe na nota nem no estado (endpoint annotate).
   async function annotateQ(qKey: string, patch: { comment?: string; highlight?: 'exemplar' | 'falha' | null }) {
     setLocalDetails(prev => {
@@ -827,7 +842,7 @@ function SubmissionDetail({
     <div
       className="fixed inset-0 z-50 flex items-start justify-end p-4 overflow-y-auto"
       style={{ background: '#00000050' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      onClick={e => { if (e.target === e.currentTarget) flushAndClose() }}
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mt-4 mb-4 overflow-hidden"
@@ -876,9 +891,9 @@ function SubmissionDetail({
             <span className="font-mono font-bold text-lg" style={{ color: '#0D1B2A' }}>
               {localTotal?.toFixed(1) ?? '—'} / {submission.max_score ?? '—'}
             </span>
-            <button onClick={onClose}
+            <button onClick={flushAndClose} disabled={flushing}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
-              ✕
+              {flushing ? '…' : '✕'}
             </button>
           </div>
         </div>
@@ -1124,19 +1139,27 @@ function SubmissionDetail({
                       type="number" min={0} max={q.points} step={0.5}
                       value={overrideVal ?? ''}
                       onChange={e => setOverrides(prev => ({ ...prev, [qKey]: Number(e.target.value) }))}
+                      onBlur={() => { if (overrides[qKey] !== undefined) handleSaveScore(qKey, q.points) }}
+                      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                       placeholder={String(detail?.score ?? 0)}
                       className="w-16 text-center text-sm px-2 py-1 rounded-lg border font-mono"
                       style={{ borderColor: overrideVal !== undefined ? '#a78bfa' : '#0D1B2A20', outline: 'none' }}
                     />
                     <span className="text-xs" style={{ color: '#9CA3AF' }}>/ {q.points}</span>
+                    {overrideVal !== undefined ? (
                     <button
-                      disabled={overrideVal === undefined || saving[qKey]}
+                      disabled={saving[qKey]}
                       onClick={() => handleSaveScore(qKey, q.points)}
                       className="px-3 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-40 transition-opacity"
                       style={{ background: '#7c3aed' }}
                     >
                       {saving[qKey] ? '...' : 'Guardar'}
                     </button>
+                    ) : (
+                      <span className="text-xs" style={{ color: detail?.manual ? '#166534' : '#9CA3AF' }}>
+                        {saving[qKey] ? '...' : detail?.manual ? '✓ gravado' : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1427,7 +1450,7 @@ export default function GradingDashboard({
             allSubmissions={submissions}
             fallbackYear={fallbackYear}
             onReassigned={() => { setSelected(null); router.refresh() }}
-            onClose={() => setSelected(null)}
+            onClose={() => { setSelected(null); router.refresh() }}
           />
         )
       })()}
