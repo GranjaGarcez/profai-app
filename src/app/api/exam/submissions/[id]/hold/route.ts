@@ -12,7 +12,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { action } = await req.json().catch(() => ({})) as { action?: 'release' | 'hold' }
+  const { action, reason } = await req.json().catch(() => ({})) as { action?: 'release' | 'hold'; reason?: string }
+  const note = typeof reason === 'string' && reason.trim() ? reason.trim() : undefined
 
   const { data: sub, error } = await supabase
     .from('exam_submissions').select('id, session_id, answers').eq('id', id).single()
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const answers = (sub.answers ?? {}) as Record<string, string>
   const merged = action === 'release'
-    ? withIntegrity(answers, { held: false, cleared: { at: new Date().toISOString() } })
+    ? withIntegrity(answers, { held: false, cleared: { at: new Date().toISOString(), reason: note } })
     : withIntegrity(answers, { held: true, cleared: undefined })
 
   const { error: upErr } = await createAdminClient()

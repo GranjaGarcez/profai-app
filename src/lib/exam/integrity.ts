@@ -49,7 +49,7 @@ export interface IntegrityRecord {
   // tipicamente por fortes indícios; `cleared` = o professor certificou → liberta e nunca
   // mais é retida automaticamente.
   held?: boolean
-  cleared?: { at: string }
+  cleared?: { at: string; reason?: string }
   // Divulgação POR TURMA (aditivo): o professor libertou/ocultou esta submissão sem
   // usar o interruptor global da sessão. `true` = libertada; `false` = ocultada. A porta
   // do resultado abre se a sessão estiver divulgada OU se isto for `true`.

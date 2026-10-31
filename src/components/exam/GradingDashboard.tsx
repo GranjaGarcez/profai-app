@@ -671,6 +671,29 @@ function RosterExport({
   )
 }
 
+// Texto legível dos comportamentos detetados (sinais, não prova) — para as observações
+// dos testes com indícios. Determinístico; não inventa nada além do que foi registado.
+function describeIntegrity(answers: Record<string, string>): string {
+  const rec = parseIntegrity(answers)
+  if (!rec) return ''
+  const s = summarizeIntegrity(rec)
+  const lines: string[] = []
+  if (s.exits > 0) lines.push(`• ${s.exits} saída(s) do ecrã do teste${s.awayMs > 1000 ? ` (~${Math.round(s.awayMs / 1000)}s fora)` : ''}`)
+  if (s.blurs > 0) lines.push(`• ${s.blurs} perda(s) de foco da janela`)
+  if (s.pastes > 0) lines.push(`• ${s.pastes} colagem(ns) de texto numa resposta`)
+  if (s.contentAbove > 0) lines.push(`• ${s.contentAbove} resposta(s) com conteúdo acima do ano / fora do tema (análise de IA)`)
+  if (s.suspended) lines.push('• Prova suspensa automaticamente ao atingir o limite de sinais')
+  const lang = rec.language as { reliability?: string } | undefined
+  if (lang?.reliability === 'suspeita') lines.push('• Escrita pouco fidedigna (possível cópia/IA)')
+  // Fallback: se não houver sinais contabilizados mas a suspeita existir, usa os motivos.
+  if (lines.length === 0) {
+    const sus = strongSuspicion(rec)
+    sus.reasons.forEach(r => lines.push(`• ${r}`))
+  }
+  if (lines.length === 0) return ''
+  return `Comportamentos detetados (sinais, não prova — a verificar pelo professor):\n${lines.join('\n')}`
+}
+
 // ── Componente de detalhe de submissão ─────────────────────────────────────────
 function SubmissionDetail({
   submission,
@@ -689,7 +712,17 @@ function SubmissionDetail({
 }) {
   const [overrides, setOverrides] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState<Record<string, boolean>>({})
-  const [notes, setNotes] = useState(submission.teacher_notes ?? '')
+  // Nas provas com indícios fortes e sem notas ainda, pré-preenche as observações com os
+  // comportamentos detetados (local — só é gravado quando guardas; não sobrepõe notas tuas).
+  const [notes, setNotes] = useState(() => {
+    const existing = submission.teacher_notes ?? ''
+    if (existing.trim()) return existing
+    if (strongSuspicion(parseIntegrity(submission.answers)).suspect) {
+      const desc = describeIntegrity(submission.answers)
+      if (desc) return desc
+    }
+    return existing
+  })
   const [savingNotes, setSavingNotes] = useState(false)
   const [localDetails, setLocalDetails] = useState(submission.grading_details ?? {})
   const [localTotal, setLocalTotal] = useState(submission.total_score)
@@ -699,6 +732,7 @@ function SubmissionDetail({
   // ── Integridade: indícios + anulação (decisão humana) ──
   const integ = parseIntegrity(submission.answers)
   const integSummary = summarizeIntegrity(integ)
+  const suspicion = strongSuspicion(integ)
   const [annulOpen, setAnnulOpen] = useState(false)
   const [annulReason, setAnnulReason] = useState('')
   const [annulling, setAnnulling] = useState(false)
@@ -713,6 +747,24 @@ function SubmissionDetail({
       if (res.ok) onReassigned()   // fecha + refresca
       else setAnnulling(false)
     } catch { setAnnulling(false) }
+  }
+
+  // Levantar suspeita: os sinais resultaram de atividade NÃO intencional e não indiciam
+  // batota → a correção deixa de estar retida e é libertada ao aluno (fica `cleared`).
+  // Repor suspeita: volta a retê-la. Não altera a nota.
+  const [clearOpen, setClearOpen] = useState(false)
+  const [clearReason, setClearReason] = useState('')
+  const [clearing, setClearing] = useState(false)
+  async function liftSuspicion(lift: boolean) {
+    setClearing(true)
+    try {
+      const res = await fetch(`/api/exam/submissions/${submission.id}/hold`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: lift ? 'release' : 'hold', reason: lift ? clearReason.trim() : '' }),
+      })
+      if (res.ok) onReassigned()   // fecha + refresca a lista
+      else setClearing(false)
+    } catch { setClearing(false) }
   }
 
   const fmtEvent = (kind: string) => kind === 'exit' ? 'Saiu do ecrã do teste'
@@ -902,21 +954,31 @@ function SubmissionDetail({
         {/* Corpo */}
         <div className="overflow-y-auto p-6 space-y-4" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
 
-          {/* ── Integridade: indícios + anulação ── */}
-          {(integSummary.hasAny || integ?.annulled) && (
+          {/* ── Integridade: indícios + levantar suspeita + anulação ── */}
+          {(integSummary.hasAny || integ?.annulled || suspicion.suspect || integ?.cleared) && (
             <div className="rounded-xl border-2 p-3"
-              style={{ borderColor: integ?.annulled ? '#991b1b' : integSummary.level === 'high' ? '#dc2626' : '#f59e0b',
-                       background: integ?.annulled ? '#fef2f2' : '#fffbeb' }}>
+              style={{ borderColor: integ?.annulled ? '#991b1b' : integ?.cleared ? '#16a34a' : integSummary.level === 'high' ? '#dc2626' : '#f59e0b',
+                       background: integ?.annulled ? '#fef2f2' : integ?.cleared ? '#f0fdf4' : '#fffbeb' }}>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-sm font-bold" style={{ color: integ?.annulled ? '#991b1b' : '#92400e' }}>
-                  {integ?.annulled ? '⛔ Exame ANULADO' : '🛡️ Indícios de integridade'}
+                <p className="text-sm font-bold" style={{ color: integ?.annulled ? '#991b1b' : integ?.cleared ? '#166534' : '#92400e' }}>
+                  {integ?.annulled ? '⛔ Exame ANULADO' : integ?.cleared ? '✓ Suspeita levantada (analisado)' : '🛡️ Indícios de integridade — retido até analisares'}
                 </p>
                 {!integ?.annulled && (
-                  <button onClick={() => setAnnulOpen(o => !o)}
-                    className="text-xs font-semibold px-2.5 py-1 rounded-md border"
-                    style={{ borderColor: '#dc2626', color: '#dc2626' }}>
-                    Anular exame…
-                  </button>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {!integ?.cleared && (
+                      <button onClick={() => setClearOpen(o => !o)}
+                        className="text-xs font-semibold px-2.5 py-1 rounded-md border"
+                        style={{ borderColor: '#16a34a', color: '#166534' }}
+                        title="Os sinais resultaram de atividade não intencional e não indiciam batota — libertar a correção">
+                        Levantar suspeita…
+                      </button>
+                    )}
+                    <button onClick={() => setAnnulOpen(o => !o)}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-md border"
+                      style={{ borderColor: '#dc2626', color: '#dc2626' }}>
+                      Anular exame…
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -975,6 +1037,41 @@ function SubmissionDetail({
                       {annulling ? 'A anular…' : 'Confirmar anulação'}
                     </button>
                     <button onClick={() => setAnnulOpen(false)} disabled={annulling}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-md border" style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Suspeita já levantada pelo professor */}
+              {integ?.cleared && !integ?.annulled && (
+                <div className="mt-2 text-xs" style={{ color: '#166534' }}>
+                  <p>Suspeita levantada em {new Date(integ.cleared.at).toLocaleString('pt-PT')} — correção libertada ao aluno.</p>
+                  {integ.cleared.reason && <p className="mt-0.5"><strong>Nota:</strong> {integ.cleared.reason}</p>}
+                  <button onClick={() => liftSuspicion(false)} disabled={clearing}
+                    className="mt-1 text-xs font-semibold px-2.5 py-1 rounded-md border disabled:opacity-50"
+                    style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                    {clearing ? '…' : 'Repor suspeita (voltar a reter)'}
+                  </button>
+                </div>
+              )}
+
+              {/* Caixa de levantar suspeita */}
+              {clearOpen && !integ?.cleared && !integ?.annulled && (
+                <div className="mt-2 rounded-lg border p-2.5 space-y-2" style={{ borderColor: '#16a34a', background: '#fff' }}>
+                  <p className="text-xs" style={{ color: '#166534' }}>
+                    Levantar a suspeita liberta a correção ao aluno. Usa-o quando os sinais resultaram de <strong>atividade não intencional</strong> (ex.: o ecrã apagou-se, mudança de janela acidental) e <strong>não indiciam batota</strong>. Não altera a nota; podes repor a suspeita depois.
+                  </p>
+                  <textarea value={clearReason} onChange={e => setClearReason(e.target.value)} rows={2}
+                    placeholder="Nota (opcional, ex.: saída do ecrã por falha do tablet; sem indício de cópia)"
+                    className="w-full px-2.5 py-1.5 rounded-lg border text-xs"
+                    style={{ borderColor: '#0D1B2A20', outline: 'none', color: '#0D1B2A' }} />
+                  <div className="flex gap-2">
+                    <button onClick={() => liftSuspicion(true)} disabled={clearing}
+                      className="text-xs font-bold px-3 py-1.5 rounded-md text-white disabled:opacity-50" style={{ background: '#16a34a' }}>
+                      {clearing ? 'A libertar…' : 'Levantar e libertar'}
+                    </button>
+                    <button onClick={() => setClearOpen(false)} disabled={clearing}
                       className="text-xs font-semibold px-3 py-1.5 rounded-md border" style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
                       Cancelar
                     </button>
@@ -1217,16 +1314,31 @@ function SubmissionDetail({
           {/* Perfil de escrita (provas de papel) */}
           {submission.writing_analysis && <WritingProfile analysis={submission.writing_analysis} />}
 
-          {/* Notas do professor */}
+          {/* Notas do professor / observações */}
           <div className="border rounded-xl p-4 space-y-2" style={{ borderColor: '#0D1B2A10' }}>
-            <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Notas do professor</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Observações</p>
+              {integSummary.hasAny || suspicion.suspect ? (
+                <button
+                  onClick={() => {
+                    const desc = describeIntegrity(submission.answers)
+                    if (!desc) return
+                    setNotes(prev => (prev.trim() && !prev.includes('Comportamentos detetados')) ? `${prev.trim()}\n\n${desc}` : desc)
+                  }}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-md border"
+                  style={{ borderColor: '#b45309', color: '#b45309' }}
+                  title="Inserir nas observações os comportamentos detetados e assinalados">
+                  ⚑ Inserir comportamentos detetados
+                </button>
+              ) : null}
+            </div>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              rows={3}
+              rows={4}
               placeholder="Observações internas sobre esta submissão..."
               className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
-              style={{ borderColor: '#0D1B2A20', outline: 'none' }}
+              style={{ borderColor: '#0D1B2A20', outline: 'none', whiteSpace: 'pre-wrap' }}
             />
             <button
               onClick={handleSaveNotes}
@@ -1234,7 +1346,7 @@ function SubmissionDetail({
               className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
               style={{ background: '#0D1B2A' }}
             >
-              {savingNotes ? 'A guardar...' : '💾 Guardar notas'}
+              {savingNotes ? 'A guardar...' : '💾 Guardar observações'}
             </button>
           </div>
         </div>
@@ -1866,6 +1978,7 @@ export default function GradingDashboard({
                         const rec = parseIntegrity(sub.answers)
                         const sum = summarizeIntegrity(rec)
                         if (rec?.annulled) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: '#fee2e2', color: '#991b1b' }} title="Exame anulado">⛔ anulado</span>
+                        if (rec?.cleared) return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded" style={{ background: '#dcfce7', color: '#166534' }} title={`Suspeita levantada pelo professor${rec.cleared.reason ? ` — ${rec.cleared.reason}` : ''}`}>✓ analisado</span>
                         if (!sum.hasAny) return null
                         const c = sum.level === 'high' ? { bg: '#fee2e2', fg: '#991b1b' } : sum.level === 'medium' ? { bg: '#ffedd5', fg: '#9a3412' } : { bg: '#fef9c3', fg: '#854d0e' }
                         return <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded" style={{ background: c.bg, color: c.fg }}
