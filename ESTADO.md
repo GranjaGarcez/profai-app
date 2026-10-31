@@ -6,9 +6,35 @@
 ---
 
 ## Último update
+2026-10-31 — **por turma + Excel geral entre exames** (ver secção a seguir).
 2026-10-25 — **integridade do exame** (análise de conteúdo + sinais ao vivo, só registar; prof decide/anula) + regeneração de critérios ancorada + editar critérios num exame lançado (ver secções no fim).
 2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).
 Updates anteriores relevantes no fim: 2026-10-17 (corrigenda na edição + rede de segurança), 2026-09-13 (motor por blocos, BYOK).
+
+### 2026-10-31 — Por turma + Excel geral entre exames (4 commits, aditivo, build OK)
+Tudo não-destrutivo (nada toca em correções, grading nem no interruptor global existente).
+1. **Divulgação por turma** — `release/route.ts` aceita `{turma}`: marca `released`
+   por submissão em `answers.__integrity` (zero migração). Porta do aluno (`result/[id]`)
+   abre se sessão divulgada **ou** submissão libertada; `released:false` oculta mesmo com
+   sessão global ligada. Email por turma (`email-results?turma=`). Painel por turma no
+   `GradingDashboard` (divulgar/ocultar/email por turma + estado visível/total).
+2. **Estudo pedagógico por turma** — `/estudo?turma=` com selector; Excel/Word/IA
+   (`export-study`, `export-study-docx`, `study-ai`) aceitam `?turma=`.
+3. **Teste alternativo (medida) do mesmo momento na MESMA folha** — liga outras sessões
+   em `test_snapshot._altSessions` (rota `link-alt` + painel `LinkAltTests` na página do
+   exame). `export-grades` acrescenta, por turma e no Global, um **bloco separado e
+   assinalado** (faixa âmbar) com esses alunos e as cotações do teste que fizeram.
+4. **Relatório geral entre exames** — nova rota `/api/exam/export-overview` (nível
+   professor): índice + **resumo por turma** (alunos × testes, nota e %) + **detalhe por
+   teste**; testes de medida assinalados. Botão "Relatório geral (Excel)" na lista de
+   exames (`OverviewExport`, escolhe os testes). Identidade de aluno entre testes = nome
+   normalizado dentro da turma.
+- **Por confirmar/afinar depois:** identidade entre exames é por nome (pode falhar com
+  grafias diferentes); se precisar, acrescentar correspondência por número. Divulgação
+  global continua a dominar a por-turma (ocultar uma turma não funciona se o interruptor
+  global estiver ligado — por decisão, para manter o comportamento antigo intacto).
+- **Pendente de sessões anteriores:** tracking longitudinal (ligar momentos de avaliação
+  do mesmo aluno ao longo do tempo) — ainda adiado, aguarda luz verde.
 
 ## Update anterior
 2026-06-24 (sessão 7) — consolidação, recuperação de merges e limpeza Netlify
