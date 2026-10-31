@@ -4,21 +4,22 @@ import { useState } from 'react'
 
 interface AiOut { turma: string[]; alunos: { nome: string; turma: string; medida: string }[] }
 
-export default function StudyActions({ sessionId }: { sessionId: string }) {
+export default function StudyActions({ sessionId, turma }: { sessionId: string; turma?: string | null }) {
   const [loading, setLoading] = useState(false)
   const [ai, setAi] = useState<AiOut | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const qs = turma ? `?turma=${encodeURIComponent(turma)}` : ''
 
   function dl(kind: 'xlsx' | 'docx') {
     const a = document.createElement('a')
-    a.href = `/api/exam/sessions/${sessionId}/export-study${kind === 'docx' ? '-docx' : ''}`
+    a.href = `/api/exam/sessions/${sessionId}/export-study${kind === 'docx' ? '-docx' : ''}${qs}`
     document.body.appendChild(a); a.click(); a.remove()
   }
 
   async function deepen() {
     setLoading(true); setErr(null)
     try {
-      const res = await fetch(`/api/exam/sessions/${sessionId}/study-ai`, { method: 'POST' })
+      const res = await fetch(`/api/exam/sessions/${sessionId}/study-ai${qs}`, { method: 'POST' })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Falha.')
       setAi({ turma: d.turma ?? [], alunos: d.alunos ?? [] })

@@ -6,12 +6,14 @@ import { createClient } from '@/lib/supabase/server'
 import { callJsonCascade } from '@/lib/ai/singleCall'
 import type { TestSnapshot } from '@/lib/exam/types'
 import { buildPedagogyReport, type SubLite } from '@/lib/exam/pedagogy'
+import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const turmaFilter = req.nextUrl.searchParams.get('turma')?.trim() || null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -26,7 +28,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     .eq('session_id', id)
 
   const snapshot = session.test_snapshot as TestSnapshot
-  const rep = buildPedagogyReport(snapshot, (subs ?? []) as SubLite[])
+  const fallbackYear = snapshot?.yearLevel ?? null
+  const scoped = (turmaFilter ? (subs ?? []).filter(s => turmaLabelOf(s.student_year, s.student_class, fallbackYear) === turmaFilter) : (subs ?? [])) as SubLite[]
+  const rep = buildPedagogyReport(snapshot, scoped)
   if (rep.nGraded === 0) return NextResponse.json({ error: 'Ainda não há correcções completas para analisar.' }, { status: 400 })
 
   // Resumo compacto (limita o custo): só o essencial + alunos em risco (máx. 25).

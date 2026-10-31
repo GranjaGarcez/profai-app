@@ -3,9 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { TestSnapshot } from '@/lib/exam/types'
 import { buildPedagogyReport, type SubLite } from '@/lib/exam/pedagogy'
+import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 import StudyActions from './StudyActions'
 
-interface Props { params: Promise<{ sessionId: string }> }
+interface Props { params: Promise<{ sessionId: string }>; searchParams: Promise<{ turma?: string }> }
 
 const TYPE_PT: Record<string, string> = { multiple_choice: 'Escolha múltipla', true_false: 'V/F', short_answer: 'Resposta curta', long_answer: 'Resposta longa', fill_blank: 'Completar' }
 const pctColor = (p: number) => p >= 70 ? '#166534' : p >= 50 ? '#92400e' : '#dc2626'
@@ -13,8 +14,10 @@ const card = { border: '1px solid #0D1B2A10', borderRadius: 12, padding: 16, bac
 const th = { padding: '8px 10px', textAlign: 'left' as const, color: '#6B7280', fontWeight: 600, fontSize: 12, background: '#f8fafc' }
 const td = { padding: '7px 10px', fontSize: 12, borderTop: '1px solid #0D1B2A08', color: '#0D1B2A' }
 
-export default async function StudyPage({ params }: Props) {
+export default async function StudyPage({ params, searchParams }: Props) {
   const { sessionId } = await params
+  const { turma: turmaRaw } = await searchParams
+  const turma = typeof turmaRaw === 'string' && turmaRaw.trim() ? turmaRaw.trim() : null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -29,7 +32,13 @@ export default async function StudyPage({ params }: Props) {
     .eq('session_id', sessionId)
 
   const snapshot = session.test_snapshot as TestSnapshot
-  const rep = buildPedagogyReport(snapshot, (submissions ?? []) as SubLite[])
+  const allSubs = (submissions ?? []) as SubLite[]
+  const fallbackYear = snapshot?.yearLevel ?? null
+  // Turmas presentes (para o selector). O estudo é construído só sobre a turma escolhida.
+  const turmaOptions = Array.from(new Set(allSubs.map(s => turmaLabelOf(s.student_year, s.student_class, fallbackYear))))
+    .filter(t => t !== '—').sort((a, b) => a.localeCompare(b, 'pt'))
+  const scoped = turma ? allSubs.filter(s => turmaLabelOf(s.student_year, s.student_class, fallbackYear) === turma) : allSubs
+  const rep = buildPedagogyReport(snapshot, scoped)
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -37,13 +46,32 @@ export default async function StudyPage({ params }: Props) {
         <Link href={`/dashboard/exams/${sessionId}`} className="text-sm hover:underline" style={{ color: '#6B7280' }}>← Voltar à correcção</Link>
       </div>
 
-      <StudyActions sessionId={sessionId} />
+      <StudyActions sessionId={sessionId} turma={turma} />
+
+      {/* Selector de turma (o estudo é recalculado só para a turma escolhida) */}
+      {turmaOptions.length > 1 && (
+        <div className="no-print flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium" style={{ color: '#6B7280' }}>Turma:</span>
+          <Link href={`/dashboard/exams/${sessionId}/estudo`}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: !turma ? '#0D1B2A' : '#0D1B2A20', background: !turma ? '#0D1B2A' : 'transparent', color: !turma ? 'white' : '#6B7280' }}>
+            Todas
+          </Link>
+          {turmaOptions.map(t => (
+            <Link key={t} href={`/dashboard/exams/${sessionId}/estudo?turma=${encodeURIComponent(t)}`}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+              style={{ borderColor: turma === t ? '#0D1B2A' : '#0D1B2A20', background: turma === t ? '#0D1B2A' : 'transparent', color: turma === t ? 'white' : '#6B7280' }}>
+              {t}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Cabeçalho do relatório */}
       <div>
-        <h1 className="text-2xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#0D1B2A' }}>Estudo pedagógico</h1>
+        <h1 className="text-2xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#0D1B2A' }}>Estudo pedagógico{turma ? ` · ${turma}` : ''}</h1>
         <p className="text-sm mt-1" style={{ color: '#6B7280' }}>{rep.title} · {rep.subject} · {rep.yearLevel}.º ano · Tema: {rep.topic}</p>
-        <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>{rep.nGraded} prova(s) corrigida(s)</p>
+        <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>{rep.nGraded} prova(s) corrigida(s){turma ? ` · turma ${turma}` : ''}</p>
       </div>
 
       {rep.nGraded === 0 ? (

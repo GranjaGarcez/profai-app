@@ -6,13 +6,15 @@ import { createClient } from '@/lib/supabase/server'
 import ExcelJS from 'exceljs'
 import type { TestSnapshot } from '@/lib/exam/types'
 import { buildPedagogyReport, type SubLite } from '@/lib/exam/pedagogy'
+import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 
 export const runtime = 'nodejs'
 
 const TYPE_PT: Record<string, string> = { multiple_choice: 'Escolha múltipla', true_false: 'V/F', short_answer: 'Resposta curta', long_answer: 'Resposta longa', fill_blank: 'Completar' }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const turma = req.nextUrl.searchParams.get('turma')?.trim() || null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -27,7 +29,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .eq('session_id', id)
 
   const snapshot = session.test_snapshot as TestSnapshot
-  const rep = buildPedagogyReport(snapshot, (subs ?? []) as SubLite[])
+  const fallbackYear = snapshot?.yearLevel ?? null
+  const scoped = (turma ? (subs ?? []).filter(s => turmaLabelOf(s.student_year, s.student_class, fallbackYear) === turma) : (subs ?? [])) as SubLite[]
+  const rep = buildPedagogyReport(snapshot, scoped)
 
   const wb = new ExcelJS.Workbook()
   wb.creator = 'PROF.IA'; wb.created = new Date()
@@ -91,11 +95,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const buf = await wb.xlsx.writeBuffer()
   const safe = (rep.title || 'exame').replace(/[^\p{L}\p{N}\- ]/gu, '').trim().slice(0, 60) || 'exame'
+  const safeTurma = turma ? ` - ${turma.replace(/[^\p{L}\p{N}\- ]/gu, '')}` : ''
   return new NextResponse(buf as ArrayBuffer, {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="Estudo pedagogico - ${safe}.xlsx"`,
+      'Content-Disposition': `attachment; filename="Estudo pedagogico - ${safe}${safeTurma}.xlsx"`,
     },
   })
 }

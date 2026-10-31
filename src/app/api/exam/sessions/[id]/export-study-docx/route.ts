@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, WidthType, AlignmentType } from 'docx'
 import type { TestSnapshot } from '@/lib/exam/types'
 import { buildPedagogyReport, type SubLite } from '@/lib/exam/pedagogy'
+import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
 
 export const runtime = 'nodejs'
 
@@ -27,8 +28,9 @@ const h2 = (t: string) => new Paragraph({ heading: HeadingLevel.HEADING_2, spaci
 const p = (t: string, opts: { italics?: boolean; color?: string } = {}) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: t, size: 20, italics: opts.italics, color: opts.color })] })
 const bullet = (t: string) => new Paragraph({ bullet: { level: 0 }, spacing: { after: 40 }, children: [new TextRun({ text: t, size: 20 })] })
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const turma = req.nextUrl.searchParams.get('turma')?.trim() || null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -43,10 +45,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .eq('session_id', id)
 
   const snapshot = session.test_snapshot as TestSnapshot
-  const rep = buildPedagogyReport(snapshot, (subs ?? []) as SubLite[])
+  const fallbackYear = snapshot?.yearLevel ?? null
+  const scoped = (turma ? (subs ?? []).filter(s => turmaLabelOf(s.student_year, s.student_class, fallbackYear) === turma) : (subs ?? [])) as SubLite[]
+  const rep = buildPedagogyReport(snapshot, scoped)
 
   const children: (Paragraph | Table)[] = [
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [new TextRun({ text: 'Estudo pedagógico', bold: true, size: 36, font: 'Georgia', color: '0D1B2A' })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [new TextRun({ text: `Estudo pedagógico${turma ? ` · ${turma}` : ''}`, bold: true, size: 36, font: 'Georgia', color: '0D1B2A' })] }),
     new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 240 }, children: [new TextRun({ text: `${rep.title} · ${rep.subject} · ${rep.yearLevel}.º ano · Tema: ${rep.topic}`, size: 20, color: '555555' })] }),
   ]
 
@@ -105,11 +109,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const doc = new Document({ sections: [{ children }] })
   const buf = await Packer.toBuffer(doc)
   const safe = (rep.title || 'exame').replace(/[^\p{L}\p{N}\- ]/gu, '').trim().slice(0, 60) || 'exame'
+  const safeTurma = turma ? ` - ${turma.replace(/[^\p{L}\p{N}\- ]/gu, '')}` : ''
   return new NextResponse(buf as unknown as ArrayBuffer, {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="Estudo pedagogico - ${safe}.docx"`,
+      'Content-Disposition': `attachment; filename="Estudo pedagogico - ${safe}${safeTurma}.docx"`,
     },
   })
 }
