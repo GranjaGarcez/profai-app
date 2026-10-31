@@ -57,6 +57,7 @@ export default function HorizontalGrading({
   const [reviewed, setReviewed] = useState<Record<string, boolean>>({})   // marcado por ti nesta sessão
   const [onlyPending, setOnlyPending] = useState(false)                   // mostrar só o que falta rever
   const [onlyHighlights, setOnlyHighlights] = useState(false)             // mostrar só os destaques (⭐/⚠)
+  const [hideAuto, setHideAuto] = useState(false)                         // esconder escolha múltipla / V-F (correção garantida)
   const [showQ, setShowQ] = useState(true)                                // mostrar/ocultar enunciado (p/ ver respostas)
   // Anotações (comentário + destaque) — overrides locais para fluidez.
   const [hl, setHl] = useState<Record<string, 'exemplar' | 'falha' | null>>({})
@@ -100,13 +101,16 @@ export default function HorizontalGrading({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [submissions, fallbackYear])
 
-  const q = questions[qi]
+  // Esconder as de correção garantida (escolha múltipla / V-F) → navegar só nas abertas.
+  const OPEN_TYPES = new Set(['short_answer', 'long_answer', 'fill_blank'])
+  const navQs = hideAuto ? questions.filter(qq => OPEN_TYPES.has(qq.type)) : questions
+  const q = navQs[qi]
   const qKey = q ? String(q.index) : ''
 
   // Fecha o editor de critérios ao mudar de questão (evita editar a errada).
   function closeEditor() { setEditing(false); setConfirmSave(false); setCritMsg(null); setOverrideManual(false) }
   function changeQi(next: number) {
-    setQi(Math.max(0, Math.min(questions.length - 1, next)))
+    setQi(Math.max(0, Math.min(navQs.length - 1, next)))
     closeEditor()
   }
 
@@ -115,13 +119,14 @@ export default function HorizontalGrading({
     const h = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
-      if (e.key === 'ArrowRight') { setQi(i => Math.min(questions.length - 1, i + 1)); closeEditor() }
+      if (e.key === 'ArrowRight') { setQi(i => Math.min(navQs.length - 1, i + 1)); closeEditor() }
       if (e.key === 'ArrowLeft') { setQi(i => Math.max(0, i - 1)); closeEditor() }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [questions.length])
+  }, [navQs.length])
 
+  if (navQs.length === 0) return <p className="text-sm" style={{ color: '#6B7280' }}>{hideAuto ? 'Não há respostas abertas para verificar — só escolha múltipla / V-F.' : 'Sem questões.'}</p>
   if (!q) return <p className="text-sm" style={{ color: '#6B7280' }}>Sem questões.</p>
 
   const rows = submissions
@@ -230,9 +235,9 @@ export default function HorizontalGrading({
           style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>◀</button>
         <select value={qi} onChange={e => changeQi(Number(e.target.value))}
           className="px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>
-          {questions.map((qq, i) => <option key={i} value={i}>Questão {i + 1} de {questions.length}</option>)}
+          {navQs.map((qq, i) => <option key={i} value={i}>Questão {i + 1} de {navQs.length}{hideAuto ? ' (abertas)' : ''}</option>)}
         </select>
-        <button onClick={() => changeQi(qi + 1)} disabled={qi === questions.length - 1}
+        <button onClick={() => changeQi(qi + 1)} disabled={qi === navQs.length - 1}
           className="px-3 py-1.5 rounded-lg text-sm font-semibold border disabled:opacity-40"
           style={{ borderColor: '#0D1B2A20', color: '#0D1B2A' }}>▶</button>
 
@@ -248,6 +253,12 @@ export default function HorizontalGrading({
             className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
             style={{ borderColor: onlyHighlights ? '#C8A84B' : '#0D1B2A20', background: onlyHighlights ? '#fffdf5' : 'transparent', color: onlyHighlights ? '#92400e' : '#6B7280' }}>
             {onlyHighlights ? '★ Só destaques' : '☆ Só destaques'}
+          </button>
+          <button onClick={() => { setHideAuto(v => !v); setQi(0); closeEditor() }}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: hideAuto ? '#0369a1' : '#0D1B2A20', background: hideAuto ? '#e0f7fc' : 'transparent', color: hideAuto ? '#0369a1' : '#6B7280' }}
+            title="Esconder escolha múltipla e V-F (correção automática garantida) e ver só as respostas que precisam de verificação">
+            {hideAuto ? '👁 Só a verificar' : '👁 Ocultar auto'}
           </button>
           <label className="text-xs" style={{ color: '#6B7280' }}>Turma:</label>
           <select value={turma} onChange={e => setTurma(e.target.value)}

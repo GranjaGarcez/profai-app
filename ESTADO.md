@@ -468,3 +468,9 @@ Tiago perdia cotações: na correção individual, mudar o número NÃO gravava 
 - **Gravação automática**: o campo de nota grava ao sair (onBlur) e com Enter; "Guardar" só aparece se houver alteração pendente, senão mostra "✓ gravado".
 - **Fechar grava**: o X e o clique no fundo passam por `flushAndClose` — grava as alterações pendentes ANTES de fechar (não se perde a última revisão).
 - **Horizontal ↔ individual conectadas**: ambas gravam no MESMO endpoint `PATCH /api/exam/submissions/[id]` (escrita atómica) → a última cotação à mão vence nas duas. A horizontal já actualizava a lista a cada gravação; a individual passa a actualizar ao fechar (`onClose` faz `router.refresh`), por isso as vistas deixam de mostrar valores antigos uma da outra.
+
+## 2026-10-31 (cont.) — Botão "ocultar correção automática" (ver só o que precisa de verificação)
+Escolha múltipla e V/F têm correção determinística garantida; o professor quer ver só as abertas.
+- **Correção horizontal**: botão "👁 Ocultar auto / Só a verificar" filtra a NAVEGAÇÃO para só respostas abertas (short/long/fill); ao ligar, volta à 1.ª. Mensagem própria se não houver abertas.
+- **Correção individual**: botão "👁 Ocultar correção automática (EM/VF)" esconde os blocos de escolha múltipla/V-F (só aparece se o teste tiver dessas).
+- Aditivo, só UI; não altera correção nem dados.

@@ -694,6 +694,7 @@ function SubmissionDetail({
   const [localDetails, setLocalDetails] = useState(submission.grading_details ?? {})
   const [localTotal, setLocalTotal] = useState(submission.total_score)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [hideAuto, setHideAuto] = useState(false)   // esconder escolha múltipla / V-F (correção garantida)
 
   // ── Integridade: indícios + anulação (decisão humana) ──
   const integ = parseIntegrity(submission.answers)
@@ -983,7 +984,18 @@ function SubmissionDetail({
             </div>
           )}
 
-          {questions.map(q => {
+          {questions.some(q => q.type === 'multiple_choice' || q.type === 'true_false') && (
+            <div className="flex justify-end">
+              <button onClick={() => setHideAuto(v => !v)}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg border"
+                style={{ borderColor: hideAuto ? '#0369a1' : '#0D1B2A20', background: hideAuto ? '#e0f7fc' : 'transparent', color: hideAuto ? '#0369a1' : '#6B7280' }}
+                title="Esconder escolha múltipla e V-F (correção automática garantida) e ver só o que precisa de verificação">
+                {hideAuto ? '👁 A mostrar só o que verificar' : '👁 Ocultar correção automática (EM/VF)'}
+              </button>
+            </div>
+          )}
+
+          {questions.filter(q => !hideAuto || !(q.type === 'multiple_choice' || q.type === 'true_false')).map(q => {
             const qKey = String(q.index)
             const detail = localDetails[qKey]
             const answer = submission.answers[qKey] ?? ''
