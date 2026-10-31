@@ -1413,16 +1413,24 @@ export default function GradingDashboard({
 
   return (
     <>
-      {selected && (
-        <SubmissionDetail
-          submission={selected}
-          questions={questions}
-          allSubmissions={submissions}
-          fallbackYear={fallbackYear}
-          onReassigned={() => { setSelected(null); router.refresh() }}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      {selected && (() => {
+        // Usa SEMPRE a versão mais recente da submissão (a lista é actualizada por
+        // router.refresh após editar critérios/re-corrigir); a `key` força um arranque
+        // limpo do detalhe quando os dados mudam, para não mostrar cotações/critérios
+        // antigos na correção individual.
+        const live = submissions.find(s => s.id === selected.id) ?? selected
+        return (
+          <SubmissionDetail
+            key={`${live.id}:${live.graded_at ?? ''}`}
+            submission={live}
+            questions={questions}
+            allSubmissions={submissions}
+            fallbackYear={fallbackYear}
+            onReassigned={() => { setSelected(null); router.refresh() }}
+            onClose={() => setSelected(null)}
+          />
+        )
+      })()}
 
       {rosterOpen && (
         <RosterExport

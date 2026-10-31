@@ -457,3 +457,8 @@ Tiago: depois de rever tudo e mostrar notas, várias alterações manuais tinham
 
 ## 2026-10-30 (cont.) — Registo de alterações por pergunta (quem/quando/de→para)
 Em cima da gravação atómica: cada correcção manual acrescenta uma entrada ao histórico da pergunta (`GradingDetail.log`: {at, by, from, to}, últimas 20). A função `profai_set_question_grade` (migração `20261030_atomic_grade.sql`, actualizada) regista o log; o recurso pré-migração também. Detalhe da submissão mostra "🕓 Histórico de revisões (N)" por pergunta. `by` = email do professor.
+
+## 2026-10-31 — Editar critérios "não passa para a correção individual"
+Duas causas possíveis, tratadas:
+- **Bug de sincronização (corrigido)**: o `SubmissionDetail` guardava `localDetails`/`localTotal` em `useState` só no arranque e era renderizado **sem `key`** → ao reabrir/actualizar mostrava critérios/notas antigos. Agora o detalhe lê SEMPRE a submissão fresca da lista (`submissions.find(id)`) e tem `key={id:graded_at}` → arranque limpo quando os dados mudam. A edição de critérios actualiza o snapshot e, após `router.refresh`, a vista individual reflecte os novos critérios e a nova nota.
+- **Por design (não é bug)**: se a pergunta foi cotada À MÃO, editar os critérios NÃO a re-corrige (preserva-se); para reaplicar aos manuais, usar a opção "Re-corrigir também as que revi à mão" no passo de confirmação.
