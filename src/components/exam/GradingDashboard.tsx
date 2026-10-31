@@ -1289,6 +1289,36 @@ export default function GradingDashboard({
     finally { setReleasing(false) }
   }
 
+  // Divulgação POR TURMA (aditivo — marca cada submissão; não mexe no interruptor global).
+  const [releasingTurma, setReleasingTurma] = useState<string | null>(null)
+  async function releaseTurma(turma: string, rel: boolean) {
+    setReleasingTurma(turma); setResultMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/release`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ released: rel, turma }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha.')
+      setResultMsg(rel
+        ? `Turma ${turma} divulgada${typeof d.freed === 'number' ? `: ${d.freed} libertado(s)` : ''}${d.held ? `, ${d.held} retido(s) sob suspeita (por certificar)` : ''}.`
+        : `Turma ${turma} ocultada (${d.hidden ?? 0}).`)
+      router.refresh()
+    } catch (e) { setResultMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setReleasingTurma(null) }
+  }
+
+  async function emailTurma(turma: string) {
+    setEmailing(true); setResultMsg(null)
+    try {
+      const res = await fetch(`/api/exam/sessions/${sessionId}/email-results?turma=${encodeURIComponent(turma)}`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Falha ao enviar.')
+      setResultMsg(d.sent != null ? `Turma ${turma}: ${d.sent} email(s) enviado(s)${d.failed ? `, ${d.failed} falhou(aram)` : ''}.` : (d.message ?? 'Concluído.'))
+    } catch (e) { setResultMsg(e instanceof Error ? e.message : 'Erro.') }
+    finally { setEmailing(false) }
+  }
+
   const [allowTrans, setAllowTrans] = useState(!!(testSnapshot as TestSnapshot)._allowTranslation)
   const [togglingTrans, setTogglingTrans] = useState(false)
   async function toggleTranslation() {
@@ -1413,6 +1443,21 @@ export default function GradingDashboard({
   const turmaLabel = (s: Submission) => turmaLabelOf(s.student_year, s.student_class, fallbackYear)
   const turmaOptions = Array.from(new Set(submissions.map(turmaLabel)))
     .filter(t => t !== '—').sort((a, b) => a.localeCompare(b, 'pt'))
+
+  // Estado de divulgação POR TURMA (para o painel de divulgação). Um aluno está
+  // "visível" se a sessão está divulgada globalmente OU a submissão foi libertada,
+  // e não está oculta (released:false) nem retida por suspeita (held sem cleared).
+  const turmaRelease = turmaOptions.map(t => {
+    const subs = submissions.filter(s => turmaLabel(s) === t)
+    let shown = 0, withEmailRel = 0
+    for (const s of subs) {
+      const integ = parseIntegrity(s.answers)
+      const heldNow = !!integ?.held && !integ?.cleared
+      const vis = integ?.released === false ? false : (released || integ?.released === true)
+      if (vis && !heldNow) { shown++; if (typeof s.student_email === 'string' && s.student_email.includes('@')) withEmailRel++ }
+    }
+    return { turma: t, total: subs.length, shown, withEmailRel }
+  })
 
   const filtered = submissions.filter(s => {
     if (turmaView !== 'all' && turmaLabel(s) !== turmaView) return false
@@ -1600,6 +1645,56 @@ export default function GradingDashboard({
           </div>
         </div>
         {resultMsg && <p className="text-xs mt-2" style={{ color: '#374151' }}>{resultMsg}</p>}
+
+        {/* ── Divulgação POR TURMA ── */}
+        {turmaOptions.length > 1 && (
+          <div className="mt-3 rounded-lg border p-3" style={{ borderColor: '#0D1B2A12', background: 'white' }}>
+            <p className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>Divulgar por turma</p>
+            <p className="text-xs mb-2" style={{ color: '#6B7280' }}>
+              Liberta a correcção só a uma turma de cada vez (ex.: já corrigiste o 6ºA mas ainda não o 6ºB). Os suspeitos dessa turma ficam retidos para certificares. O botão <strong>“Divulgar resultados”</strong> em cima liberta todas.
+            </p>
+            <div className="space-y-1.5">
+              {turmaRelease.map(({ turma, total, shown, withEmailRel }) => {
+                const allShown = shown >= total && total > 0
+                return (
+                  <div key={turma} className="flex items-center justify-between gap-2 flex-wrap rounded-md px-2.5 py-1.5"
+                    style={{ background: allShown ? '#f0fdf4' : '#f8fafc', border: `1px solid ${allShown ? '#86efac' : '#0D1B2A10'}` }}>
+                    <div className="min-w-0">
+                      <span className="text-sm font-semibold" style={{ color: '#0D1B2A' }}>{turma}</span>
+                      <span className="text-xs ml-2" style={{ color: shown > 0 ? '#166534' : '#9CA3AF' }}>
+                        {shown}/{total} visível(eis) aos alunos
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                      {!allShown && (
+                        <button onClick={() => releaseTurma(turma, true)} disabled={releasingTurma === turma}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-md text-white disabled:opacity-50"
+                          style={{ background: '#0D1B2A' }}>
+                          {releasingTurma === turma ? '…' : `Divulgar ${turma}`}
+                        </button>
+                      )}
+                      {shown > 0 && (
+                        <button onClick={() => releaseTurma(turma, false)} disabled={releasingTurma === turma}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-md border disabled:opacity-50"
+                          style={{ borderColor: '#0D1B2A20', color: '#6B7280' }}>
+                          {releasingTurma === turma ? '…' : 'Ocultar'}
+                        </button>
+                      )}
+                      {shown > 0 && withEmailRel > 0 && (
+                        <button onClick={() => emailTurma(turma)} disabled={emailing}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-md text-white disabled:opacity-50"
+                          style={{ background: '#00B4D8' }}
+                          title={`Enviar a correcção por email aos ${withEmailRel} aluno(s) com email nesta turma`}>
+                          ✉️ {withEmailRel}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Suspeitos → retidos na divulgação (o professor certifica para libertar) */}
         {suspectList.length > 0 && (

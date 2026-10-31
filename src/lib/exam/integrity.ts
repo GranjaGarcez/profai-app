@@ -50,6 +50,10 @@ export interface IntegrityRecord {
   // mais é retida automaticamente.
   held?: boolean
   cleared?: { at: string }
+  // Divulgação POR TURMA (aditivo): o professor libertou/ocultou esta submissão sem
+  // usar o interruptor global da sessão. `true` = libertada; `false` = ocultada. A porta
+  // do resultado abre se a sessão estiver divulgada OU se isto for `true`.
+  released?: boolean
 }
 
 /** Lê o registo de integridade de um objecto de respostas (tolerante a tudo). */

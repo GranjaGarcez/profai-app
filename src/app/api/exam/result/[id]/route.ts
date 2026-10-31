@@ -26,13 +26,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: 'Exame não encontrado.' }, { status: 404 })
 
   const title = session.title as string
+  const integ = parseIntegrity((sub.answers ?? {}) as Record<string, string>)
+  // Divulgado se a SESSÃO está divulgada (global) OU se esta submissão foi libertada
+  // por turma (marcador `released` na integridade). `released === false` oculta esta
+  // submissão mesmo que a sessão esteja divulgada globalmente.
+  const isReleased = integ?.released === false ? false : (!!session.results_released || integ?.released === true)
   // Ainda não divulgado, ou ainda por corrigir → não revelar nada da correcção.
-  if (!session.results_released) {
+  if (!isReleased) {
     return NextResponse.json({ released: false, title, studentName: sub.student_name })
   }
   // Submissão RETIDA (fortes indícios, por certificar) → não libertar, mesmo com a
   // sessão divulgada. O professor tem de a certificar primeiro.
-  const integ = parseIntegrity((sub.answers ?? {}) as Record<string, string>)
   if (integ?.held && !integ?.cleared) {
     return NextResponse.json({ released: true, pending: true, held: true, title, studentName: sub.student_name })
   }

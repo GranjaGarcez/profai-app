@@ -4,6 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { parseIntegrity } from '@/lib/exam/integrity'
+import { turmaLabel as turmaLabelOf } from '@/lib/exam/turma'
+import type { TestSnapshot } from '@/lib/exam/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -24,26 +27,43 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Envio de email não configurado. Falta RESEND_API_KEY e/ou EXAM_EMAIL_FROM no ambiente.' }, { status: 503 })
   }
 
+  const turma = req.nextUrl.searchParams.get('turma')?.trim() || null
+
   const { data: session, error } = await supabase
     .from('exam_sessions')
-    .select('id, title, results_released')
+    .select('id, title, results_released, test_snapshot')
     .eq('id', id)
     .eq('teacher_id', user.id)
     .single()
   if (error || !session) return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 })
-  if (!session.results_released) {
-    return NextResponse.json({ error: 'Divulga os resultados antes de os enviar por email.' }, { status: 409 })
-  }
 
   const admin = createAdminClient()
+  const fallbackYear = (session.test_snapshot as TestSnapshot)?.yearLevel ?? null
   const { data: subs } = await admin
     .from('exam_submissions')
-    .select('id, student_name, student_email, total_score, max_score, status')
+    .select('id, student_name, student_email, total_score, max_score, status, student_year, student_class, answers')
     .eq('session_id', id)
     .in('status', ['graded', 'reviewed'])
 
-  const recipients = (subs ?? []).filter(s => typeof s.student_email === 'string' && s.student_email.includes('@'))
-  if (!recipients.length) return NextResponse.json({ sent: 0, skipped: 0, message: 'Nenhum aluno com email corrigido.' })
+  // Divulgado para este aluno? Sessão global OU marcador por submissão; retido/oculto não envia.
+  const isReleased = (answers: Record<string, string>) => {
+    const integ = parseIntegrity(answers)
+    if (integ?.held && !integ?.cleared) return false
+    if (integ?.released === false) return false
+    return !!session.results_released || integ?.released === true
+  }
+
+  const recipients = (subs ?? []).filter(s => {
+    if (!(typeof s.student_email === 'string' && s.student_email.includes('@'))) return false
+    if (!isReleased((s.answers ?? {}) as Record<string, string>)) return false
+    if (turma && turmaLabelOf(s.student_year, s.student_class, fallbackYear) !== turma) return false
+    return true
+  })
+  if (!recipients.length) {
+    return NextResponse.json({ sent: 0, skipped: 0, message: turma
+      ? `Nenhum aluno com email corrigido e divulgado na turma ${turma}. Divulga a turma primeiro.`
+      : 'Nenhum aluno com email corrigido e divulgado. Divulga os resultados primeiro.' })
+  }
 
   const origin = req.nextUrl.origin
   const title = String(session.title)
