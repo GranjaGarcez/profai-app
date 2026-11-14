@@ -57,6 +57,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       text: q.text,
       options: q.options ?? null,
       match: q.match ?? null,
+      image: q.image ?? null,
       figure: q.figure ?? null,
       illustration: q.illustration ?? null,
       illustrationCredit: q.illustrationCredit ?? null,

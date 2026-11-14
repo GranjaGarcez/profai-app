@@ -21,6 +21,7 @@ const TYPE_LABEL: Record<string, string> = {
   long_answer:     'Resposta longa',
   fill_blank:      'Completar espaços',
   matching:        'Associação',
+  image_label:     'Legendar imagem',
 }
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
@@ -818,12 +819,13 @@ function QuestionCard({
     )
     if (stop) { stopDictRef.current = stop; setListening(true) }
   }
-  const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank', 'matching']
+  const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank', 'matching', 'image_label']
   const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
   const isMatch = q.type === 'matching'
-  const isOpen  = !isMulti && !isTF && !isMatch && !isTextOnly
+  const isImageLabel = q.type === 'image_label'
+  const isOpen  = !isMulti && !isTF && !isMatch && !isImageLabel && !isTextOnly
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [showKeyboard, setShowKeyboard] = useState(false)
@@ -1053,6 +1055,82 @@ function QuestionCard({
                         <option value="">—</option>
                         {q.match!.right.map(r => <option key={r.key} value={String(r.key).toUpperCase()}>{String(r.key).toUpperCase()}</option>)}
                       </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Legendar imagem (associar da lista OU escrever) ── */}
+        {isImageLabel && q.image && (() => {
+          const markers = q.image.markers ?? []
+          const mode = q.image.mode ?? 'select'
+          // Resposta actual: uma linha por marcador, "chave: legenda".
+          const current: Record<string, string> = {}
+          for (const line of answer.split(/\r?\n/)) {
+            const m = line.match(/^\s*([^:：\-]+?)\s*[:：\-]\s*(.*)$/)
+            if (m) current[m[1].trim()] = m[2]
+          }
+          const setLabel = (key: string, val: string) => {
+            const next = { ...current }
+            if (val.trim()) next[key] = val; else delete next[key]
+            onChange(markers
+              .map(mk => next[mk.key]?.trim() ? `${mk.key}: ${next[mk.key].trim()}` : null)
+              .filter(Boolean).join('\n'))
+          }
+          // Modo 'select': lista baralhada das legendas certas (semente estável = índice).
+          const choices = markers.map(mk => mk.label).filter(l => String(l ?? '').trim())
+          if (mode === 'select') {
+            let s = (q.index ?? 0) + 1
+            const rng = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff }
+            for (let i = choices.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1));[choices[i], choices[j]] = [choices[j], choices[i]] }
+          }
+          return (
+            <div className="space-y-3">
+              {/* Imagem com marcadores numerados */}
+              <div className="relative rounded-xl overflow-hidden border select-none" style={{ borderColor: '#e2e8f0', background: '#fafafa' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={q.image.src} alt="" className="w-full block" draggable={false} />
+                {markers.map(mk => (
+                  <span key={mk.key} className="absolute flex items-center justify-center font-black"
+                    style={{
+                      left: `${mk.x}%`, top: `${mk.y}%`, transform: 'translate(-50%,-50%)',
+                      width: 26, height: 26, borderRadius: 9999, fontSize: 13,
+                      background: '#0D1B2A', color: '#F7F3EE', border: '2px solid #F7F3EE',
+                      boxShadow: '0 1px 4px rgba(13,27,42,0.4)',
+                    }}>
+                    {mk.key}
+                  </span>
+                ))}
+              </div>
+              {/* Legendas: menu (select) ou campo de texto (write) por marcador */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold" style={{ color: '#64748b' }}>
+                  {mode === 'select' ? 'Associa a legenda certa a cada número' : 'Escreve a legenda de cada número'}
+                </p>
+                {markers.map(mk => {
+                  const val = current[mk.key] ?? ''
+                  const filled = val.trim().length > 0
+                  return (
+                    <div key={mk.key} className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                      style={{ border: `1.5px solid ${filled ? '#bbf7d0' : '#e2e8f0'}`, background: filled ? '#f0fdf4' : 'white' }}>
+                      <span className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
+                        style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{mk.key}</span>
+                      {mode === 'select' ? (
+                        <select value={val} onChange={e => setLabel(mk.key, e.target.value)}
+                          className="flex-1 px-2 py-1.5 rounded-lg border text-sm font-medium"
+                          style={{ borderColor: '#00B4D8', color: '#0369a1', background: 'white' }}>
+                          <option value="">—</option>
+                          {choices.map((c, ci) => <option key={ci} value={c}>{c}</option>)}
+                        </select>
+                      ) : (
+                        <input type="text" value={val} onChange={e => setLabel(mk.key, e.target.value)}
+                          placeholder="legenda…"
+                          className="flex-1 px-3 py-1.5 rounded-lg border text-sm"
+                          style={{ borderColor: '#e2e8f0', color: '#0D1B2A', ...(legibleStyle ?? {}) }} />
+                      )}
                     </div>
                   )
                 })}

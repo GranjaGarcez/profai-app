@@ -7,6 +7,7 @@ import { speak, ttsAvailable } from '@/lib/a11y/speech'
 interface QResult {
   n: number; type: string; text: string; options: string[] | null
   match?: { left: Array<{ key: string; text: string }>; right: Array<{ key: string; text: string }> } | null
+  image?: { src: string; markers: Array<{ key: string; x: number; y: number; label: string }>; mode?: 'select' | 'write' } | null
   figure?: unknown; illustration?: string | null; illustrationCredit?: string | null
   studentAnswer: string; correctAnswer: string; points: number; earned: number; feedback: string
   teacherComment?: string; exemplar?: boolean
@@ -177,6 +178,34 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                           <span className="font-bold shrink-0" style={{ color: ok ? '#059669' : '#dc2626' }}>
                             {mine ? mine.toUpperCase() : '—'} {ok ? '✓' : `✗ → ${(right ?? '?').toUpperCase()}`}
                           </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })() : q.type === 'image_label' && q.image ? (() => {
+                const markers = q.image.markers ?? []
+                const norm = (s: string) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.,;:!?"'()«»]/g, '').replace(/\s+/g, ' ').trim()
+                const parse = (s: string) => { const m: Record<string, string> = {}; for (const line of String(s).split(/\r?\n/)) { const x = line.match(/^\s*([^:：\-]+?)\s*[:：\-]\s*(.*)$/); if (x) m[x[1].trim()] = x[2] } return m }
+                const stu = parse(q.studentAnswer)
+                return (
+                  <div className="space-y-1.5">
+                    <div className="relative rounded-lg overflow-hidden border" style={{ borderColor: '#e2e8f0' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={q.image.src} alt="" className="w-full block" />
+                      {markers.map(mk => (
+                        <span key={mk.key} className="absolute flex items-center justify-center font-black"
+                          style={{ left: `${mk.x}%`, top: `${mk.y}%`, transform: 'translate(-50%,-50%)', width: 24, height: 24, borderRadius: 9999, fontSize: 12, background: '#0D1B2A', color: '#F7F3EE', border: '2px solid #F7F3EE' }}>{mk.key}</span>
+                      ))}
+                    </div>
+                    {markers.map(mk => {
+                      const mine = stu[mk.key] ?? ''
+                      const ok = !!mine.trim() && norm(mine) === norm(mk.label)
+                      return (
+                        <div key={mk.key} className="flex items-center gap-2">
+                          <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{mk.key}</span>
+                          <span className="flex-1" style={{ color: '#374151' }}>{mine.trim() || '—'}</span>
+                          <span className="font-bold shrink-0" style={{ color: ok ? '#059669' : '#dc2626' }}>{ok ? '✓' : `✗ → ${mk.label}`}</span>
                         </div>
                       )
                     })}

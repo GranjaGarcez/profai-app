@@ -64,6 +64,45 @@ function gradeMatching(q: Question, rawAnswer: string): GradingDetail {
   }
 }
 
+// ── Correcção automática LEGENDAR IMAGEM (image_label) ────────────────────────
+// Objectiva, com crédito PARCIAL por marcador. Os DOIS modos partilham esta
+// correcção: 'select' (o aluno escolhe a legenda de uma lista → acerto exacto) e
+// 'write' (o aluno ESCREVE cada legenda → compara por significado: minúsculas, sem
+// acentos nem pontuação, via normBlank — "Coração"="coracao"). Gabarito lido de
+// `q.image.markers` (fonte de verdade); fallback para o espelho em `correctAnswer`.
+// Resposta do aluno: uma linha por marcador, "chave: legenda" (a legenda pode ter
+// espaços), serializada pela página do exame.
+function parseLabelAnswer(s: string): Record<string, string> {
+  const map: Record<string, string> = {}
+  for (const line of String(s ?? '').split(/\r?\n/)) {
+    const m = line.match(/^\s*([^:：\-]+?)\s*[:：\-]\s*(.*)$/)
+    if (m && m[2].trim()) map[normBlank(m[1])] = normBlank(m[2])
+  }
+  return map
+}
+function gradeImageLabel(q: Question, rawAnswer: string): GradingDetail {
+  const markers = q.image?.markers ?? []
+  const correct: Record<string, string> = {}
+  for (const mk of markers) if (String(mk.label ?? '').trim()) correct[normBlank(mk.key)] = normBlank(mk.label)
+  if (!Object.keys(correct).length) {                      // defensivo: sem marcadores → espelho
+    const fb = parseLabelAnswer(q.correctAnswer)
+    for (const k in fb) correct[k] = fb[k]
+  }
+  const given = parseLabelAnswer(rawAnswer)
+  const keys = Object.keys(correct)
+  const n = keys.length || 1
+  let ok = 0
+  for (const k of keys) if (given[k] && given[k] === correct[k]) ok++
+  const score = Math.min(q.points, Math.round((q.points * ok / n) * 2) / 2)   // crédito parcial, ao 0,5
+  const gabarito = markers.length ? markers.map(m => `${m.key}-${m.label}`).join(', ') : q.correctAnswer
+  return {
+    score,
+    max: q.points,
+    feedback: ok === n ? 'Correcto.' : `${ok} de ${n} legendas certas. Legendas correctas: ${gabarito}`,
+    auto: true,
+  }
+}
+
 // Clamp cada critério ao seu max e devolve undefined se input vazio
 function clampRubric(rubric: RubricCriterion[] | undefined): RubricCriterion[] | undefined {
   if (!rubric?.length) return undefined
@@ -347,6 +386,8 @@ export async function gradeSubmission(
       details[key] = gradeObjective(q, raw)
     } else if (q.type === 'matching') {
       details[key] = gradeMatching(q, raw)
+    } else if (q.type === 'image_label') {
+      details[key] = gradeImageLabel(q, raw)
     } else {
       await acquireGradingSlot()
       try {
@@ -396,6 +437,8 @@ export async function regradeSubmissionSelective(
       details[key] = gradeObjective(q, raw)
     } else if (q.type === 'matching') {
       details[key] = gradeMatching(q, raw)
+    } else if (q.type === 'image_label') {
+      details[key] = gradeImageLabel(q, raw)
     } else {
       await acquireGradingSlot()
       try {

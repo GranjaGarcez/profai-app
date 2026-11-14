@@ -24,6 +24,9 @@ interface Question {
   allowCalculator?: boolean
   // Associação (type='matching'): Coluna A (left) ↔ Coluna B (right); gabarito em correctAnswer ("1-c,2-a,…").
   match?: { left: Array<{ key: string; text: string }>; right: Array<{ key: string; text: string }> }
+  // Legendar imagem (type='image_label'): imagem + marcadores numerados (x/y em %); cada um com a legenda correcta.
+  // Modo 'select' = o aluno escolhe de uma lista; 'write' = escreve. Espelho do gabarito em correctAnswer ("1: aorta\n2: …").
+  image?: { src: string; markers: Array<{ key: string; x: number; y: number; label: string }>; mode?: 'select' | 'write' }
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
   _criteriaStale?: boolean   // interno: enunciado/opções/resposta editados → corrigenda pode estar desactualizada. Persiste no conteúdo (aviso sobrevive a recargas); removido do snapshot do exame em launch/route.ts
   illustration?: string   // data URL base64 (IA) ou URL real — ilustração gerada/pesquisada no Estúdio de Imagens
@@ -167,10 +170,19 @@ async function fileToImageDataUrl(file: File, maxDim = 1000): Promise<string> {
 // Conservador de propósito — só dispara em V/F com 2+ veredictos (Verdadeiro/Falso) nos
 // critérios que NÃO aparecem no enunciado. Nunca marca rubricas de parcelas (Dados/
 // Fórmula/Cálculo…) de questões abertas, que também são numeradas mas estão correctas.
-function incompleteReason(q: { type?: string; text?: string; markScheme?: string; options?: string[]; match?: unknown }): string | null {
+function incompleteReason(q: { type?: string; text?: string; markScheme?: string; options?: string[]; match?: unknown; image?: { src?: string; markers?: Array<{ label?: string }> } }): string | null {
   const text = String(q.text ?? '')
   const ms = String(q.markScheme ?? '')
   const low = text.toLowerCase()
+
+  // Legendar imagem: precisa de imagem, marcadores e legenda em cada marcador.
+  if (q.type === 'image_label') {
+    if (!q.image?.src) return 'Questão de legendar imagem ainda sem imagem. Carrega a figura a legendar (⬆️ Carregar imagem).'
+    const markers = Array.isArray(q.image.markers) ? q.image.markers : []
+    if (markers.length === 0) return 'A imagem ainda não tem marcadores. Clica nos pontos da figura para marcar o que o aluno deve legendar.'
+    if (markers.some(m => !String(m?.label ?? '').trim())) return 'Há marcadores sem legenda correcta. Preenche a legenda de cada número na lista abaixo da imagem.'
+    return null
+  }
 
   // Associação gerada sem estrutura: o enunciado fala em "Coluna A/B" ou "associa",
   // mas não é do tipo Associação nem tem colunas (q.match) → faltam as colunas.
@@ -764,6 +776,12 @@ export default function TestPreview({
         }
         base.correctAnswer = '1-a,2-b,3-c'
         base.markScheme = 'Associação objectiva — cada par correcto vale a sua parte da cotação (crédito parcial).'
+      }
+      if (type === 'image_label') {
+        base.text = 'Legenda a figura: identifica cada número.'
+        base.image = { src: '', markers: [], mode: 'select' }
+        base.correctAnswer = ''
+        base.markScheme = 'Legendagem objectiva — cada legenda correcta vale a sua parte da cotação (crédito parcial).'
       }
       groups[gi].questions.push(base)
       groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
@@ -1646,6 +1664,7 @@ export default function TestPreview({
                       onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
                       onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
                       onChangeMatch={(m, ca) => { updateQuestion(gi, qi, 'match', m); if (ca !== undefined) updateQuestion(gi, qi, 'correctAnswer', ca) }}
+                      onChangeImage={(im, ca) => { updateQuestion(gi, qi, 'image', im); if (ca !== undefined) updateQuestion(gi, qi, 'correctAnswer', ca) }}
                       onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
                       onDuplicate={() => duplicateQuestion(gi, qi)}
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
@@ -1695,6 +1714,13 @@ export default function TestPreview({
                         className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
                         style={{ borderColor: '#C8A84B', color: '#92400e', background: '#fdf6e3' }}>
                         🔗 Associação
+                      </button>
+                      <button
+                        onClick={() => { setAddMenuGi(null); addQuestion(gi, 'image_label') }}
+                        title="Questão de legendar imagem — carregas a figura, marcas os pontos e defines a legenda de cada um; correcção automática"
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
+                        style={{ borderColor: '#C8A84B', color: '#92400e', background: '#fdf6e3' }}>
+                        🖼️ Legendar imagem
                       </button>
                       <button
                         onClick={() => { setAddMenuGi(null); addQuestion(gi, 'short_answer') }}
@@ -1766,6 +1792,8 @@ export default function TestPreview({
         .teacher-key { display: none; }
         /* Associação: caixa para o aluno escrever a letra — só no papel */
         .match-writein { display: none; }
+        /* Legendar imagem: linha para o aluno escrever a legenda — só no papel */
+        .label-writeline { display: none; }
 
         @media print {
           /* "body > * { display:none }" não funciona aqui — o Sidebar/Header/main
@@ -1789,6 +1817,13 @@ export default function TestPreview({
             width: 24pt; height: 15pt;
             border: 1pt solid #0D1B2A; border-radius: 3pt;
             margin-right: 6pt; flex: 0 0 auto; vertical-align: middle;
+          }
+          /* Linha de escrita da legenda (legendar imagem) — visível no papel */
+          .label-writeline {
+            display: inline-block !important;
+            min-width: 150pt; height: 12pt;
+            border-bottom: 1pt solid #0D1B2A;
+            margin-left: 6pt; flex: 1 1 auto; vertical-align: bottom;
           }
 
           /* Versão professor: mostrar corrigenda em cada questão */
@@ -1890,6 +1925,7 @@ interface QuestionBlockProps {
   onChangeMarkScheme: (v: string) => void
   onChangeOption: (oi: number, v: string) => void
   onChangeMatch?: (match: Question['match'], correctAnswer?: string) => void
+  onChangeImage?: (image: Question['image'], correctAnswer?: string) => void
   onChangeCalculator: (v: boolean) => void
   onDelete?: () => void
   onDuplicate?: () => void
@@ -1910,7 +1946,7 @@ interface QuestionBlockProps {
 
 function QuestionBlock({
   q, globalIndex, editing,
-  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeMatch, onChangeCalculator,
+  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeMatch, onChangeImage, onChangeCalculator,
   onDelete, onDuplicate, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure, onSplitAlineas, isSplitting,
 }: QuestionBlockProps) {
@@ -2299,6 +2335,118 @@ function QuestionBlock({
                     <input value={q.correctAnswer} onChange={e => onChangeMatch?.(mt, e.target.value)} placeholder="1-c,2-a,3-b,4-d"
                       style={{ minWidth: 160, background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.75rem', fontWeight: 700, color: '#059669' }} />
                     <span className="text-xs" style={{ color: '#9CA3AF' }}>(formato: 1-c,2-a,…)</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* ── Legendar imagem (upload + marcadores + associar/escrever) ── */}
+          {q.type === 'image_label' && (() => {
+            const img = q.image ?? { src: '', markers: [], mode: 'select' as const }
+            const markers = img.markers ?? []
+            const mode = img.mode ?? 'select'
+            type Mk = { key: string; x: number; y: number; label: string }
+            const syncCA = (ms: Mk[]) => ms.map(m => `${m.key}: ${m.label}`).join('\n')
+            const renumber = (ms: Mk[]): Mk[] => ms.map((m, i) => ({ ...m, key: String(i + 1) }))
+            const setImg = (next: NonNullable<Question['image']>, ca?: string) => onChangeImage?.(next, ca)
+            return (
+              <div className="mt-3 space-y-3">
+                {/* Modo (só edição) */}
+                {editing && (
+                  <div className="flex items-center gap-2 flex-wrap no-print">
+                    <span className="text-xs font-bold" style={{ color: '#64748b' }}>Como responde o aluno:</span>
+                    {(['select', 'write'] as const).map(m => (
+                      <button key={m} onClick={() => setImg({ ...img, mode: m })}
+                        className="text-xs font-semibold px-2.5 py-1 rounded-md border transition-colors"
+                        style={{ borderColor: mode === m ? '#00B4D8' : '#e2e8f0', color: mode === m ? '#0369a1' : '#6B7280', background: mode === m ? '#e0f7fc' : 'white' }}>
+                        {m === 'select' ? 'Associar da lista' : 'Escrever a legenda'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Imagem com marcadores */}
+                {img.src ? (
+                  <div className="relative inline-block max-w-full rounded-xl overflow-hidden border"
+                    style={{ borderColor: '#e2e8f0', cursor: editing ? 'crosshair' : 'default' }}
+                    onClick={editing ? (e => {
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                      const x = Math.min(100, Math.max(0, Math.round(((e.clientX - r.left) / r.width) * 1000) / 10))
+                      const y = Math.min(100, Math.max(0, Math.round(((e.clientY - r.top) / r.height) * 1000) / 10))
+                      const nm = renumber([...markers, { key: '', x, y, label: '' }])
+                      setImg({ ...img, markers: nm }, syncCA(nm))
+                    }) : undefined}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.src} alt="" className="block max-w-full" draggable={false} style={{ maxHeight: 420 }} />
+                    {markers.map(mk => (
+                      <span key={mk.key} className="absolute flex items-center justify-center font-black"
+                        style={{ left: `${mk.x}%`, top: `${mk.y}%`, transform: 'translate(-50%,-50%)', width: 24, height: 24, borderRadius: 9999, fontSize: 12, background: '#0D1B2A', color: '#F7F3EE', border: '2px solid #F7F3EE', boxShadow: '0 1px 3px rgba(0,0,0,.4)' }}>
+                        {mk.key}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border-2 border-dashed p-4 text-center no-print" style={{ borderColor: '#e2e8f0', color: '#9CA3AF' }}>
+                    <p className="text-xs">Sem imagem. Carrega a figura que o aluno vai legendar.</p>
+                  </div>
+                )}
+
+                {/* Upload / substituir / remover (só edição) */}
+                {editing && (
+                  <div className="flex items-center gap-2 flex-wrap no-print">
+                    <label className="text-xs font-semibold px-2.5 py-1 rounded-md border cursor-pointer" style={{ borderColor: '#bae6fd', color: '#0369a1' }}>
+                      {img.src ? '⬆️ Substituir imagem' : '⬆️ Carregar imagem'}
+                      <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                        const f = e.target.files?.[0]; e.currentTarget.value = ''
+                        if (!f) return
+                        try { setImg({ ...img, src: await fileToImageDataUrl(f) }) } catch { /* ignora ficheiro inválido */ }
+                      }} />
+                    </label>
+                    {img.src && (
+                      <span className="text-xs" style={{ color: '#00B4D8' }}>
+                        {markers.length === 0 ? 'Clica nos pontos da imagem para marcar o que o aluno deve legendar.' : 'Clica na imagem para pôr mais um marcador.'}
+                      </span>
+                    )}
+                    {img.src && (
+                      <button onClick={() => setImg({ ...img, src: '' })} className="text-xs font-semibold ml-auto" style={{ color: '#ef4444' }}>Remover imagem</button>
+                    )}
+                  </div>
+                )}
+
+                {/* Lista de marcadores: legenda correcta editável OU linha de escrita no papel */}
+                {markers.length > 0 && (
+                  <div className="space-y-1.5">
+                    {editing ? markers.map((mk, mi) => (
+                      <div key={mi} className="flex items-center gap-2">
+                        <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{mk.key}</span>
+                        <input value={mk.label} onChange={e => {
+                          const nm = markers.map((x, i) => i === mi ? { ...x, label: e.target.value } : x)
+                          setImg({ ...img, markers: nm }, syncCA(nm))
+                        }} placeholder="legenda correcta"
+                          style={{ flex: 1, background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.85rem', color: '#0D1B2A' }} />
+                        <button onClick={() => {
+                          const nm = renumber(markers.filter((_, i) => i !== mi))
+                          setImg({ ...img, markers: nm }, syncCA(nm))
+                        }} className="shrink-0 text-xs font-bold no-print" style={{ color: '#ef4444' }}>remover</button>
+                      </div>
+                    )) : markers.map(mk => (
+                      <div key={mk.key} className="flex items-center gap-2">
+                        <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{mk.key}</span>
+                        <span className="label-writeline" aria-hidden="true" />
+                        <span className="no-print text-xs font-bold" style={{ color: '#059669' }}>→ {mk.label || '?'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Banco de legendas (modo "associar da lista") — visível no ecrã e no papel */}
+                {mode === 'select' && markers.some(m => String(m.label ?? '').trim()) && (
+                  <div className="rounded-lg border p-2.5" style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}>
+                    <p className="text-xs font-black mb-1" style={{ color: '#64748b' }}>Legendas disponíveis</p>
+                    <p className="text-sm" style={{ color: '#0D1B2A' }}>
+                      {markers.map(m => m.label).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')).join('  ·  ')}
+                    </p>
                   </div>
                 )}
               </div>

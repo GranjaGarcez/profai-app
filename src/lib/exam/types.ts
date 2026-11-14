@@ -7,7 +7,7 @@ export interface CalcEntry {
 
 export interface Question {
   index: number
-  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'long_answer' | 'fill_blank' | 'matching'
+  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'long_answer' | 'fill_blank' | 'matching' | 'image_label'
   text: string
   figure?: unknown
   options?: string[]
@@ -21,6 +21,16 @@ export interface Question {
   match?: {
     left: Array<{ key: string; text: string }>
     right: Array<{ key: string; text: string }>
+  }
+  // Questão de LEGENDAR IMAGEM (type='image_label'): imagem + marcadores numerados
+  // sobre pontos da figura (x/y em % → responsivo e imprime bem). Cada marcador tem a
+  // legenda correcta. Dois modos: 'select' (o aluno escolhe de uma lista baralhada) e
+  // 'write' (o aluno escreve cada legenda). Espelho do gabarito também em `correctAnswer`.
+  // Criada pelo professor por upload — a IA não gera imagens. Aditivo; opcional.
+  image?: {
+    src: string                                                   // data URL base64 (redimensionada no browser)
+    markers: Array<{ key: string; x: number; y: number; label: string }>
+    mode?: 'select' | 'write'
   }
   allowCalculator?: boolean   // IA define; professor pode sobrepor
   illustration?: string       // imagem/ilustração (data URL base64 ou URL) — Estúdio de Imagens / upload
