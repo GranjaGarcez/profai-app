@@ -159,6 +159,36 @@ async function fileToImageDataUrl(file: File, maxDim = 1000): Promise<string> {
   })
 }
 
+// ── Deteção de questão INCOMPLETA (aviso ao professor, não-destrutivo) ──────────
+// O caso típico: V/F composto ("assinala V/F · corrige as afirmações falsas") em que
+// as afirmações a classificar ficaram só nos critérios de correcção, fora do enunciado.
+// Conservador de propósito — só dispara em V/F com 2+ veredictos (Verdadeiro/Falso) nos
+// critérios que NÃO aparecem no enunciado. Nunca marca rubricas de parcelas (Dados/
+// Fórmula/Cálculo…) de questões abertas, que também são numeradas mas estão correctas.
+function incompleteReason(q: { type?: string; text?: string; markScheme?: string; options?: string[] }): string | null {
+  const text = String(q.text ?? '')
+  const ms = String(q.markScheme ?? '')
+  const low = text.toLowerCase()
+  // Conta marcadores de lista "N." ou "N)" (N = 1–9), inclusive quando vários aparecem
+  // na mesma linha separados por espaços ("… (3pt) 2. … 3. …"). Exige espaço a seguir
+  // ao ponto/parêntese para não apanhar decimais ("1.5") nem cotações ("(3pt)").
+  const countNumbered = (s: string) => {
+    const set = new Set<string>()
+    for (const m of s.matchAll(/(?:^|[\s;([])([1-9])[.)]\s/g)) set.add(m[1])
+    return set.size
+  }
+  const combined = text + '\n' + (Array.isArray(q.options) ? q.options.join('\n') : '')
+  const nVisible = countNumbered(combined)   // afirmações presentes no enunciado/opções
+  const nMs = countNumbered(ms)              // afirmações enumeradas nos critérios
+  const msVFverdicts = (ms.match(/\b(verdadeir|fals)/gi) ?? []).length
+  const stemLooksVF = q.type === 'true_false'
+    || /verdadeiro\s*\(?v?\)?\s*(ou|e|\/)\s*falso|assinala[^.]*\b[vf]\b|corrige\s+as\s+afirma|afirma[çc][õo]es\s+fals/i.test(low)
+  if (stemLooksVF && nMs >= 2 && msVFverdicts >= 2 && nVisible < nMs) {
+    return 'O enunciado não inclui as afirmações que o aluno deve classificar — aparecem só nos critérios de correcção. Regenera a questão (🔄 Alternativa) ou acrescenta as afirmações numeradas ao enunciado.'
+  }
+  return null
+}
+
 // ── Painel de distribuição de cotação ─────────────────────────────────────────
 const GROUP_COLORS = ['#0D1B2A', '#00B4D8', '#7c3aed', '#059669', '#C8A84B']
 
@@ -2028,6 +2058,29 @@ function QuestionBlock({
               style={{ fontSize: '0.9rem', fontWeight: 500, color: '#0D1B2A', lineHeight: '1.75' }}
             />
           </div>
+
+          {/* ── Aviso: questão parece incompleta (não-destrutivo, só no ecrã) ── */}
+          {(() => {
+            const reason = incompleteReason(q)
+            if (!reason) return null
+            return (
+              <div className="no-print mb-3 flex items-start gap-2 px-3 py-2 rounded-lg"
+                style={{ background: '#fffbeb', border: '1px solid #fbbf24' }}>
+                <span style={{ fontSize: 14, lineHeight: 1.2 }}>⚠️</span>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold" style={{ color: '#92400e' }}>Questão possivelmente incompleta</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#92400e' }}>{reason}</p>
+                  {onRegenerate && (
+                    <button onClick={onRegenerate} disabled={isRegenerating}
+                      className="mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-md disabled:opacity-50"
+                      style={{ background: '#b45309', color: 'white' }}>
+                      {isRegenerating ? '⏳ A gerar…' : '🔄 Gerar alternativa'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Ilustração gerada/pesquisada no Estúdio de Imagens (decorativa, separada do sistema de figuras) */}
           {!!q.illustration && (
