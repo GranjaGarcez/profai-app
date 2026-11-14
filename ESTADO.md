@@ -6,6 +6,7 @@
 ---
 
 ## Último update
+2026-11-14 — **tipo de questão ASSOCIAÇÃO** (matching, menu por item) + aviso de incompletas estendido a associação. Aditivo, não mexe no motor de IA. A geração NÃO cria `matching` (prof cria/insere); legendar imagem fica para a próxima etapa. Ficheiros: `types.ts` (+type `matching`, campo `match{left,right}`), `grading.ts` (`gradeMatching`, crédito parcial ao 0,5, ramo nos 2 despachadores), `exam/[code]/page.tsx` (render menu-por-item + KNOWN_TYPES), `exam/resultado/[id]` + `api/exam/result` (vista de correção por par), `content/TestPreview.tsx` (editor das 2 colunas, botão "🔗 Associação", detetor de associação-sem-colunas). Gabarito em `correctAnswer` formato "1-c,2-a,3-b,4-d".
 2026-10-31 — **por turma + Excel geral entre exames** (ver secção a seguir).
 2026-10-25 — **integridade do exame** (análise de conteúdo + sinais ao vivo, só registar; prof decide/anula) + regeneração de critérios ancorada + editar critérios num exame lançado (ver secções no fim).
 2026-10-24 — exame ao vivo com alunos: resultados ao aluno, turmas inteligentes, correção horizontal, sinónimos nos "completar espaços" (ver secção no fim).

@@ -7,7 +7,7 @@ export interface CalcEntry {
 
 export interface Question {
   index: number
-  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'long_answer' | 'fill_blank'
+  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'long_answer' | 'fill_blank' | 'matching'
   text: string
   figure?: unknown
   options?: string[]
@@ -15,6 +15,13 @@ export interface Question {
   points: number
   markScheme?: string
   bloomLevel?: string
+  // Questão de ASSOCIAÇÃO (type='matching'): Coluna A (left) ↔ Coluna B (right).
+  // O emparelhamento correcto vive em `correctAnswer` como "1-c,2-a,3-b,4-d".
+  // A Coluna B pode ter mais itens que a A (distratores). Aditivo; opcional.
+  match?: {
+    left: Array<{ key: string; text: string }>
+    right: Array<{ key: string; text: string }>
+  }
   allowCalculator?: boolean   // IA define; professor pode sobrepor
   illustration?: string       // imagem/ilustração (data URL base64 ou URL) — Estúdio de Imagens / upload
   illustrationCredit?: string // atribuição (quando vem de pesquisa, ex.: Wikimedia)

@@ -35,6 +35,35 @@ function gradeObjective(q: Question, rawAnswer: string): GradingDetail {
   }
 }
 
+// ── Correcção automática ASSOCIAÇÃO (matching) ────────────────────────────────
+// Objectiva, com crédito PARCIAL: cada par certo vale points/nLeft. Lê o gabarito do
+// `correctAnswer` ("1-c,2-a,3-b,4-d") e a resposta do aluno no mesmo formato.
+function parseMatchPairs(s: string): Record<string, string> {
+  const map: Record<string, string> = {}
+  for (const tok of String(s ?? '').split(/[,;\n]+/)) {
+    const m = tok.trim().match(/^([^\s\-:=→]+)\s*[-:=→]\s*([^\s\-:=→]+)$/)
+    if (m) map[m[1].toLowerCase()] = m[2].toLowerCase()
+  }
+  return map
+}
+function gradeMatching(q: Question, rawAnswer: string): GradingDetail {
+  const correct = parseMatchPairs(q.correctAnswer)
+  const given = parseMatchPairs(rawAnswer)
+  const leftKeys = q.match?.left?.length
+    ? q.match.left.map(l => String(l.key).toLowerCase())
+    : Object.keys(correct)
+  const n = leftKeys.length || 1
+  let ok = 0
+  for (const k of leftKeys) if (given[k] && given[k] === correct[k]) ok++
+  const score = Math.min(q.points, Math.round((q.points * ok / n) * 2) / 2)   // crédito parcial, ao 0,5
+  return {
+    score,
+    max: q.points,
+    feedback: ok === n ? 'Correcto.' : `${ok} de ${n} associações certas. Associação correcta: ${q.correctAnswer}`,
+    auto: true,
+  }
+}
+
 // Clamp cada critério ao seu max e devolve undefined se input vazio
 function clampRubric(rubric: RubricCriterion[] | undefined): RubricCriterion[] | undefined {
   if (!rubric?.length) return undefined
@@ -316,6 +345,8 @@ export async function gradeSubmission(
 
     if (q.type === 'multiple_choice' || q.type === 'true_false') {
       details[key] = gradeObjective(q, raw)
+    } else if (q.type === 'matching') {
+      details[key] = gradeMatching(q, raw)
     } else {
       await acquireGradingSlot()
       try {
@@ -363,6 +394,8 @@ export async function regradeSubmissionSelective(
     const calcHistory = answers[`calc_${key}`] ?? undefined
     if (q.type === 'multiple_choice' || q.type === 'true_false') {
       details[key] = gradeObjective(q, raw)
+    } else if (q.type === 'matching') {
+      details[key] = gradeMatching(q, raw)
     } else {
       await acquireGradingSlot()
       try {

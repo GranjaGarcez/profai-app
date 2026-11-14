@@ -6,6 +6,7 @@ import { speak, ttsAvailable } from '@/lib/a11y/speech'
 
 interface QResult {
   n: number; type: string; text: string; options: string[] | null
+  match?: { left: Array<{ key: string; text: string }>; right: Array<{ key: string; text: string }> } | null
   figure?: unknown; illustration?: string | null; illustrationCredit?: string | null
   studentAnswer: string; correctAnswer: string; points: number; earned: number; feedback: string
   teacherComment?: string; exemplar?: boolean
@@ -158,14 +159,41 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
             </details>
 
             <div className="space-y-1.5" style={{ fontSize: fz(14) }}>
-              <p>
-                <span className="font-semibold" style={{ color }}>A tua resposta: </span>
-                <span style={{ color: '#374151' }}>{q.studentAnswer.trim() || '(em branco)'}</span>
-              </p>
-              <p>
-                <span className="font-semibold" style={{ color: '#059669' }}>Resposta certa: </span>
-                <span style={{ color: '#166534' }}>{q.correctAnswer}</span>
-              </p>
+              {q.type === 'matching' && q.match ? (() => {
+                const parse = (s: string) => { const m: Record<string, string> = {}; for (const t of String(s).split(/[,;\n]+/)) { const x = t.trim().match(/^([^-\s]+)\s*-\s*(.+)$/); if (x) m[x[1].toLowerCase()] = x[2].toLowerCase() } return m }
+                const stu = parse(q.studentAnswer); const cor = parse(q.correctAnswer)
+                return (
+                  <div className="space-y-1.5">
+                    <div className="rounded-lg border p-2" style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: '#64748b' }}>Coluna B</p>
+                      {q.match.right.map(r => <p key={r.key} style={{ color: '#374151', fontSize: fz(12) }}><b style={{ color: '#00B4D8' }}>{r.key})</b> {r.text}</p>)}
+                    </div>
+                    {q.match.left.map(l => {
+                      const k = String(l.key).toLowerCase(); const mine = stu[k]; const right = cor[k]; const ok = !!mine && mine === right
+                      return (
+                        <div key={l.key} className="flex items-center gap-2">
+                          <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{l.key}</span>
+                          <span className="flex-1" style={{ color: '#0D1B2A' }}>{l.text}</span>
+                          <span className="font-bold shrink-0" style={{ color: ok ? '#059669' : '#dc2626' }}>
+                            {mine ? mine.toUpperCase() : '—'} {ok ? '✓' : `✗ → ${(right ?? '?').toUpperCase()}`}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })() : (
+                <>
+                  <p>
+                    <span className="font-semibold" style={{ color }}>A tua resposta: </span>
+                    <span style={{ color: '#374151' }}>{q.studentAnswer.trim() || '(em branco)'}</span>
+                  </p>
+                  <p>
+                    <span className="font-semibold" style={{ color: '#059669' }}>Resposta certa: </span>
+                    <span style={{ color: '#166534' }}>{q.correctAnswer}</span>
+                  </p>
+                </>
+              )}
               {q.exemplar && (
                 <p className="text-xs mt-1 px-3 py-2 rounded-lg font-semibold" style={{ background: '#dcfce7', color: '#166534' }}>
                   ⭐ Resposta destacada pelo teu professor

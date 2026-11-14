@@ -22,6 +22,8 @@ interface Question {
   points: number
   markScheme?: string
   allowCalculator?: boolean
+  // Associação (type='matching'): Coluna A (left) ↔ Coluna B (right); gabarito em correctAnswer ("1-c,2-a,…").
+  match?: { left: Array<{ key: string; text: string }>; right: Array<{ key: string; text: string }> }
   _bankId?: string   // ID no banco — presente quando a questão foi guardada/veio do banco
   _criteriaStale?: boolean   // interno: enunciado/opções/resposta editados → corrigenda pode estar desactualizada. Persiste no conteúdo (aviso sobrevive a recargas); removido do snapshot do exame em launch/route.ts
   illustration?: string   // data URL base64 (IA) ou URL real — ilustração gerada/pesquisada no Estúdio de Imagens
@@ -165,10 +167,19 @@ async function fileToImageDataUrl(file: File, maxDim = 1000): Promise<string> {
 // Conservador de propósito — só dispara em V/F com 2+ veredictos (Verdadeiro/Falso) nos
 // critérios que NÃO aparecem no enunciado. Nunca marca rubricas de parcelas (Dados/
 // Fórmula/Cálculo…) de questões abertas, que também são numeradas mas estão correctas.
-function incompleteReason(q: { type?: string; text?: string; markScheme?: string; options?: string[] }): string | null {
+function incompleteReason(q: { type?: string; text?: string; markScheme?: string; options?: string[]; match?: unknown }): string | null {
   const text = String(q.text ?? '')
   const ms = String(q.markScheme ?? '')
   const low = text.toLowerCase()
+
+  // Associação gerada sem estrutura: o enunciado fala em "Coluna A/B" ou "associa",
+  // mas não é do tipo Associação nem tem colunas (q.match) → faltam as colunas.
+  if (q.type !== 'matching' && !q.match) {
+    const twoCols = /coluna\s*a\b/i.test(low) && /coluna\s*b\b/i.test(low)
+    if (twoCols || (/\bassocia/i.test(low) && /coluna|corresponde/i.test(low))) {
+      return 'Parece uma questão de associação (Coluna A ↔ Coluna B), mas as colunas não estão no enunciado. Cria uma questão de Associação (🔗) e preenche as colunas, ou regenera.'
+    }
+  }
   // Conta marcadores de lista "N." ou "N)" (N = 1–9), inclusive quando vários aparecem
   // na mesma linha separados por espaços ("… (3pt) 2. … 3. …"). Exige espaço a seguir
   // ao ponto/parêntese para não apanhar decimais ("1.5") nem cotações ("(3pt)").
@@ -745,6 +756,15 @@ export default function TestPreview({
         markScheme: '',
       }
       if (type === 'multiple_choice') base.options = ['A) ', 'B) ', 'C) ', 'D) ']
+      if (type === 'matching') {
+        base.text = 'Associa cada item da Coluna A à Coluna B.'
+        base.match = {
+          left: [{ key: '1', text: '' }, { key: '2', text: '' }, { key: '3', text: '' }],
+          right: [{ key: 'a', text: '' }, { key: 'b', text: '' }, { key: 'c', text: '' }],
+        }
+        base.correctAnswer = '1-a,2-b,3-c'
+        base.markScheme = 'Associação objectiva — cada par correcto vale a sua parte da cotação (crédito parcial).'
+      }
       groups[gi].questions.push(base)
       groups[gi].totalPoints = groups[gi].questions.reduce((s, q) => s + (q.points ?? 0), 0)
       const total = groups.reduce((s, g) => s + (g.totalPoints ?? 0), 0)
@@ -1625,6 +1645,7 @@ export default function TestPreview({
                       onChangePoints={v => { updateQuestion(gi, qi, 'points', v); recalcPoints(gi) }}
                       onChangeMarkScheme={v => updateQuestion(gi, qi, 'markScheme', v)}
                       onChangeOption={(oi, v) => updateOption(gi, qi, oi, v)}
+                      onChangeMatch={(m, ca) => { updateQuestion(gi, qi, 'match', m); if (ca !== undefined) updateQuestion(gi, qi, 'correctAnswer', ca) }}
                       onChangeCalculator={(v: boolean) => updateQuestion(gi, qi, 'allowCalculator' as keyof Question, v)}
                       onDuplicate={() => duplicateQuestion(gi, qi)}
                       onDelete={group.questions.length > 1 ? () => deleteQuestion(gi, qi) : undefined}
@@ -1668,6 +1689,13 @@ export default function TestPreview({
                           {TYPE_LABEL[type]}
                         </button>
                       ))}
+                      <button
+                        onClick={() => { setAddMenuGi(null); addQuestion(gi, 'matching') }}
+                        title="Questão de associação (Coluna A ↔ Coluna B) — preenches as colunas; correcção automática"
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors"
+                        style={{ borderColor: '#C8A84B', color: '#92400e', background: '#fdf6e3' }}>
+                        🔗 Associação
+                      </button>
                       <button
                         onClick={() => { setAddMenuGi(null); addQuestion(gi, 'short_answer') }}
                         className="text-xs px-3 py-1.5 rounded-lg border"
@@ -1852,6 +1880,7 @@ interface QuestionBlockProps {
   onChangePoints: (v: number) => void
   onChangeMarkScheme: (v: string) => void
   onChangeOption: (oi: number, v: string) => void
+  onChangeMatch?: (match: Question['match'], correctAnswer?: string) => void
   onChangeCalculator: (v: boolean) => void
   onDelete?: () => void
   onDuplicate?: () => void
@@ -1872,7 +1901,7 @@ interface QuestionBlockProps {
 
 function QuestionBlock({
   q, globalIndex, editing,
-  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeCalculator,
+  onChangeText, onChangeAnswer, onChangePoints, onChangeMarkScheme, onChangeOption, onChangeMatch, onChangeCalculator,
   onDelete, onDuplicate, onMoveUp, onMoveDown, onRegenerate, isRegenerating, onRefreshCriteria, isRefreshingCriteria, onIllustrate, onUploadImage, onRemoveIllustration,
   onRegenerateFigure, isRegeneratingFigure, onSplitAlineas, isSplitting,
 }: QuestionBlockProps) {
@@ -2194,6 +2223,77 @@ function QuestionBlock({
               })}
             </div>
           )}
+
+          {/* ── Associação / correspondência (Coluna A ↔ Coluna B) ── */}
+          {q.type === 'matching' && q.match && (() => {
+            const correctMap: Record<string, string> = {}
+            for (const tok of String(q.correctAnswer).split(/[,;\n]+/)) {
+              const m = tok.trim().match(/^([^-\s]+)\s*-\s*(.+)$/)
+              if (m) correctMap[m[1].toLowerCase()] = m[2].toLowerCase()
+            }
+            const mt = q.match
+            return (
+              <div className="mt-3">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Coluna A */}
+                  <div>
+                    <p className="text-xs font-black mb-1.5" style={{ color: '#64748b' }}>Coluna A</p>
+                    <div className="space-y-1.5">
+                      {mt.left.map((l, li) => (
+                        <div key={li} className="flex items-start gap-2">
+                          <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{l.key}</span>
+                          {editing ? (
+                            <input value={l.text} onChange={e => onChangeMatch?.({ left: mt.left.map((x, i) => i === li ? { ...x, text: e.target.value } : x), right: mt.right })}
+                              placeholder="item da Coluna A"
+                              style={{ flex: 1, background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.85rem', color: '#0D1B2A' }} />
+                          ) : <span className="text-sm flex-1" style={{ color: '#0D1B2A' }}>{l.text}</span>}
+                          {!editing && (
+                            <span className="shrink-0 text-xs font-bold no-print" style={{ color: '#059669' }}>→ {(correctMap[String(l.key).toLowerCase()] ?? '?').toUpperCase()}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {editing && (
+                      <div className="flex gap-3 mt-1.5">
+                        <button onClick={() => onChangeMatch?.({ left: [...mt.left, { key: String(mt.left.length + 1), text: '' }], right: mt.right })} className="text-xs font-semibold" style={{ color: '#00B4D8' }}>+ linha</button>
+                        {mt.left.length > 1 && <button onClick={() => onChangeMatch?.({ left: mt.left.slice(0, -1), right: mt.right })} className="text-xs font-semibold" style={{ color: '#ef4444' }}>− linha</button>}
+                      </div>
+                    )}
+                  </div>
+                  {/* Coluna B */}
+                  <div>
+                    <p className="text-xs font-black mb-1.5" style={{ color: '#64748b' }}>Coluna B</p>
+                    <div className="space-y-1.5">
+                      {mt.right.map((r, ri) => (
+                        <div key={ri} className="flex items-start gap-2">
+                          <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#00B4D8', color: 'white' }}>{r.key}</span>
+                          {editing ? (
+                            <input value={r.text} onChange={e => onChangeMatch?.({ left: mt.left, right: mt.right.map((x, i) => i === ri ? { ...x, text: e.target.value } : x) })}
+                              placeholder="item da Coluna B"
+                              style={{ flex: 1, background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.85rem', color: '#0D1B2A' }} />
+                          ) : <span className="text-sm flex-1" style={{ color: '#0D1B2A' }}>{r.text}</span>}
+                        </div>
+                      ))}
+                    </div>
+                    {editing && (
+                      <div className="flex gap-3 mt-1.5">
+                        <button onClick={() => onChangeMatch?.({ left: mt.left, right: [...mt.right, { key: String.fromCharCode(97 + mt.right.length), text: '' }] })} className="text-xs font-semibold" style={{ color: '#00B4D8' }}>+ linha</button>
+                        {mt.right.length > 1 && <button onClick={() => onChangeMatch?.({ left: mt.left, right: mt.right.slice(0, -1) })} className="text-xs font-semibold" style={{ color: '#ef4444' }}>− linha</button>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {editing && (
+                  <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold" style={{ color: '#059669' }}>Associação correcta:</span>
+                    <input value={q.correctAnswer} onChange={e => onChangeMatch?.(mt, e.target.value)} placeholder="1-c,2-a,3-b,4-d"
+                      style={{ minWidth: 160, background: 'transparent', outline: 'none', borderBottom: '1.5px dashed #00B4D8', fontSize: '0.75rem', fontWeight: 700, color: '#059669' }} />
+                    <span className="text-xs" style={{ color: '#9CA3AF' }}>(formato: 1-c,2-a,…)</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Resposta correcta editável (MCQ/VF em modo edição) */}
           {isMulti && editing && (

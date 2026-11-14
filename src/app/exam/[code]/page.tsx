@@ -20,6 +20,7 @@ const TYPE_LABEL: Record<string, string> = {
   short_answer:    'Resposta curta',
   long_answer:     'Resposta longa',
   fill_blank:      'Completar espaços',
+  matching:        'Associação',
 }
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
@@ -817,11 +818,12 @@ function QuestionCard({
     )
     if (stop) { stopDictRef.current = stop; setListening(true) }
   }
-  const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank']
+  const KNOWN_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'long_answer', 'fill_blank', 'matching']
   const isTextOnly = (q.type as string) === 'text' || !KNOWN_TYPES.includes(q.type as string) || q.points === 0
   const isMulti = q.type === 'multiple_choice'
   const isTF    = q.type === 'true_false'
-  const isOpen  = !isMulti && !isTF && !isTextOnly
+  const isMatch = q.type === 'matching'
+  const isOpen  = !isMulti && !isTF && !isMatch && !isTextOnly
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [showKeyboard, setShowKeyboard] = useState(false)
@@ -1006,6 +1008,58 @@ function QuestionCard({
             })}
           </div>
         )}
+
+        {/* ── Associação / correspondência (menu por item) ── */}
+        {isMatch && q.match && (() => {
+          const pairs: Record<string, string> = {}
+          for (const tok of answer.split(/[,;\n]+/)) {
+            const m = tok.trim().match(/^([^-\s]+)\s*-\s*(.+)$/)
+            if (m) pairs[m[1].toLowerCase()] = m[2].toLowerCase()
+          }
+          const setPair = (leftKey: string, rightKey: string) => {
+            const next = { ...pairs }
+            if (rightKey) next[leftKey.toLowerCase()] = rightKey.toLowerCase(); else delete next[leftKey.toLowerCase()]
+            onChange(q.match!.left
+              .map(l => { const r = next[String(l.key).toLowerCase()]; return r ? `${l.key}-${r}` : null })
+              .filter(Boolean).join(','))
+          }
+          return (
+            <div className="space-y-3">
+              {/* Coluna B — referência */}
+              <div className="rounded-xl border p-3" style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}>
+                <p className="text-xs font-bold mb-1.5" style={{ color: '#64748b' }}>Coluna B</p>
+                <ul className="space-y-1">
+                  {q.match.right.map(r => (
+                    <li key={r.key} style={{ color: '#0D1B2A', fontSize: fz(13), ...(legibleStyle ?? {}) }}>
+                      <span className="font-black" style={{ color: '#00B4D8' }}>{r.key})</span> {r.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* Coluna A — itens com menu de escolha */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold" style={{ color: '#64748b' }}>Coluna A — escolhe a correspondência</p>
+                {q.match.left.map(l => {
+                  const sel = pairs[String(l.key).toLowerCase()] ?? ''
+                  return (
+                    <div key={l.key} className="flex items-center gap-2.5 p-2.5 rounded-xl"
+                      style={{ border: `1.5px solid ${sel ? '#bbf7d0' : '#e2e8f0'}`, background: sel ? '#f0fdf4' : 'white' }}>
+                      <span className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
+                        style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{l.key}</span>
+                      <span className="flex-1" style={{ color: '#0D1B2A', fontSize: fz(14), ...(legibleStyle ?? {}) }}>{l.text}</span>
+                      <select value={sel.toUpperCase()} onChange={e => setPair(String(l.key), e.target.value)}
+                        className="shrink-0 px-2 py-1.5 rounded-lg border text-sm font-bold"
+                        style={{ borderColor: '#00B4D8', color: '#0369a1', background: 'white', minWidth: 64 }}>
+                        <option value="">—</option>
+                        {q.match!.right.map(r => <option key={r.key} value={String(r.key).toUpperCase()}>{String(r.key).toUpperCase()}</option>)}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── Resposta aberta ── */}
         {isOpen && (
