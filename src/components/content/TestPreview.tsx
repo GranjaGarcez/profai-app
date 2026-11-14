@@ -1764,6 +1764,8 @@ export default function TestPreview({
       <style jsx global>{`
         /* Corrigenda do professor — sempre oculta no ecrã */
         .teacher-key { display: none; }
+        /* Associação: caixa para o aluno escrever a letra — só no papel */
+        .match-writein { display: none; }
 
         @media print {
           /* "body > * { display:none }" não funciona aqui — o Sidebar/Header/main
@@ -1781,6 +1783,13 @@ export default function TestPreview({
           .no-print { display: none !important; }
           .group-block { page-break-inside: avoid; }
           .question-block { page-break-inside: avoid; }
+          /* Caixa de escrita da associação (Coluna A) — visível no papel */
+          .match-writein {
+            display: inline-block !important;
+            width: 24pt; height: 15pt;
+            border: 1pt solid #0D1B2A; border-radius: 3pt;
+            margin-right: 6pt; flex: 0 0 auto; vertical-align: middle;
+          }
 
           /* Versão professor: mostrar corrigenda em cada questão */
           #test-document.print-teacher .teacher-key {
@@ -2242,6 +2251,7 @@ function QuestionBlock({
                       {mt.left.map((l, li) => (
                         <div key={li} className="flex items-start gap-2">
                           <span className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-xs font-black" style={{ background: '#0D1B2A', color: '#F7F3EE' }}>{l.key}</span>
+                          {!editing && <span className="match-writein" aria-hidden="true" />}
                           {editing ? (
                             <input value={l.text} onChange={e => onChangeMatch?.({ left: mt.left.map((x, i) => i === li ? { ...x, text: e.target.value } : x), right: mt.right })}
                               placeholder="item da Coluna A"
